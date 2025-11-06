@@ -23,4 +23,8 @@ knitr::opts_chunk$set(
 Kingship matrix reduction through networks analysis techniques in R
 
 
+Updated results for structures up to 5 components (6 nov 2025):
 
+```{r, echo = F}
+knitr::include_graphics("redkinnet_upto5_all_structures.pdf")
+```

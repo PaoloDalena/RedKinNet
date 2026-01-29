@@ -275,6 +275,31 @@ rules_db <- list(
     )
   ),
 
+  list(
+    name = "hub_tail5_iso17_determ",
+    size_allowed = 5,
+    match_fn = function(fam_df) {
+      nrow(fam_df) == 5 &&
+        paste(sort(fam_df$degree), collapse = ",") == "1,2,2,2,3" &&
+        paste(
+          sort(paste(fam_df$degree, fam_df$max_path_length, sep=":")),
+          collapse = ","
+        ) == "1:3,2:2,2:2,2:3,3:2"
+    },
+
+    kept_rules = list(
+      c("(degree == 2 & max_path_length == 2) | degree == 1")
+    ),
+
+    discarded_rules = list(
+      c("(degree == 3) | (degree == 2 & max_path_length == 3)")
+    ),
+
+    conflict_rules = list()
+  ),
+
+
+
   ## size 5: asymmetric hub + tails (degrees 1,2,2,2,3) ------------------
   list(
     name = "hub_tail5_like_iso15",
@@ -407,7 +432,6 @@ rules_db <- list(
   ),
 
   ## size 5: degree signature 2,2,2,3,3 ----------------------------------
-  ## variant A: fixed kept/ discarded
   list(
     name = "size5_sig_2,2,2,3,3",
     size_allowed = 5,
@@ -415,11 +439,15 @@ rules_db <- list(
       nrow(fam_df) == 5 &&
         paste(sort(fam_df$degree), collapse = ",") == "2,2,2,3,3"
     },
-    kept_rules = list(),
-    discarded_rules = list(),
-    conflict_rules = list( list("TRUE") ),  # tutti candidati
-    alpha = 2                                # MIS di taglia 2 → largest_ivs()
+    kept_rules = list(
+      c("degree == 2")
+    ),
+    discarded_rules = list(
+      c("degree == 3")
+    ),
+    conflict_rules = list()
   ),
+
 
   ## size 5: degree signature 2,2,2,4,4 ----------------------------------
   list(

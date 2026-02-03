@@ -1,6 +1,5 @@
 library(here)
-source(here("R", "helpers.r"))
-source(here("R", "rkn_manual_select_upto5_random.r"))
+source(here("R", "rkn_select_random_upto5.r"))
 source(here("R", "rules_db.r"))
 load(here("graphs_all.rdata"))
 
@@ -62,7 +61,7 @@ for (nm in sel) {
 
   plot_graph_basic(g, main = paste0(nm, " (raw)"))
 
-  res <- rkn_manual_select_upto5_random(
+  res <- rkn_select_random_upto5(
     fam_df = df_fake,
     rules_db = rules_db,
     seed = 123,

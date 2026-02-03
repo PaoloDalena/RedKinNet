@@ -101,9 +101,8 @@ plot_full_network <- function(synth,
     kept = out$kept %||% character(0),
     discarded_apriori = out$discarded_apriori %||% character(0),
     discarded = out$discarded %||% character(0),
-    unknown = out$unknown %||% character(0),
-    complex_candidates = out$complex_candidates %||% character(0),
-    simple_candidates = out$simple_candidates %||% character(0),
+    candidate_complex = out$candidate_complex %||% character(0),
+    candidate_simple  = out$candidate_simple %||% character(0),
     used_largest_ivs = out$used_largest_ivs %||% FALSE
   )
 }
@@ -134,28 +133,29 @@ plot_family_diagnostics <- function(synth,
   used_mis <- isTRUE(info$used_largest_ivs)
 
   vnames <- igraph::V(g)$name
-  cls <- rep("undecided", length(vnames))
+  cls <- rep(NA_character_, length(vnames))
   names(cls) <- vnames
 
+  if (any(is.na(cls))) {
+    stop("Unclassified nodes found in plot_family_diagnostics().")
+  }
+
   # apply in increasing priority, then overwrite with higher priority later
-  if (length(info$simple_candidates))  cls[info$simple_candidates] <- "simple_candidates"
-  if (length(info$complex_candidates)) cls[info$complex_candidates] <- "complex_candidates"
-  if (length(info$unknown))            cls[info$unknown] <- "unknown"
+  if (length(info$candidate_simple))  cls[info$candidate_simple] <- "candidate_simple"
+  if (length(info$candidate_complex)) cls[info$candidate_complex] <- "candidate_complex"
   if (length(info$discarded))          cls[info$discarded] <- "discarded"
   if (length(info$discarded_apriori))  cls[info$discarded_apriori] <- "discarded_apriori"
   if (length(info$kept))               cls[info$kept] <- "kept"
   if (length(info$kept_apriori))       cls[info$kept_apriori] <- "kept_apriori"
 
-  # color map (feel free to change)
+  # color map
   col_map <- c(
     kept_apriori = "#1B9E77",
     kept = "#66C2A5",
     discarded_apriori = "#D95F02",
     discarded = "#FDAE61",
-    simple_candidates = "#7570B3",
-    complex_candidates = "#E7298A",
-    unknown = "#666666",
-    undecided = "#BDBDBD"
+    candidate_simple = "#7570B3",
+    candidate_complex = "#E7298A"
   )
 
   vcol <- unname(col_map[cls])
@@ -213,22 +213,21 @@ plot_family_diagnostics <- function(synth,
   c(
     kept_apriori = "#1B9E77",
     discarded_apriori = "#B3B3B3",
-    simple_candidates = "#FFD92F",
-    complex_candidates = "#E41A1C",
-    unknown = "#4D4D4D",
-    other = "#D9D9D9"
+    candidate_simple = "#FFD92F",
+    candidate_complex = "#E41A1C"
   )
 }
 
+
+
 # Costruisce una mappa name -> class usando diag$results_by_family$out
-# Classi richieste: kept_apriori, discarded_apriori, simple_candidates, complex_candidates, unknown
 # (Per robustezza: se un nodo non cade in nessuna classe, va in "other")
 rkn_build_node_class_map <- function(synth, diag) {
   if (is.null(synth$g_all)) stop("synth$g_all non trovato.")
   if (is.null(diag$results_by_family)) stop("diag$results_by_family non trovato.")
 
   all_names <- igraph::V(synth$g_all)$name
-  cls_map <- stats::setNames(rep("other", length(all_names)), all_names)
+  cls_map <- setNames(rep(NA_character_, length(all_names)), all_names)
 
   # helper: assegna classe a un vettore di nodi
   assign_class <- function(nodes, class_name) {
@@ -243,16 +242,18 @@ rkn_build_node_class_map <- function(synth, diag) {
 
     kept_ap <- out$kept_apriori %||% character(0)
     disc_ap <- out$discarded_apriori %||% character(0)
-    simple  <- out$simple_candidates %||% character(0)
-    complex <- out$complex_candidates %||% character(0)
-    unknown <- out$unknown %||% character(0)
+    simple  <- out$candidate_simple %||% character(0)
+    complex <- out$candidate_complex %||% character(0)
 
     # ordine: prima metto "più debole", poi sovrascrivo con "più forte"
-    assign_class(simple,  "simple_candidates")
-    assign_class(complex, "complex_candidates")
-    assign_class(unknown, "unknown")
+    assign_class(simple,  "candidate_simple")
+    assign_class(complex, "candidate_complex")
     assign_class(disc_ap, "discarded_apriori")
     assign_class(kept_ap, "kept_apriori")
+  }
+
+  if (any(is.na(cls_map))) {
+    stop("Unclassified nodes found in rkn_build_node_class_map(). This should not happen.")
   }
 
   cls_map
@@ -327,17 +328,15 @@ plot_full_network_diagnostics <- function(synth,
 #   kept_apriori, discarded_apriori, simple_candidates, complex_candidates, unknown (+ other)
 # ============================================================
 
-`%||%` <- function(x, y) if (is.null(x)) y else x
-
 .rkn_diag_colors_minimal <- function() {
   c(
     kept_apriori = "#1B9E77",
     discarded_apriori = "#B3B3B3",
-    simple_candidates = "#FFD92F",
-    complex_candidates = "#E41A1C",
-    unknown = "#4D4D4D"
+    candidate_simple = "#FFD92F",
+    candidate_complex = "#E41A1C"
   )
 }
+
 
 .rkn_get_out_for_family <- function(diag, family_id) {
   if (is.null(diag$results_by_family)) stop("diag$results_by_family non trovato.")
@@ -354,14 +353,15 @@ plot_full_network_diagnostics <- function(synth,
 
   kept_ap <- intersect(out$kept_apriori %||% character(0), vnames)
   disc_ap <- intersect(out$discarded_apriori %||% character(0), vnames)
-  simple  <- intersect(out$simple_candidates %||% character(0), vnames)
-  complex <- intersect(out$complex_candidates %||% character(0), vnames)
-  unknown <- intersect(out$unknown %||% character(0), vnames)
+  simple  <- intersect(out$candidate_simple %||% character(0), vnames)
+  complex <- intersect(out$candidate_complex %||% character(0), vnames)
+
+
+
 
   # assegna dal più debole al più forte
-  if (length(simple))  cls[simple]  <- "simple_candidates"
-  if (length(complex)) cls[complex] <- "complex_candidates"
-  if (length(unknown)) cls[unknown] <- "unknown"
+  if (length(simple))  cls[simple]  <- "candidate_simple"
+  if (length(complex)) cls[complex] <- "candidate_complex"
   if (length(disc_ap)) cls[disc_ap] <- "discarded_apriori"
   if (length(kept_ap)) cls[kept_ap] <- "kept_apriori"
 

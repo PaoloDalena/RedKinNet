@@ -2,19 +2,18 @@
 # Upto5 isoforms diagnostics PDF grid (style aligned to 6plus)
 # - last cell = legend
 # - no empty leading cell / no shifting
-# - uses rkn_manual_select_upto5_random(return_diagnostics=TRUE)
+# - uses rkn_select_random_upto5(return_diagnostics=TRUE)
 # ============================================================
+
+library(here)
+load("graphs_all.rdata")
+source(here("R/rkn_select_random_upto5.r"))
+source(here("R/rules_db.r"))
+
 
 suppressPackageStartupMessages({
   library(igraph)
 })
-
-# --- load your project code ---
-# Assumes you already have helpers + rules_db + selection in your session.
-# If not, source them (adapt paths as needed):
-# source("helpers.txt")
-# source("rules_db.txt")  # if it's an R script; otherwise load your rules_db object separately
-# source("rkn_manual_select_upto5_random.txt")
 
 # ---- your helper (kept as you wrote) ----
 make_fake_df_for_graph <- function(g, comp_id = 1L, iso_id = NA_integer_) {
@@ -170,7 +169,7 @@ save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
 
         fam_df <- make_fake_df_for_graph(g, comp_id = 1L, iso_id = iso_id)
 
-        res <- rkn_manual_select_upto5_random(
+        res <- rkn_select_random_upto5(
           fam_df = fam_df,
           rules_db = rules_db,
           seed = seed,

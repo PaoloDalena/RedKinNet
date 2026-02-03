@@ -1,0 +1,808 @@
+#' Random selection for connected components with 6+ nodes
+#'
+#' @description
+#' Applies the RedKinNet randomized node selection strategy to a connected
+#' component with at least 6 nodes. The function combines:
+#' \itemize{
+#'   \item deterministic (a priori) decisions for recognizable structures; and
+#'   \item randomized resolution for remaining ambiguous cases.
+#' }
+#'
+#' The function expects the component to be provided both as a node-level
+#' data frame and as an \pkg{igraph} subgraph; vertex names in the graph must
+#' match node identifiers in the data frame.
+#'
+#' @param fam_df A data frame describing the nodes in the component. Must contain
+#'   a character column \code{.name}. If \code{name} exists and \code{.name} does
+#'   not, it is promoted to \code{.name}.
+#' @param g_sub An \pkg{igraph} object representing the same component as
+#'   \code{fam_df}. Must have \code{igraph::V(g_sub)$name}.
+#' @param seed Optional integer RNG seed used for randomized decisions.
+#' @param return_diagnostics Logical; if \code{TRUE}, returns additional
+#'   per-node and per-family diagnostics.
+#'
+#' @return
+#' If \code{return_diagnostics = FALSE}, a list with:
+#' \itemize{
+#'   \item \code{kept}: character vector of selected node names;
+#'   \item \code{discarded}: character vector of discarded node names.
+#' }
+#'
+#' If \code{return_diagnostics = TRUE}, the list also includes:
+#' \itemize{
+#'   \item \code{structure_name}: recognized structure label;
+#'   \item \code{kept_apriori}, \code{discarded_apriori};
+#'   \item \code{candidates_simple}, \code{candidates_complex};
+#'   \item \code{kept_afterrandomization}, \code{discarded_afterrandomization};
+#'   \item \code{used_largest_ivs};
+#'   \item \code{node_diagnostics}: a data frame with one row per node;
+#'   \item \code{family_diagnostics}: a one-row summary data frame.
+#' }
+#'
+#' @details
+#' This function is intended for internal pipeline use with controlled inputs.
+#' It relies on \pkg{igraph} for graph operations and uses randomized tie-breaking
+#' in specific structures. Set \code{seed} for reproducibility.
+#'
+#' @examples
+#' \dontrun{
+#' out <- rkn_select_random_6plus(fam_df, g_sub, seed = 1)
+#' out_diag <- rkn_select_random_6plus(fam_df, g_sub, seed = 1, return_diagnostics = TRUE)
+#' }
+#'
+#' @export
+rkn_select_random_6plus <- function(fam_df,
+                                    g_sub,
+                                    seed = NULL,
+                                    return_diagnostics = FALSE) {
+
+  if (is.null(fam_df$.name) && !is.null(fam_df$name)) fam_df$.name <- fam_df$name
+  if (is.null(fam_df$name)  && !is.null(fam_df$.name)) fam_df$name  <- fam_df$.name
+
+  if (is.null(g_sub)) stop("g_sub non può essere NULL.")
+  if (is.null(igraph::V(g_sub)$name)) stop("g_sub deve avere igraph::V(g_sub)$name valorizzato.")
+  if (!all(fam_df$.name %in% igraph::V(g_sub)$name)) {
+    stop("fam_df$.name contiene nodi non presenti in g_sub.")
+  }
+
+  n0 <- nrow(fam_df)
+  if (n0 < 6) {
+    warning("rkn_select_random_6plus chiamata con n < 6. Restituisco fallback: tutti discarded.")
+    kept_final <- character(0)
+    discarded_final <- fam_df$.name
+    if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+    node_diag <- data.frame(
+      id = fam_df$.name,
+      pre_class = rep("discarded_apriori", length(fam_df$.name)),
+      post_class = rep("discarded", length(fam_df$.name)),
+      is_selected = rep(FALSE, length(fam_df$.name)),
+      pre_reason = rep("n_lt_6_fallback", length(fam_df$.name)),
+      stringsAsFactors = FALSE
+    )
+    fam_diag <- data.frame(
+      n_nodes = n0,
+      used_largest_ivs = FALSE,
+      structure_name = "n_lt_6_fallback",
+      stringsAsFactors = FALSE
+    )
+
+    return(list(
+      structure_name = "n_lt_6_fallback",
+      kept_apriori = character(0),
+      discarded_apriori = fam_df$.name,
+      candidate_simple = character(0),
+      candidate_complex = character(0),
+      kept_afterrandomization = character(0),
+      discarded_afterrandomization = character(0),
+      kept = kept_final,
+      discarded = discarded_final,
+      used_largest_ivs = FALSE,
+      node_diagnostics = node_diag,
+      family_diagnostics = fam_diag
+    ))
+  }
+
+  if (!is.null(seed)) set.seed(seed)
+
+  all_names <- fam_df$.name
+  kept_apriori <- character(0)
+  discarded_apriori <- character(0)
+
+  pre_reason_map <- setNames(rep(NA_character_, length(all_names)), all_names)
+
+  discard_neighbors_of_kept <- function(g, kept_vec, discarded_vec) {
+    if (length(kept_vec) == 0) return(discarded_vec)
+    nb_idx <- igraph::neighborhood(g, order = 1, nodes = kept_vec)
+    nb_names <- unique(unlist(lapply(nb_idx, function(vs) igraph::V(g)$name[vs])))
+    nb_names <- setdiff(nb_names, kept_vec)
+    unique(c(discarded_vec, nb_names))
+  }
+
+  deg0 <- igraph::degree(g_sub, v = all_names)
+  n_all <- length(all_names)
+
+  if (n_all >= 6 &&
+      sum(deg0 == 1) == (n_all - 1) &&
+      sum(deg0 == (n_all - 1)) == 1) {
+
+    structure_name <- paste0("star", n_all)
+    hub <- names(deg0)[deg0 == (n_all - 1)][1]
+    leaves <- setdiff(all_names, hub)
+
+    kept_apriori <- leaves
+    discarded_apriori <- hub
+
+    for (x in leaves) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "star_deterministic_leaf"
+    if (is.na(pre_reason_map[[hub]])) pre_reason_map[[hub]] <- "star_deterministic_hub"
+
+    kept_final <- kept_apriori
+    discarded_final <- discarded_apriori
+
+    if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+    node_diag <- .rkn_build_node_diag_6plus(
+      all_names = all_names,
+      kept_apriori = kept_apriori,
+      discarded_apriori = discarded_apriori,
+      candidate_simple = character(0),
+      candidate_complex = character(0),
+      kept_final = kept_final,
+      discarded_final = discarded_final,
+      pre_reason_map = pre_reason_map
+    )
+
+    fam_diag <- data.frame(
+      n_nodes = n_all,
+      used_largest_ivs = FALSE,
+      structure_name = structure_name,
+      stringsAsFactors = FALSE
+    )
+
+    return(list(
+      structure_name = structure_name,
+      kept_apriori = kept_apriori,
+      discarded_apriori = discarded_apriori,
+      candidate_simple = character(0),
+      candidate_complex = character(0),
+      kept_afterrandomization = character(0),
+      discarded_afterrandomization = character(0),
+      kept = kept_final,
+      discarded = discarded_final,
+      used_largest_ivs = FALSE,
+      node_diagnostics = node_diag,
+      family_diagnostics = fam_diag
+    ))
+  }
+
+
+  deg0 <- igraph::degree(g_sub, v = all_names)
+  n_all <- length(all_names)
+
+  if (n_all >= 6 &&
+      igraph::is_connected(g_sub) &&
+      igraph::ecount(g_sub) == (n_all - 1) &&
+      sum(deg0 == 1) == 2 &&
+      all(deg0 %in% c(1, 2))) {
+
+    structure_name <- paste0("path", n_all)
+
+    if (!is.null(seed)) set.seed(seed)
+
+    ends <- names(deg0)[deg0 == 1]
+    start <- ends[1]
+    d <- igraph::distances(g_sub, v = start)
+    ord <- names(sort(d[1, ]))  # ordine lungo il path
+
+    if (n_all %% 2 == 1) {
+      keep_idx <- seq(1, length(ord), by = 2)
+      keep_set <- ord[keep_idx]
+      disc_set <- setdiff(ord, keep_set)
+
+      kept_apriori <- unique(c(kept_apriori, keep_set))
+      discarded_apriori <- unique(c(discarded_apriori, disc_set))
+      for (x in keep_set) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "path_odd_deterministic_keep"
+      for (x in disc_set) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "path_odd_deterministic_discard"
+
+      kept_final <- kept_apriori
+      discarded_final <- discarded_apriori
+
+      if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+      node_diag <- .rkn_build_node_diag_6plus(
+        all_names = all_names,
+        kept_apriori = kept_apriori,
+        discarded_apriori = discarded_apriori,
+        candidate_simple = character(0),
+        candidate_complex = character(0),
+        kept_final = kept_final,
+        discarded_final = discarded_final,
+        pre_reason_map = pre_reason_map
+      )
+
+      fam_diag <- data.frame(
+        n_nodes = n_all,
+        used_largest_ivs = FALSE,
+        structure_name = structure_name,
+        stringsAsFactors = FALSE
+      )
+
+      return(list(
+        structure_name = structure_name,
+        kept_apriori = unique(kept_apriori),
+        discarded_apriori = unique(discarded_apriori),
+        candidate_simple = character(0),
+        candidate_complex = character(0),
+        kept_afterrandomization = character(0),
+        discarded_afterrandomization = character(0),
+        kept = kept_final,
+        discarded = discarded_final,
+        used_largest_ivs = FALSE,
+        node_diagnostics = node_diag,
+        family_diagnostics = fam_diag
+      ))
+
+    } else {
+      candidate_complex <- all_names
+      for (x in candidate_complex) pre_reason_map[[x]] <- "path_even_bipartite"
+
+      A <- ord[seq(1, length(ord), by = 2)]
+      B <- ord[seq(2, length(ord), by = 2)]
+      kept_afterrandomization <- if (runif(1) < 0.5) A else B
+      discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
+
+      kept_final <- kept_afterrandomization
+      discarded_final <- discarded_afterrandomization
+
+      if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+      node_diag <- .rkn_build_node_diag_6plus(
+        all_names = all_names,
+        kept_apriori = character(0),
+        discarded_apriori = character(0),
+        candidate_simple = character(0),
+        candidate_complex = candidate_complex,
+        kept_final = kept_final,
+        discarded_final = discarded_final,
+        pre_reason_map = pre_reason_map
+      )
+
+      fam_diag <- data.frame(
+        n_nodes = n_all,
+        used_largest_ivs = FALSE,
+        structure_name = structure_name,
+        stringsAsFactors = FALSE
+      )
+
+      return(list(
+        structure_name = structure_name,
+        kept_apriori = character(0),
+        discarded_apriori = character(0),
+        candidate_simple = character(0),
+        candidate_complex = candidate_complex,
+        kept_afterrandomization = kept_final,
+        discarded_afterrandomization = discarded_final,
+        kept = kept_final,
+        discarded = discarded_final,
+        used_largest_ivs = FALSE,
+        node_diagnostics = node_diag,
+        family_diagnostics = fam_diag
+      ))
+    }
+  }
+
+  deg0 <- igraph::degree(g_sub, v = all_names)
+  n_all <- length(all_names)
+
+  if (n_all >= 6 && all(deg0 == (n_all - 1))) {
+
+    if (!is.null(seed)) set.seed(seed)
+
+    structure_name <- paste0("clique", n_all)
+
+    candidate_simple <- all_names
+    candidate_complex <- character(0)
+
+    for (x in candidate_simple) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "clique_choose1"
+
+    kept_afterrandomization <- sample(candidate_simple, 1)
+    discarded_afterrandomization <- setdiff(candidate_simple, kept_afterrandomization)
+
+    kept_final <- kept_afterrandomization
+    discarded_final <- discarded_afterrandomization
+
+    if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+    node_diag <- .rkn_build_node_diag_6plus(
+      all_names = all_names,
+      kept_apriori = character(0),
+      discarded_apriori = character(0),
+      candidate_simple = candidate_simple,
+      candidate_complex = character(0),
+      kept_final = kept_final,
+      discarded_final = discarded_final,
+      pre_reason_map = pre_reason_map
+    )
+
+    fam_diag <- data.frame(
+      n_nodes = n_all,
+      used_largest_ivs = FALSE,
+      structure_name = structure_name,
+      stringsAsFactors = FALSE
+    )
+
+    return(list(
+      structure_name = structure_name,
+      kept_apriori = character(0),
+      discarded_apriori = character(0),
+      candidate_simple = candidate_simple,
+      candidate_complex = character(0),
+      kept_afterrandomization = kept_afterrandomization,
+      discarded_afterrandomization = discarded_afterrandomization,
+      kept = kept_final,
+      discarded = discarded_final,
+      used_largest_ivs = FALSE,
+      node_diagnostics = node_diag,
+      family_diagnostics = fam_diag
+    ))
+  }
+
+  if (n_all >= 6 &&
+      igraph::is_connected(g_sub) &&
+      igraph::ecount(g_sub) == n_all &&
+      all(deg0 == 2)) {
+
+    if (!is.null(seed)) set.seed(seed)
+
+    structure_name <- paste0("cycle", n_all)
+
+    candidate_simple <- character(0)
+    candidate_complex <- all_names
+
+    if (n_all %% 2 == 0) {
+      for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "cycle_even_bipartite"
+
+      start <- all_names[1]
+      d <- igraph::distances(g_sub, v = start)
+      ord <- names(sort(d[1, ]))
+
+      A <- ord[seq(1, length(ord), by = 2)]
+      B <- ord[seq(2, length(ord), by = 2)]
+      kept_afterrandomization <- if (runif(1) < 0.5) A else B
+      discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
+
+      used_largest_ivs <- FALSE
+
+    } else {
+      for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "largest_ivs_fallback"
+
+      used_largest_ivs <- TRUE
+
+      g_ind <- igraph::induced_subgraph(g_sub, vids = all_names)
+      sets <- igraph::largest_ivs(g_ind)
+      set_names <- lapply(sets, function(s) igraph::V(g_ind)$name[s])
+      chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
+
+      kept_afterrandomization <- chosen_names
+      discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
+    }
+
+    kept_final <- kept_afterrandomization
+    discarded_final <- discarded_afterrandomization
+
+    if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+    node_diag <- .rkn_build_node_diag_6plus(
+      all_names = all_names,
+      kept_apriori = character(0),
+      discarded_apriori = character(0),
+      candidate_simple = character(0),
+      candidate_complex = candidate_complex,
+      kept_final = kept_final,
+      discarded_final = discarded_final,
+      pre_reason_map = pre_reason_map
+    )
+
+    fam_diag <- data.frame(
+      n_nodes = n_all,
+      used_largest_ivs = used_largest_ivs,
+      structure_name = structure_name,
+      stringsAsFactors = FALSE
+    )
+
+    return(list(
+      structure_name = structure_name,
+      kept_apriori = character(0),
+      discarded_apriori = character(0),
+      candidate_simple = character(0),
+      candidate_complex = candidate_complex,
+      kept_afterrandomization = kept_afterrandomization,
+      discarded_afterrandomization = discarded_afterrandomization,
+      kept = kept_final,
+      discarded = discarded_final,
+      used_largest_ivs = used_largest_ivs,
+      node_diagnostics = node_diag,
+      family_diagnostics = fam_diag
+    ))
+  }
+
+  changed <- TRUE
+  while (changed) {
+    changed <- FALSE
+
+    new_discarded <- discard_neighbors_of_kept(g_sub, kept_apriori, discarded_apriori)
+    if (length(setdiff(new_discarded, discarded_apriori)) > 0) {
+      discarded_apriori <- new_discarded
+      for (x in setdiff(new_discarded, names(pre_reason_map)[!is.na(pre_reason_map)])) {
+        if (x %in% names(pre_reason_map) && is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "neighbor_of_kept"
+      }
+      changed <- TRUE
+    }
+
+    undecided <- setdiff(all_names, union(kept_apriori, discarded_apriori))
+    if (length(undecided) == 0) break
+
+    g_u <- igraph::induced_subgraph(g_sub, vids = undecided)
+    deg <- igraph::degree(g_u)
+
+    iso <- names(deg)[deg == 0]
+    if (length(iso) > 0) {
+      kept_apriori <- unique(c(kept_apriori, iso))
+      for (x in iso) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "isolated"
+      changed <- TRUE
+      next
+    }
+
+    leaves <- names(deg)[deg == 1]
+    if (length(leaves) > 0) {
+      for (lf in leaves) {
+        if (!(lf %in% igraph::V(g_u)$name)) next
+        nb <- igraph::neighbors(g_u, v = lf, mode = "all")
+        nb_name <- igraph::V(g_u)$name[nb][1]
+
+        if (nb_name %in% kept_apriori) {
+          discarded_apriori <- unique(c(discarded_apriori, lf))
+          if (is.na(pre_reason_map[[lf]])) pre_reason_map[[lf]] <- "leaf_neighbor_is_kept"
+        } else {
+          kept_apriori <- unique(c(kept_apriori, lf))
+          discarded_apriori <- unique(c(discarded_apriori, nb_name))
+          if (is.na(pre_reason_map[[lf]])) pre_reason_map[[lf]] <- "leaf_forcing_keep_leaf"
+          if (is.na(pre_reason_map[[nb_name]])) pre_reason_map[[nb_name]] <- "leaf_forcing_discard_neighbor"
+        }
+        changed <- TRUE
+      }
+      next
+    }
+
+    if (igraph::vcount(g_u) >= 4) {
+      deg_u <- igraph::degree(g_u)
+      hubs <- names(deg_u)[deg_u >= 3]
+      if (length(hubs) > 0) {
+        for (h in hubs) {
+          nbs <- igraph::neighbors(g_u, h)
+          nb_names <- igraph::V(g_u)$name[nbs]
+          if (length(nb_names) >= 3) {
+            nb_deg <- deg_u[nb_names]
+            if (all(nb_deg == 1)) {
+              discarded_apriori <- unique(c(discarded_apriori, h))
+              kept_apriori <- unique(c(kept_apriori, nb_names))
+              if (is.na(pre_reason_map[[h]])) pre_reason_map[[h]] <- "pure_star_hub"
+              for (x in nb_names) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "pure_star_leaf"
+              changed <- TRUE
+            }
+          }
+        }
+        if (changed) next
+      }
+    }
+  }
+
+  discarded_apriori <- discard_neighbors_of_kept(g_sub, kept_apriori, discarded_apriori)
+  undecided <- setdiff(all_names, union(kept_apriori, discarded_apriori))
+
+  if (length(undecided) == 0) {
+    kept_final <- unique(kept_apriori)
+    discarded_final <- setdiff(unique(discarded_apriori), kept_final)
+    if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
+
+    node_diag <- .rkn_build_node_diag_6plus(
+      all_names = all_names,
+      kept_apriori = kept_apriori,
+      discarded_apriori = discarded_apriori,
+      candidate_simple = character(0),
+      candidate_complex = character(0),
+      kept_final = kept_final,
+      discarded_final = discarded_final,
+      pre_reason_map = pre_reason_map
+    )
+    fam_diag <- data.frame(
+      n_nodes = n0,
+      used_largest_ivs = FALSE,
+      structure_name = "reduced_to_empty",
+      stringsAsFactors = FALSE
+    )
+
+    return(list(
+      structure_name = "reduced_to_empty",
+      kept_apriori = unique(kept_apriori),
+      discarded_apriori = unique(discarded_apriori),
+      candidate_simple = character(0),
+      candidate_complex = character(0),
+      kept_afterrandomization = character(0),
+      discarded_afterrandomization = character(0),
+      kept = kept_final,
+      discarded = discarded_final,
+      used_largest_ivs = FALSE,
+      node_diagnostics = node_diag,
+      family_diagnostics = fam_diag
+    ))
+  }
+
+  g_r <- igraph::induced_subgraph(g_sub, vids = undecided)
+  nr <- igraph::vcount(g_r)
+  er <- igraph::ecount(g_r)
+  degr <- igraph::degree(g_r)
+
+  structure_name <- "unrecognized_6plus"
+  used_largest_ivs <- FALSE
+
+  candidate_simple <- character(0)
+  candidate_complex <- character(0)
+
+  fallback_nodes <- character(0)
+
+  kept_afterrandomization <- character(0)
+  discarded_afterrandomization <- character(0)
+
+  pick_one_bipartite_side <- function(g) {
+    b <- igraph::bipartite_mapping(g)
+    if (!isTRUE(b$res)) return(character(0))
+    A <- igraph::V(g)$name[b$type]
+    B <- igraph::V(g)$name[!b$type]
+    if (runif(1) < 0.5) A else B
+  }
+
+  if (nr >= 6 && sum(degr == 1) == (nr - 1) && sum(degr == (nr - 1)) == 1) {
+    structure_name <- paste0("star", nr)
+    hub <- names(degr)[degr == (nr - 1)][1]
+    leaves <- setdiff(igraph::V(g_r)$name, hub)
+
+    kept_apriori <- unique(c(kept_apriori, leaves))
+    discarded_apriori <- unique(c(discarded_apriori, hub))
+    for (x in leaves) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "star_deterministic_leaf"
+    if (is.na(pre_reason_map[[hub]])) pre_reason_map[[hub]] <- "star_deterministic_hub"
+
+  } else if (all(degr == (nr - 1))) {
+    structure_name <- paste0("clique", nr)
+    grp <- igraph::V(g_r)$name
+    candidate_simple <- grp
+    for (x in grp) pre_reason_map[[x]] <- "clique_choose1"
+
+    kept_afterrandomization <- sample(grp, 1)
+    discarded_afterrandomization <- setdiff(grp, kept_afterrandomization)
+
+  } else if (igraph::is_connected(g_r) &&
+             er == (nr - 1) &&
+             sum(degr == 1) == 2 &&
+             all(degr %in% c(1, 2))) {
+
+    structure_name <- paste0("path", nr)
+
+    if (nr %% 2 == 1) {
+      ends <- names(degr)[degr == 1]
+      start <- ends[1]
+      d <- igraph::distances(g_r, v = start)
+      ord <- names(sort(d[1, ]))
+      keep_idx <- seq(1, length(ord), by = 2)
+      keep_set <- ord[keep_idx]
+      disc_set <- setdiff(ord, keep_set)
+
+      kept_apriori <- unique(c(kept_apriori, keep_set))
+      discarded_apriori <- unique(c(discarded_apriori, disc_set))
+      for (x in keep_set) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "path_odd_deterministic_keep"
+      for (x in disc_set) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "path_odd_deterministic_discard"
+    } else {
+      candidate_complex <- igraph::V(g_r)$name
+      for (x in candidate_complex) pre_reason_map[[x]] <- "path_even_bipartite"
+
+      chosen <- pick_one_bipartite_side(g_r)
+      if (length(chosen) == 0) {
+        fallback_nodes <- igraph::V(g_r)$name
+      } else {
+        kept_afterrandomization <- chosen
+        discarded_afterrandomization <- setdiff(igraph::V(g_r)$name, kept_afterrandomization)
+      }
+    }
+
+  } else if (igraph::is_connected(g_r) &&
+             er == nr &&
+             all(degr == 2)) {
+
+    structure_name <- paste0("cycle", nr)
+
+    if (nr %% 2 == 0) {
+      candidate_complex <- igraph::V(g_r)$name
+      for (x in candidate_complex) pre_reason_map[[x]] <- "cycle_even_bipartite"
+
+      chosen <- pick_one_bipartite_side(g_r)
+      if (length(chosen) == 0) {
+        fallback_nodes <- igraph::V(g_r)$name
+      } else {
+        kept_afterrandomization <- chosen
+        discarded_afterrandomization <- setdiff(igraph::V(g_r)$name, kept_afterrandomization)
+      }
+    } else {
+      fallback_nodes <- igraph::V(g_r)$name
+    }
+
+  } else {
+    fallback_nodes <- igraph::V(g_r)$name
+  }
+
+  if (length(fallback_nodes) > 0) {
+    used_largest_ivs <- TRUE
+
+    candidate_complex <- unique(c(candidate_complex, fallback_nodes))
+    for (x in fallback_nodes) pre_reason_map[[x]] <- "largest_ivs_fallback"
+
+    g_ind <- igraph::induced_subgraph(g_sub, vids = fallback_nodes)
+    sets <- igraph::largest_ivs(g_ind)
+    set_names <- lapply(sets, function(s) igraph::V(g_ind)$name[s])
+    chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
+
+    kept_afterrandomization <- unique(c(kept_afterrandomization, chosen_names))
+    discarded_afterrandomization <- unique(c(discarded_afterrandomization,
+                                             setdiff(fallback_nodes, chosen_names)))
+  }
+
+  kept_final <- unique(c(kept_apriori, kept_afterrandomization))
+  discarded_final <- unique(c(discarded_apriori, discarded_afterrandomization))
+  discarded_final <- setdiff(discarded_final, kept_final)
+
+  if (!return_diagnostics) {
+    return(list(kept = kept_final, discarded = discarded_final))
+  }
+
+  node_diag <- .rkn_build_node_diag_6plus(
+    all_names = all_names,
+    kept_apriori = kept_apriori,
+    discarded_apriori = discarded_apriori,
+    candidate_simple = candidate_simple,
+    candidate_complex = candidate_complex,
+    kept_final = kept_final,
+    discarded_final = discarded_final,
+    pre_reason_map = pre_reason_map
+  )
+
+  fam_diag <- data.frame(
+    n_nodes = n0,
+    used_largest_ivs = used_largest_ivs,
+    structure_name = structure_name,
+    stringsAsFactors = FALSE
+  )
+
+  return(list(
+    structure_name = structure_name,
+    kept_apriori = unique(kept_apriori),
+    discarded_apriori = unique(discarded_apriori),
+    candidate_simple = unique(candidate_simple),
+    candidate_complex = unique(candidate_complex),
+    kept_afterrandomization = unique(kept_afterrandomization),
+    discarded_afterrandomization = unique(discarded_afterrandomization),
+    kept = kept_final,
+    discarded = discarded_final,
+    used_largest_ivs = used_largest_ivs,
+    node_diagnostics = node_diag,
+    family_diagnostics = fam_diag
+  ))
+}
+
+#' Internal helper: build per-node diagnostics for 6+ selection
+#'
+#' @description Constructs a per-node diagnostics data frame from intermediate and final classification vectors.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_build_node_diag_6plus <- function(all_names,
+                                       kept_apriori,
+                                       discarded_apriori,
+                                       candidate_simple,
+                                       candidate_complex,
+                                       kept_final,
+                                       discarded_final,
+                                       pre_reason_map = NULL) {
+  ids <- all_names
+
+  pre_class <- setNames(rep("candidate_complex", length(ids)), ids) # default “non banale”
+  pre_class[candidate_simple] <- "candidate_simple"
+  pre_class[candidate_complex] <- "candidate_complex"
+  pre_class[discarded_apriori] <- "discarded_apriori"
+  pre_class[kept_apriori] <- "kept_apriori"
+
+  post_class <- setNames(rep(NA_character_, length(ids)), ids)
+  post_class[kept_final] <- "kept"
+  post_class[discarded_final] <- "discarded"
+
+  if (is.null(pre_reason_map)) {
+    pre_reason <- rep(NA_character_, length(ids))
+  } else {
+    if (is.null(names(pre_reason_map))) names(pre_reason_map) <- ids
+    pre_reason <- unname(pre_reason_map[ids])
+  }
+
+  data.frame(
+    id = ids,
+    pre_class = unname(pre_class[ids]),
+    post_class = unname(post_class[ids]),
+    is_selected = unname(post_class[ids] == "kept"),
+    pre_reason = pre_reason,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+#' Internal helper: apply 6+ selection over a family object table
+#'
+#' @description Convenience wrapper that maps the 6+ selection over a table of family objects and returns summary tables.
+#'
+#' @keywords internal
+#' @noRd
+apply_rkn_select_random_6plus <- function(synth, seed = 999) {
+
+  res <- synth$family_objects %>%
+    dplyr::mutate(
+      out = purrr::pmap(
+        list(fam_df, g_sub, family_id),
+        function(fam_df, g_sub, family_id) {
+          rkn_select_random_6plus(
+            fam_df = fam_df,
+            g_sub = g_sub,
+            seed = seed + as.integer(family_id),
+            return_diagnostics = TRUE
+          )
+        }
+      ),
+      structure_name   = purrr::map_chr(out, "structure_name"),
+      used_largest_ivs = purrr::map_lgl(out, "used_largest_ivs"),
+      n_kept           = purrr::map_int(out, ~ length(.x$kept)),
+      n_discarded      = purrr::map_int(out, ~ length(.x$discarded)),
+      n_kept_apriori   = purrr::map_int(out, ~ length(.x$kept_apriori)),
+      n_discarded_apriori = purrr::map_int(out, ~ length(.x$discarded_apriori)),
+      n_simple         = purrr::map_int(out, ~ length(.x$candidate_simple)),
+      n_complex        = purrr::map_int(out, ~ length(.x$candidate_complex))
+    )
+
+  summary_df <- res %>%
+    dplyr::select(
+      family_id, size, type, structure_name, used_largest_ivs,
+      n_kept, n_discarded, n_kept_apriori, n_discarded_apriori,
+      n_simple, n_complex
+    )
+
+  long_nodes <- res %>%
+    dplyr::transmute(
+      family_id,
+      size,
+      type,
+      structure_name,
+      used_largest_ivs,
+      kept_apriori = purrr::map(out, "kept_apriori"),
+      discarded_apriori = purrr::map(out, "discarded_apriori"),
+      candidate_simple = purrr::map(out, "candidate_simple"),
+      candidate_complex = purrr::map(out, "candidate_complex"),
+      kept = purrr::map(out, "kept"),
+      discarded = purrr::map(out, "discarded")
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(kept_apriori, discarded_apriori, candidate_simple, candidate_complex, kept, discarded),
+      names_to = "class",
+      values_to = "nodes"
+    ) %>%
+    tidyr::unnest(nodes)
+
+  list(
+    results_by_family = res,
+    summary_df = summary_df,
+    long_nodes_df = long_nodes
+  )
+}

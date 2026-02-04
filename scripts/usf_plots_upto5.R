@@ -7,9 +7,7 @@
 
 library(here)
 load("graphs_all.rdata")
-source(here("R/rkn_select_random_upto5.r"))
-source(here("R/rules_db.r"))
-
+devtools::load_all()
 
 suppressPackageStartupMessages({
   library(igraph)
@@ -221,7 +219,7 @@ save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
 save_isoforms_diagnostics_pdf_grid_upto5(
   graphs_all = graphs_all,
   rules_db = rules_db,
-  pdf_path = "diagnostica_redkinnet_upto5_isoforms_3to5.pdf",
+  pdf_path = "rkn_upto5_isoforms_3to5.pdf",
   nrow = 6, ncol = 5,
   layout = "fr",
   vertex_size = 15,

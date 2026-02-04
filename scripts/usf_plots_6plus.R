@@ -86,21 +86,14 @@ plot_full_network <- function(synth,
 
 # ---------- helper: build a vertex class vector from diag for 1 family
 .rkn_vertex_classes_for_family <- function(diag, family_id) {
-  # diag$results_by_family is a tibble with columns family_id and out (list)
-  if (is.null(diag$results_by_family)) stop("diag$results_by_family not found.")
   row_idx <- which(diag$results_by_family$family_id == family_id)
   if (length(row_idx) != 1) stop("family_id not found (or duplicated) in diag$results_by_family.")
-
   out <- diag$results_by_family$out[[row_idx]]
 
-  # priority matters for color assignment (top wins):
-  # kept_apriori > kept > discarded_apriori > discarded > unknown > complex > simple > undecided
   list(
     structure_name = out$structure_name,
     kept_apriori = out$kept_apriori %||% character(0),
-    kept = out$kept %||% character(0),
     discarded_apriori = out$discarded_apriori %||% character(0),
-    discarded = out$discarded %||% character(0),
     candidate_complex = out$candidate_complex %||% character(0),
     candidate_simple  = out$candidate_simple %||% character(0),
     used_largest_ivs = out$used_largest_ivs %||% FALSE
@@ -133,11 +126,28 @@ plot_family_diagnostics <- function(synth,
   used_mis <- isTRUE(info$used_largest_ivs)
 
   vnames <- igraph::V(g)$name
-  cls <- rep(NA_character_, length(vnames))
-  names(cls) <- vnames
+  cls <- setNames(rep(NA_character_, length(vnames)), vnames)
 
-  if (any(is.na(cls))) {
-    stop("Unclassified nodes found in plot_family_diagnostics().")
+  # Assign from weaker to stronger (strong overwrites)
+  if (length(info$candidate_simple))   cls[intersect(info$candidate_simple, vnames)] <- "candidate_simple"
+  if (length(info$candidate_complex))  cls[intersect(info$candidate_complex, vnames)] <- "candidate_complex"
+  if (length(info$discarded))          cls[intersect(info$discarded, vnames)] <- "discarded"
+  if (length(info$discarded_apriori))  cls[intersect(info$discarded_apriori, vnames)] <- "discarded_apriori"
+  if (length(info$kept))               cls[intersect(info$kept, vnames)] <- "kept"
+  if (length(info$kept_apriori))       cls[intersect(info$kept_apriori, vnames)] <- "kept_apriori"
+
+  # Warn (do not stop) if some nodes are still unclassified
+  unclassified <- names(cls)[is.na(cls)]
+  if (length(unclassified) > 0) {
+    warning(
+      sprintf(
+        "plot_family_diagnostics(): %d unclassified node(s) in family %s: %s",
+        length(unclassified),
+        family_id,
+        paste(unclassified, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
 
   # apply in increasing priority, then overwrite with higher priority later
@@ -159,6 +169,7 @@ plot_family_diagnostics <- function(synth,
   )
 
   vcol <- unname(col_map[cls])
+  vcol[is.na(vcol)] <- "#D9D9D9"  # unclassified nodes shown in light gray
 
   lay <- switch(
     layout,

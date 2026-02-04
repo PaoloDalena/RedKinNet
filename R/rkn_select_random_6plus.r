@@ -32,7 +32,7 @@
 #' \itemize{
 #'   \item \code{structure_name}: recognized structure label;
 #'   \item \code{kept_apriori}, \code{discarded_apriori};
-#'   \item \code{candidates_simple}, \code{candidates_complex};
+#'   \item \code{candidate_simple}, \code{candidate_complex};
 #'   \item \code{kept_afterrandomization}, \code{discarded_afterrandomization};
 #'   \item \code{used_largest_ivs};
 #'   \item \code{node_diagnostics}: a data frame with one row per node;

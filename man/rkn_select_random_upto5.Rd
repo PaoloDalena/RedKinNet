@@ -13,33 +13,30 @@ rkn_select_random_upto5(
 )
 }
 \arguments{
-\item{fam_df}{A data frame describing the nodes in the connected component.
-Must include a node identifier column \code{.name} (preferred) or \code{name}
-(the function will align them), and any columns referenced by \code{rules_db}
-expressions (e.g., \code{degree}, \code{max_path_length}).}
+\item{fam_df}{A data frame describing nodes in the component. Must contain a node
+identifier column \code{.name} (preferred) or \code{name} (promoted to \code{.name}).
+Must also contain any columns referenced by rule expressions in \code{rules_db}.}
 
-\item{rules_db}{A list of rule objects. Each rule is expected to contain:
+\item{rules_db}{A list of rule objects. Each rule is expected to provide:
 \itemize{
 \item \code{name}: rule name.
 \item \code{size_allowed}: integer size constraint.
 \item \code{match_fn}: function(\code{fam_df}) returning a scalar logical.
-\item \code{kept_rules}: list of character vectors (each element is an expression).
-\item \code{discarded_rules}: list of character vectors.
-\item \code{conflict_rules}: list of character vectors, each representing a candidate group.
+\item \code{kept_rules}: list of character expressions.
+\item \code{discarded_rules}: list of character expressions.
+\item \code{conflict_rules}: list of character vectors, each defining a candidate group.
 \item Optional: \code{alpha} (numeric), \code{kept_fn}, \code{discarded_fn}
 for graph-dependent deterministic selection.
 }}
 
-\item{seed}{Optional integer. If not \code{NULL}, sets the RNG seed before
-randomized choices.}
+\item{seed}{Optional integer RNG seed used for randomized choices.}
 
-\item{return_diagnostics}{Logical. If \code{FALSE} (default), returns only
-\code{kept} and \code{discarded}. If \code{TRUE}, returns additional fields
-describing intermediate sets and whether \code{igraph::largest_ivs()} was used.}
+\item{return_diagnostics}{Logical; if \code{TRUE}, returns diagnostics in addition to
+\code{kept} and \code{discarded}.}
 
-\item{g_sub}{Optional \code{igraph} graph representing the same component as
-\code{fam_df}. Vertex names (\code{V(g_sub)$name}) must match \code{fam_df$.name}.
-Required to use the maximum independent set-based resolution (\code{rule$alpha > 1}).}
+\item{g_sub}{Optional \pkg{igraph} graph for the same component. Required if using
+the maximum independent set mechanism (\code{rule$alpha > 1}). Vertex names
+\code{igraph::V(g_sub)$name} must match \code{fam_df$.name}.}
 }
 \value{
 If \code{return_diagnostics = FALSE}, a list with:
@@ -48,58 +45,47 @@ If \code{return_diagnostics = FALSE}, a list with:
 \item \code{discarded}: character vector of discarded node names.
 }
 
-If \code{return_diagnostics = TRUE}, a list with:
+If \code{return_diagnostics = TRUE}, the list also includes:
 \itemize{
-\item \code{structure_name}
-\item \code{kept_apriori}, \code{discarded_apriori}
-\item \code{candidates}, \code{candidates_complex}
-\item \code{kept_afterrandomization}, \code{discarded_afterrandomization}
-\item \code{kept}, \code{discarded}
-\item \code{used_largest_ivs}
+\item \code{structure_name}: matched rule name (or \code{"unknown"}).
+\item \code{kept_apriori}, \code{discarded_apriori}.
+\item \code{candidate_simple}, \code{candidate_complex}.
+\item \code{kept_afterrandomization}, \code{discarded_afterrandomization}.
+\item \code{used_largest_ivs}.
+\item \code{node_diagnostics}: one row per node (pre/post class and reason).
+\item \code{family_diagnostics}: one-row summary data frame.
 }
 }
 \description{
-Selects a subset of nodes to keep (and optionally discard) within a connected
-component of size \eqn{\le 5}, combining:
-(i) deterministic (a priori) rules, and
-(ii) randomized resolution of remaining conflicts.
-
-The function matches the component against a rule in \code{rules_db}. If a rule
-is found, it applies deterministic keep/discard filters and then resolves any
-residual ambiguity either by:
+Applies the RedKinNet randomized node selection strategy to a connected
+component with at most 5 nodes. The function combines:
 \itemize{
-\item choosing a random maximum independent vertex set when \code{rule$alpha > 1}
-and \code{g_sub} is provided, or
-\item sampling one node per conflict group (or an equivalent randomized fallback).
+\item deterministic (a priori) keep/discard decisions based on a matched rule; and
+\item randomized resolution of remaining ambiguous conflict groups.
 }
 
-If no rule matches, all nodes are returned as discarded (and none kept).
-}
-\details{
-Deterministic selection is computed via rule expressions evaluated over \code{fam_df}
-columns (vectorized logical masks). Graph-dependent deterministic rules can be
-provided via \code{rule$kept_fn} and \code{rule$discarded_fn}, which should return
-character vectors of node names.
+A component is matched to the first rule in \code{rules_db} whose size constraint
+equals \code{nrow(fam_df)} and whose \code{match_fn(fam_df)} evaluates to \code{TRUE}.
+If no rule matches, all nodes are returned as discarded.
 
-Conflict groups are constructed from \code{rule$conflict_rules}, excluding any
-nodes already classified a priori as kept or discarded.
-
-When \code{rule$alpha > 1} and \code{g_sub} is supplied, eligible nodes are
-restricted to:
-\itemize{
-\item all nodes excluding \code{discarded_apriori}, and
-\item optionally excluding \code{kept_apriori} and their 1-hop neighbors
-(to enforce compatibility with pre-fixed selections).
+Randomization uses one of two mechanisms:
+\enumerate{
+\item If \code{rule$alpha > 1} and \code{g_sub} is provided, the function samples
+uniformly among maximum independent vertex sets returned by
+\code{igraph::largest_ivs()} on an induced subgraph of eligible vertices.
+\item Otherwise, it performs simple random sampling within each conflict group
+defined by \code{rule$conflict_rules}.
 }
-The function then samples uniformly among maximum independent vertex sets returned
-by \code{igraph::largest_ivs()} on the induced subgraph.
+
+When \code{return_diagnostics = TRUE}, the function returns per-node and per-family
+diagnostics aligned with the 6+ selector output (fields \code{candidate_simple},
+\code{candidate_complex}, \code{node_diagnostics}, \code{family_diagnostics}).
 }
 \examples{
 \dontrun{
-# fam_df: component-level node descriptors (size <= 5)
-# rules_db: list of structural rules
 out <- rkn_select_random_upto5(fam_df, rules_db, seed = 1)
-out_diag <- rkn_select_random_upto5(fam_df, rules_db, seed = 1, return_diagnostics = TRUE, g_sub = g_sub)
+out_diag <- rkn_select_random_upto5(fam_df, rules_db, seed = 1,
+                                   return_diagnostics = TRUE, g_sub = g_sub)
 }
 
 }

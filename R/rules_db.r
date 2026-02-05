@@ -227,13 +227,13 @@ rules_db <- list(
     size_allowed = 5,
     match_fn = function(fam_df) {
       nrow(fam_df) == 5 &&
-        all(fam_df$degree == 2L) &&                # tutti grado 2
-        all(fam_df$max_path_length == 2)           # eccentr. 2 su C5 (distingue da path5)
+        all(fam_df$degree == 2L) &&                # all degree 2
+        all(fam_df$max_path_length == 2)           # distinguish from path5
     },
     kept_rules = list(),
     discarded_rules = list(),
-    conflict_rules = list( list("TRUE") ),         # tutti candidati
-    alpha = 2                                      # usa largest_ivs()
+    conflict_rules = list( list("TRUE") ),         # all candidates
+    alpha = 2                                      # uses largest_ivs()
   ),
 
   ## size 5: clique K5 (degrees 4,4,4,4,4) --------------------------------
@@ -310,8 +310,8 @@ rules_db <- list(
     },
     kept_rules = list(),
     discarded_rules = list(),
-    conflict_rules = list( list("TRUE") ),  # tutti candidati
-    alpha = 2                                # usa largest_ivs, scelta tra più coppie
+    conflict_rules = list( list("TRUE") ),   # all candidates
+    alpha = 2                                # uses largest_ivs
   ),
 
   ## size 5: degree signature 1,1,1,2,3 ----------------------------------
@@ -326,9 +326,9 @@ rules_db <- list(
     # a priori tabellari
     kept_rules = list(),
     discarded_rules = list(
-      c("degree == 3 & max_path_length == 2")  # scarta il centro (nodo 1)
+      c("degree == 3 & max_path_length == 2")  # discard the center (node 1)
     ),
-    # a priori grafo-dipendenti: foglie attaccate al nodo di grado 3
+    # a priori graph-dependent: leaves attached to grade 3 node
     kept_fn = function(df, g) {
       deg <- igraph::degree(g)
       leaves <- df$.name[df$degree == 1]
@@ -338,7 +338,6 @@ rules_db <- list(
       keep
     },
     conflict_rules = list( list("TRUE") )
-    # NIENTE alpha: restano candidati solo {2,3} → random semplice
   ),
 
   ## size 5: degree signature 1,1,2,2,4 ----------------------------------
@@ -408,8 +407,8 @@ rules_db <- list(
     },
     kept_rules = list(),
     discarded_rules = list(),
-    conflict_rules = list( list("TRUE") ),  # tutti candidati
-    alpha = 2                                # MIS di taglia 2 (largest_ivs)
+    conflict_rules = list( list("TRUE") ),   # all candidates
+    alpha = 2                                # largest_ivs
   ),
 
   ## size 5: degree signature 1,3,3,3,4 ----------------------------------
@@ -529,8 +528,8 @@ rules_db <- list(
     },
     kept_rules = list(),
     discarded_rules = list(),
-    conflict_rules = list( list("TRUE") ),  # tutti candidati
-    alpha = 2                                # usa largest_ivs() → coppia indipendente
+    conflict_rules = list( list("TRUE") ),   # all candidates
+    alpha = 2                                # largest_ivs()
   ),
 
   ## size 5: degree signature 2,3,3,4,4 ----------------------------------
@@ -562,12 +561,12 @@ rules_db <- list(
     },
     kept_rules = list(),
     discarded_rules = list(
-      list("degree == 4")                      # scarta l'hub (1)
+      list("degree == 4")                      # discard the hub (1)
     ),
     conflict_rules = list(
-      list("degree == 3")                      # candidati = {2,3,4,5}
+      list("degree == 3")                      # candidates = {2,3,4,5}
     ),
-    alpha = 2                                   # usa largest_ivs() → 2 nodi non adiacenti
+    alpha = 2                                  # largest_ivs()
   ),
 
   ## size 5: degree signature 3,3,4,4,4 ----------------------------------

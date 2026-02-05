@@ -587,3 +587,5 @@ rules_db <- list(
   )
 
 )
+
+usethis::use_data(rules_db, overwrite = TRUE)

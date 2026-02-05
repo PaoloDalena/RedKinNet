@@ -362,12 +362,35 @@ rkn_select_random_6plus <- function(fam_df,
     if (n_all %% 2 == 0) {
       for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "cycle_even_bipartite"
 
+      # --- Build an explicit cyclic ordering via deterministic traversal -------
+      # Note: ordering vertices by graph distances is insufficient for cycles,
+      # because multiple vertices share the same distance and ties are arbitrary.
       start <- all_names[1]
-      d <- igraph::distances(g_sub, v = start)
-      ord <- names(sort(d[1, ]))
+      nbrs <- igraph::neighbors(g_sub, start, mode = "all")
+      if (length(nbrs) != 2) stop("Cycle traversal invariant violated: start node degree is not 2.")
 
-      A <- ord[seq(1, length(ord), by = 2)]
-      B <- ord[seq(2, length(ord), by = 2)]
+      prev <- start
+      curr <- igraph::V(g_sub)$name[nbrs][1]  # choose an arbitrary direction
+
+      ord <- character(n_all)
+      ord[1] <- start
+
+      for (k in 2:n_all) {
+        ord[k] <- curr
+        nb <- igraph::neighbors(g_sub, curr, mode = "all")
+        nb_names <- igraph::V(g_sub)$name[nb]
+
+        # In a simple cycle, each vertex has exactly two neighbors.
+        # Advance by selecting the neighbor that is not the previous vertex.
+        nxt <- setdiff(nb_names, prev)
+        if (length(nxt) != 1) stop("Cycle traversal failed: non-unique next vertex.")
+        prev <- curr
+        curr <- nxt
+      }
+
+      # --- Bipartition along the cyclic ordering (guarantees independence) -----
+      A <- ord[seq(1, n_all, by = 2)]
+      B <- ord[seq(2, n_all, by = 2)]
       kept_afterrandomization <- if (runif(1) < 0.5) A else B
       discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
 

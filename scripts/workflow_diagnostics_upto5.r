@@ -1,6 +1,5 @@
 library(here)
-source(here("R", "rkn_select_random_upto5.r"))
-source(here("R", "rules_db.r"))
+devtools::load_all()
 load(here("graphs_all.rdata"))
 
 make_fake_df_for_graph <- function(g, comp_id = 1L, iso_id = NA_integer_) {
@@ -63,7 +62,6 @@ for (nm in sel) {
 
   res <- rkn_select_random_upto5(
     fam_df = df_fake,
-    rules_db = rules_db,
     seed = 123,
     return_diagnostics = TRUE,
     g_sub = g         # <— NOVITÀ: serve per largest_ivs()
@@ -73,13 +71,8 @@ for (nm in sel) {
   node_names <- df_fake$name
   cols <- setNames(rep("white", length(node_names)), node_names)
 
-  if (length(res$candidates) > 0) {
-    if (length(res$candidates_complex) > 0) {
-      cols[ res$candidates ] <- "orangered"
-    } else {
-      cols[ res$candidates ] <- "yellow"
-    }
-  }
+  if (length(res$candidate_simple) > 0)  cols[ res$candidate_simple ]  <- "yellow"
+  if (length(res$candidate_complex) > 0) cols[ res$candidate_complex ] <- "orangered"
   if (length(res$discarded_apriori) > 0) {
     cols[ res$discarded_apriori ] <- "grey80"
   }

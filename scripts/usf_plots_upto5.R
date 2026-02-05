@@ -110,7 +110,6 @@ plot_isoform_thumbnail_upto5 <- function(g,
 
 # ---- main: save a PDF grid (same logic as save_families_diagnostics_pdf_grid) ----
 save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
-                                                     rules_db,
                                                      pdf_path = "rkn_isoforms_diagnostics_upto5_3to5.pdf",
                                                      iso_names = NULL,
                                                      nrow = 8,
@@ -121,7 +120,7 @@ save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
                                                      width = 16,
                                                      height = 16,
                                                      seed = 123,
-                                                     add_page_title_in_cell = TRUE) {
+                                                     add_page_title_in_cell = FALSE) {
   layout <- match.arg(layout)
 
   if (is.null(iso_names)) {
@@ -169,7 +168,6 @@ save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
 
         res <- rkn_select_random_upto5(
           fam_df = fam_df,
-          rules_db = rules_db,
           seed = seed,
           return_diagnostics = TRUE,
           g_sub = g
@@ -218,7 +216,6 @@ save_isoforms_diagnostics_pdf_grid_upto5 <- function(graphs_all,
 # -------------------
 save_isoforms_diagnostics_pdf_grid_upto5(
   graphs_all = graphs_all,
-  rules_db = rules_db,
   pdf_path = "rkn_upto5_isoforms_3to5.pdf",
   nrow = 6, ncol = 5,
   layout = "fr",

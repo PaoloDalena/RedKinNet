@@ -6,7 +6,7 @@
 \usage{
 rkn_select_random_upto5(
   fam_df,
-  rules_db,
+  custom_rules_db = NULL,
   seed = NULL,
   return_diagnostics = FALSE,
   g_sub = NULL
@@ -17,7 +17,11 @@ rkn_select_random_upto5(
 identifier column \code{.name} (preferred) or \code{name} (promoted to \code{.name}).
 Must also contain any columns referenced by rule expressions in \code{rules_db}.}
 
-\item{rules_db}{A list of rule objects. Each rule is expected to provide:
+\item{custom_rules_db}{Optional list of rule objects. If provided, it overrides the
+internal rule database used for components of size <= 5. If \code{NULL} (default),
+the function uses the package dataset \code{rules_db}; see \code{\link{rules_db}}.
+
+Each rule is expected to provide:
 \itemize{
 \item \code{name}: rule name.
 \item \code{size_allowed}: integer size constraint.
@@ -64,7 +68,7 @@ component with at most 5 nodes. The function combines:
 \item randomized resolution of remaining ambiguous conflict groups.
 }
 
-A component is matched to the first rule in \code{rules_db} whose size constraint
+A component is matched to the first rule in \code{rules_db} (or in \code{custom_rules_db} if provided) whose size constraint
 equals \code{nrow(fam_df)} and whose \code{match_fn(fam_df)} evaluates to \code{TRUE}.
 If no rule matches, all nodes are returned as discarded.
 
@@ -83,8 +87,8 @@ diagnostics aligned with the 6+ selector output (fields \code{candidate_simple},
 }
 \examples{
 \dontrun{
-out <- rkn_select_random_upto5(fam_df, rules_db, seed = 1)
-out_diag <- rkn_select_random_upto5(fam_df, rules_db, seed = 1,
+out <- rkn_select_random_upto5(fam_df, seed = 1)
+out_diag <- rkn_select_random_upto5(fam_df, seed = 1,
                                    return_diagnostics = TRUE, g_sub = g_sub)
 }
 

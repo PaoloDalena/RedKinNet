@@ -110,6 +110,15 @@ rkn_select_random <- function(g,
       for (nm in names(attrs)) df[[nm]] <- attrs[[nm]]
     }
     if (is.null(df$name)) df$name <- df$.name
+
+    # Ensure structural measures required by rules_db are present
+    if (is.null(df$degree)) {
+      df$degree <- as.integer(igraph::degree(g_sub, mode = "all"))
+    }
+    if (is.null(df$max_path_length)) {
+      # Node eccentricity = maximum shortest-path length from each node within the component
+      df$max_path_length <- as.integer(igraph::eccentricity(g_sub, mode = "all"))
+    }
     df
   }
 

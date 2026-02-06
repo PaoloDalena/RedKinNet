@@ -15,6 +15,7 @@
 #' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
 #' @param col_kept Character. Color used for kept vertices (default: "#1B9E77").
 #' @param col_discarded Character. Color used for discarded vertices (default: "#B3B3B3").
+#' @param show_legend Logical. If TRUE, a legend indicating kept vs discarded nodes is displayed.
 #' @param main Character. Title of the plot.
 #'
 #' @return Invisibly returns NULL.
@@ -26,7 +27,8 @@ rkn_plot_post <- function(g,
                           vertex_label = FALSE,
                           col_kept = "#1B9E77",
                           col_discarded = "#B3B3B3",
-                          main = "Full network post-selection: kept vs discarded") {
+                          show_legend = TRUE,
+                          main = "Full network post-selection") {
 
   layout <- match.arg(layout)
 
@@ -71,6 +73,23 @@ rkn_plot_post <- function(g,
     edge.curved = 0.1,
     main = main
   )
+
+  # ---- Legend -----------------------------------------------------------------
+  if (isTRUE(show_legend)) {
+    graphics::legend(
+      "topright",
+      legend = c("Kept", "Discarded"),
+      col = c(col_kept, col_discarded),
+      pch = 19,
+      pt.cex = 1.1,
+      cex = 0.8,
+      bty = "o",
+      bg = grDevices::adjustcolor("white", alpha.f = 0.85),
+      box.col = "grey40",
+      box.lwd = 0.8,
+      y.intersp = 0.8
+    )
+  }
 
   invisible(NULL)
 }

@@ -12,7 +12,8 @@ rkn_plot_post(
   vertex_label = FALSE,
   col_kept = "#1B9E77",
   col_discarded = "#B3B3B3",
-  main = "Full network post-selection: kept vs discarded"
+  show_legend = TRUE,
+  main = "Full network post-selection"
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ rkn_plot_post(
 \item{col_kept}{Character. Color used for kept vertices (default: "#1B9E77").}
 
 \item{col_discarded}{Character. Color used for discarded vertices (default: "#B3B3B3").}
+
+\item{show_legend}{Logical. If TRUE, a legend indicating kept vs discarded nodes is displayed.}
 
 \item{main}{Character. Title of the plot.}
 }

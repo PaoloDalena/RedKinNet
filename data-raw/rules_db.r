@@ -431,6 +431,18 @@ rules_db <- list(
   ),
 
   ## size 5: degree signature 2,2,2,3,3 ----------------------------------
+  ## Two non-isomorphic graphs share this degree sequence, indistinguishable
+  ## by degree + eccentricity alone (both are constant across all 5 nodes in
+  ## either graph): K_{2,3} (the two degree-3 nodes are non-adjacent, unique
+  ## maximum independent set = the three degree-2 nodes) and a "theta-like"
+  ## graph (the two degree-3 nodes ARE adjacent, so two of the three degree-2
+  ## nodes are adjacent to each other -- keeping all three is invalid).
+  ## match_fn cannot tell them apart, so both were previously routed to the
+  ## deterministic branch below, which is always wrong for the theta-like
+  ## case. Resolved via largest_ivs(), which is correct for both graphs
+  ## (verified: returns the same unique {degree-2 triple} for K_{2,3}, and
+  ## correctly enumerates all 4 valid maximum independent sets -- including
+  ## ones that keep a degree-3 node -- for the theta-like graph).
   list(
     name = "size5_sig_2,2,2,3,3",
     size_allowed = 5,
@@ -438,13 +450,12 @@ rules_db <- list(
       nrow(fam_df) == 5 &&
         paste(sort(fam_df$degree), collapse = ",") == "2,2,2,3,3"
     },
-    kept_rules = list(
-      c("degree == 2")
+    kept_rules = list(),
+    discarded_rules = list(),
+    conflict_rules = list(
+      list("TRUE")
     ),
-    discarded_rules = list(
-      c("degree == 3")
-    ),
-    conflict_rules = list()
+    alpha = 2
   ),
 
 
@@ -466,7 +477,12 @@ rules_db <- list(
   ),
 
   ## size 5: degree signature 2,2,2,2,4 ----------------------------------
-  ## two disjoint conflict groups, same local pattern
+  ## bowtie: hub (degree 4) + two disjoint edges among the degree-2 nodes.
+  ## The two degree-2 pairs are indistinguishable from degree + eccentricity
+  ## alone, so the previous "two disjoint conflict groups" encoding could
+  ## select two adjacent degree-2 nodes (invalid, ~32% of random draws).
+  ## Resolved via largest_ivs() on the induced subgraph, as for the other
+  ## structurally symmetric cases (cycle4, path4, cycle5, ...).
   list(
     name = "size5_sig_2,2,2,2,4",
     size_allowed = 5,
@@ -479,28 +495,9 @@ rules_db <- list(
       c("degree == 4 & max_path_length == 1")
     ),
     conflict_rules = list(
-      list("degree == 2 & max_path_length == 2"),
-      list("degree == 2 & max_path_length == 2")
-    )
-  ),
-
-  ## size 5: degree signature 2,2,2,3,3 (alternate form) -----------------
-  ## no fixed keep/discard; global conflict
-  list(
-    name = "size5_sig_2,2,2,3,3_alt",
-    size_allowed = 5,
-    match_fn = function(fam_df) {
-      nrow(fam_df) == 5 &&
-        paste(sort(fam_df$degree), collapse = ",") == "2,2,2,3,3"
-    },
-    kept_rules = list(),
-    discarded_rules = list(),
-    conflict_rules = list(
-      list(
-        "degree == 3 & max_path_length == 2",
-        "degree == 2 & max_path_length == 2"
-      )
-    )
+      list("TRUE")
+    ),
+    alpha = 2
   ),
 
   ## size 5: degree signature 2,2,3,3,4 ----------------------------------

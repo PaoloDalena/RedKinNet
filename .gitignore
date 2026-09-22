@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# real/pseudonymised kinship data - local use only, never committed
+data/KINGSHIP_matrix.ctrl.tsv

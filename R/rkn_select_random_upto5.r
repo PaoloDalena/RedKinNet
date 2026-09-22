@@ -100,44 +100,7 @@ rkn_select_random_upto5 <- function(fam_df,
   rule <- find_matching_rule(fam_df, rules_db_use)
 
   # Build per-node diagnostics (upto5; aligned with 6plus fields).
-  build_node_diag <- function(ids,
-                              kept_apriori, discarded_apriori,
-                              candidate_simple, candidate_complex,
-                              kept_final, discarded_final,
-                              pre_reason_map = NULL) {
-
-    pre_class <- rep(NA_character_, length(ids))
-    names(pre_class) <- ids
-
-    pre_class[ids %in% kept_apriori]      <- "kept_apriori"
-    pre_class[ids %in% discarded_apriori] <- "discarded_apriori"
-    pre_class[ids %in% candidate_simple]  <- "candidate_simple"
-    pre_class[ids %in% candidate_complex] <- "candidate_complex"
-
-    # Fallback (should be rare): any remaining node is treated as complex candidate.
-    pre_class[is.na(pre_class)] <- "candidate_complex"
-
-    post_class <- rep(NA_character_, length(ids))
-    names(post_class) <- ids
-    post_class[intersect(ids, kept_final)]      <- "kept"
-    post_class[intersect(ids, discarded_final)] <- "discarded"
-    post_class[is.na(post_class)] <- "discarded"
-
-    pre_reason <- rep(NA_character_, length(ids))
-    names(pre_reason) <- ids
-    if (!is.null(pre_reason_map) && length(pre_reason_map) > 0) {
-      pre_reason[names(pre_reason_map)] <- unname(pre_reason_map)
-    }
-
-    data.frame(
-      id = ids,
-      pre_class = unname(pre_class[ids]),
-      post_class = unname(post_class[ids]),
-      is_selected = unname(post_class[ids] == "kept"),
-      pre_reason = unname(pre_reason[ids]),
-      stringsAsFactors = FALSE
-    )
-  }
+  build_node_diag <- .rkn_build_node_diag_upto5
 
   # No matching rule: discard all nodes.
   if (is.null(rule)) {
@@ -180,37 +143,13 @@ rkn_select_random_upto5 <- function(fam_df,
     ))
   }
 
-  # Deterministic (table-driven) selection.
-  kept_apriori      <- apply_rule_filter(fam_df, unlist(rule$kept_rules))
-  discarded_apriori <- apply_rule_filter(fam_df, unlist(rule$discarded_rules))
-
-  # Optional graph-dependent deterministic selection (kept_fn / discarded_fn).
-  if (!is.null(g_sub)) {
-    if (!is.null(rule$kept_fn) && is.function(rule$kept_fn)) {
-      kept_graph <- rule$kept_fn(fam_df, g_sub)
-      kept_apriori <- unique(c(kept_apriori, kept_graph))
-    }
-    if (!is.null(rule$discarded_fn) && is.function(rule$discarded_fn)) {
-      disc_graph <- rule$discarded_fn(fam_df, g_sub)
-      discarded_apriori <- unique(c(discarded_apriori, disc_graph))
-    }
-  }
-
-  # Conflict groups (always excluding a priori decisions).
-  conflict_groups <- list()
-  candidates_all  <- character(0)
-
-  if (length(rule$conflict_rules) > 0) {
-    for (grp in rule$conflict_rules) {
-      cand_nodes <- apply_rule_filter(fam_df, grp)
-      cand_nodes <- setdiff(cand_nodes, union(kept_apriori, discarded_apriori))
-      cand_nodes <- unique(cand_nodes)
-      if (length(cand_nodes) > 0) conflict_groups[[length(conflict_groups) + 1]] <- cand_nodes
-    }
-    if (length(conflict_groups) > 0) {
-      candidates_all <- unique(unlist(conflict_groups))
-    }
-  }
+  # Deterministic (table-driven) selection, plus conflict groups (shared with
+  # rkn_select_criteria_upto5(); see .rkn_apriori_and_conflicts_upto5()).
+  ac <- .rkn_apriori_and_conflicts_upto5(fam_df, rule, g_sub)
+  kept_apriori      <- ac$kept_apriori
+  discarded_apriori <- ac$discarded_apriori
+  conflict_groups   <- ac$conflict_groups
+  candidates_all    <- ac$candidates_all
 
   # Randomized resolution.
   used_largest_ivs <- FALSE
@@ -222,15 +161,7 @@ rkn_select_random_upto5 <- function(fam_df,
     # Eligible nodes: all nodes except discarded a priori; optionally exclude kept a priori
     # and their 1-hop neighbors.
     eligible <- setdiff(fam_df$.name, discarded_apriori)
-
-    if (length(kept_apriori) > 0) {
-      nb_idx  <- igraph::neighborhood(g_sub, order = 1, nodes = kept_apriori)
-      nb_names <- unique(setdiff(
-        unlist(lapply(nb_idx, function(vs) igraph::V(g_sub)$name[vs])),
-        kept_apriori
-      ))
-      eligible <- setdiff(eligible, union(kept_apriori, nb_names))
-    }
+    eligible <- .rkn_exclude_neighbors_of_kept(g_sub, eligible, kept_apriori)
 
     g_ind <- igraph::induced_subgraph(g_sub, vids = eligible)
     sets  <- igraph::largest_ivs(g_ind)

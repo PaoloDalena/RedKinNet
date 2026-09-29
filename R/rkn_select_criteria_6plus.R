@@ -187,8 +187,10 @@ rkn_select_criteria_6plus <- function(fam_df,
 
   # Resolve a graph (whole component, or post-peeling residual) against a recognized
   # structure. Returns NULL if the graph is irregular (caller handles the generic
-  # largest_ivs fallback, since only the residual case needs it).
-  resolve_component <- function(g, seed_offset) {
+  # largest_ivs fallback, since only the residual case needs it). `fixed_kept` holds the
+  # nodes already kept by the peeling loop, so that candidates are scored on the
+  # family-level kept set, as in rkn_select_criteria_upto5().
+  resolve_component <- function(g, seed_offset, fixed_kept = character(0)) {
     shape <- .rkn_recognize_candidates_6plus(g)
     if (shape$kind == "irregular") return(NULL)
 
@@ -203,7 +205,7 @@ rkn_select_criteria_6plus <- function(fam_df,
     }
 
     picked <- .rkn_select_among_candidates(
-      candidate_sets = shape$candidate_sets, fam_df = fam_df, fixed_kept_ids = character(0),
+      candidate_sets = shape$candidate_sets, fam_df = fam_df, fixed_kept_ids = fixed_kept,
       criterion_primary = criterion_primary, criterion_secondary = criterion_secondary,
       seed = if (!is.null(seed)) seed + seed_offset else NULL
     )
@@ -345,13 +347,13 @@ rkn_select_criteria_6plus <- function(fam_df,
 
   # ---- residual pass: same recognizer, reused --------------------------------
   g_r <- igraph::induced_subgraph(g_sub, vids = undecided)
-  res_r <- resolve_component(g_r, seed_offset = 1L)
+  res_r <- resolve_component(g_r, seed_offset = 1L, fixed_kept = kept_apriori)
 
   if (is.null(res_r)) {
     sets <- igraph::largest_ivs(g_r)
     candidate_sets <- lapply(sets, function(s) igraph::V(g_r)$name[s])
     picked <- .rkn_select_among_candidates(
-      candidate_sets = candidate_sets, fam_df = fam_df, fixed_kept_ids = character(0),
+      candidate_sets = candidate_sets, fam_df = fam_df, fixed_kept_ids = kept_apriori,
       criterion_primary = criterion_primary, criterion_secondary = criterion_secondary,
       seed = if (!is.null(seed)) seed + 2L else NULL
     )

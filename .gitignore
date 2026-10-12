@@ -9,3 +9,7 @@ scripts/
 
 # real/pseudonymised data and any output derived from it - local use only, never committed
 data-private/
+
+# testthat debugging artefacts
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds

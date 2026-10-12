@@ -1,16 +1,26 @@
 Package: RedKinNet
-Title: Kingship matrix reduction through networks analysis techniques
+Title: Selection of Unrelated Individuals from Kinship Networks
 Version: 0.0.0.9000
-Authors@R: c(
-    person("Paolo", "Dalena", , "paolodalena97@gmail.com", role = c("aut", "cre", "cph"), 
-    comment = c(ORCID = "0000-0003-2920-9572")),
-    person("Sara", "Geremia", , "sara.geremia@phd.units.it", role = c("ctb"),
-    comment = c(ORCID = "0000-0001-7780-040X")))
-Description: What the package does (one paragraph).
+Authors@R:
+    person("Paolo", "Dalena", , "paolodalena97@gmail.com", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0003-2920-9572"))
+Description: Selects sets of mutually unrelated individuals from pairwise
+    kinship estimates. Relatedness above a user-defined threshold is
+    represented as an undirected graph, and each connected component (family
+    network) is resolved as a maximum independent set problem, combining
+    structural rules and graph reductions with exact resolution of the
+    remaining ambiguity. Ambiguous choices can be resolved at random or
+    according to covariate-based criteria, and node-level diagnostics document
+    the reason for every retained or discarded individual.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Depends: 
+Depends:
     R (>= 3.5)
+Imports:
+    graphics,
+    grDevices,
+    igraph,
+    stats
 LazyData: true

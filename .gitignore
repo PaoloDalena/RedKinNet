@@ -2,6 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
+*.Rproj
 
-# real/pseudonymised kinship data - local use only, never committed
-data/KINGSHIP_matrix.ctrl.tsv
+# local-only working material: validation documents, diagnostics, pilots, outputs
+scripts/
+
+# real/pseudonymised data and any output derived from it - local use only, never committed
+data-private/

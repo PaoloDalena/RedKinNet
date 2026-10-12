@@ -1,3 +1,7 @@
 ^RedKinNet\.rpkg\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^data-private$
+^data-raw$
+^scripts$
+^README\.rmd$

@@ -57,12 +57,13 @@ rkn_select_random <- function(g,
     plot_effective <- "post"
   }
 
-  all_vnames <- igraph::V(g)$name
   n_nodes <- igraph::vcount(g)
 
-  fam_nodes <- split(all_vnames, igraph::components(g)$membership)
-  n_fam <- length(fam_nodes)
-  fam_sizes <- lengths(fam_nodes)
+  # Families are extracted by integer vertex id: extraction by name scans the
+  # whole graph for every family and makes the run time quadratic.
+  fam_idx <- split(seq_len(n_nodes), igraph::components(g)$membership)
+  n_fam <- length(fam_idx)
+  fam_sizes <- lengths(fam_idx)
 
   if (identical(plot_effective, "pre")) {
     do.call(rkn_plot_pre, c(list(g = g), plot_args))
@@ -107,10 +108,7 @@ rkn_select_random <- function(g,
   family_summary_list <- if (diagnostics) vector("list", n_fam) else NULL
 
   for (i in seq_len(n_fam)) {
-    nodes_i <- fam_nodes[[i]]
-
-    g_sub <- igraph::induced_subgraph(g, vids = nodes_i)
-    if (is.null(igraph::V(g_sub)$name)) igraph::V(g_sub)$name <- nodes_i
+    g_sub <- igraph::induced_subgraph(g, vids = fam_idx[[i]])
 
     fam_df <- .fam_df_from_graph(g_sub)
     fam_seed <- if (is.null(seed)) NULL else as.integer(seed + i)

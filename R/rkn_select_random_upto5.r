@@ -75,7 +75,8 @@
 #'                                    return_diagnostics = TRUE, g_sub = g_sub)
 #' }
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 rkn_select_random_upto5 <- function(fam_df,
                                     custom_rules_db = NULL,
                                     seed = NULL,

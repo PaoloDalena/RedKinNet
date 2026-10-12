@@ -1,10 +1,10 @@
 #' Rule database for connected components up to 5 nodes
 #'
-#' A curated list of structural rules used by \code{\link{rkn_select_random_upto5}}
-#' and \code{\link{rkn_select_criteria_upto5}} to perform deterministic (a priori)
-#' keep/discard decisions and to define conflict groups for the resolution of the
-#' remaining ambiguity. Every connected graph with at most 5 nodes matches exactly one
-#' rule.
+#' A curated list of structural rules used by \code{\link{rkn_select_random}} and
+#' \code{\link{rkn_select_criteria}} on families with at most 5 nodes, to perform
+#' deterministic (a priori) keep/discard decisions and to define conflict groups for
+#' the resolution of the remaining ambiguity. Every connected graph with at most 5
+#' nodes matches exactly one rule.
 #'
 #' Each element of the list is a rule with fields such as:
 #' \itemize{

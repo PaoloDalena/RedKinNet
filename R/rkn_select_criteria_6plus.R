@@ -95,11 +95,11 @@
 #'
 #' @description
 #' Applies the same structural recognition and deterministic peeling logic as
-#' \code{\link{rkn_select_random_6plus}} to a connected component with at least 6 nodes,
+#' \code{rkn_select_random_6plus()} to a connected component with at least 6 nodes,
 #' but resolves every ambiguous case (an even path or cycle's two bipartite sides, a
 #' clique's single choice, an odd cycle's maximum independent sets) by criterion score
 #' instead of a uniform random draw, via the same \code{.rkn_select_among_candidates()}
-#' engine used by \code{\link{rkn_select_criteria_upto5}}. Ties are broken with a seeded
+#' engine used by \code{rkn_select_criteria_upto5()}. Ties are broken with a seeded
 #' random draw restricted to the tied candidates. \code{structure_name} uses the same
 #' coarse labels as \code{rkn_select_random_6plus()} (\code{"pathN"}, \code{"cycleN"}, not
 #' distinguishing odd/even in the name).
@@ -119,11 +119,12 @@
 #' @param return_diagnostics Logical; if \code{TRUE}, returns additional per-node and
 #'   per-family diagnostics.
 #'
-#' @return Same structure as \code{\link{rkn_select_criteria_upto5}}.
+#' @return Same structure as \code{rkn_select_criteria_upto5()}.
 #'
-#' @seealso \code{\link{rkn_select_random_6plus}}, \code{\link{rkn_select_criteria_upto5}}
+#' @seealso \code{rkn_select_random_6plus()}, \code{rkn_select_criteria_upto5()}
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 rkn_select_criteria_6plus <- function(fam_df,
                                       g_sub,
                                       criterion_primary,

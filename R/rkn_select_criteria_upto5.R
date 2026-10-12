@@ -6,7 +6,7 @@
 #' two covariate-based criteria instead of uniformly at random.
 #'
 #' Rule matching and deterministic (a priori) keep/discard decisions are
-#' identical to \code{\link{rkn_select_random_upto5}} (same \code{rules_db}/
+#' identical to \code{rkn_select_random_upto5()} (same \code{rules_db}/
 #' \code{custom_rules_db}, same \code{kept_rules}/\code{discarded_rules}/
 #' \code{kept_fn}/\code{discarded_fn}). The two functions differ only in how
 #' the remaining ambiguous conflict group is resolved:
@@ -37,12 +37,13 @@
 #' @param seed Optional integer RNG seed, used only to break exact ties in the
 #'   criterion score(s).
 #'
-#' @return Same structure as \code{\link{rkn_select_random_upto5}}.
+#' @return Same structure as \code{rkn_select_random_upto5()}.
 #'
-#' @seealso \code{\link{rkn_select_random_upto5}}, \code{\link{rkn_criterion_target_mean}},
-#'   \code{\link{rkn_score_candidate_set}}
+#' @seealso \code{rkn_select_random_upto5()}, \code{\link{rkn_criterion_target_mean}},
+#'   \code{rkn_score_candidate_set()}
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 rkn_select_criteria_upto5 <- function(fam_df,
                                       criterion_primary,
                                       criterion_secondary = NULL,

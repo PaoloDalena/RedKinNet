@@ -30,7 +30,8 @@
 #'   `secondary_type`, `secondary_score` (the latter two `NA` if `criterion_secondary`
 #'   is not supplied).
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criterion_secondary = NULL) {
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
     stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")

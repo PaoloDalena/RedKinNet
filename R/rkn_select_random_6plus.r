@@ -50,7 +50,8 @@
 #' out_diag <- rkn_select_random_6plus(fam_df, g_sub, seed = 1, return_diagnostics = TRUE)
 #' }
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 rkn_select_random_6plus <- function(fam_df,
                                     g_sub,
                                     seed = NULL,

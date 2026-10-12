@@ -55,18 +55,18 @@ Same structure as \code{\link{rkn_select_random}}.
 \description{
 Criteria-based counterpart of \code{\link{rkn_select_random}}. The network is
 partitioned into families, defined as the connected components of \code{g}, and
-each family is resolved independently by \code{\link{rkn_select_criteria_upto5}} (families with at
-most 5 nodes) or \code{\link{rkn_select_criteria_6plus}} (families with 6 or more
-nodes). Ambiguous selections are resolved by criterion score rather than uniformly at
-random; family construction, aggregation of results, console summary, plotting, and
-return structure are identical to \code{rkn_select_random()}.
+each family is resolved independently: families with at most 5 nodes through the
+structural rules in \code{\link{rules_db}}, larger families through structural
+reductions followed by the resolution of the remaining ambiguity. Ambiguous
+selections are resolved by criterion score rather than uniformly at random; family
+construction, aggregation of results, console summary, plotting, and return
+structure are identical to \code{rkn_select_random()}.
 
 Covariates referenced by the criteria are read from the vertex attributes of
-\code{g}, which are propagated to the per-family data frames. The packaged
-\code{rules_db} is always used for families with at most 5 nodes.
+\code{g}.
 }
 \seealso{
-\code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria_upto5}},
-\code{\link{rkn_select_criteria_6plus}}, \code{rkn_plot_pre()}, \code{rkn_plot_post()},
-\code{rkn_plot_diagnostics()}.
+\code{\link{rkn_select_random}}, \code{\link{rkn_criterion_target_mean}},
+\code{\link{rules_db}}, \code{\link{rkn_plot_pre}}, \code{\link{rkn_plot_post}},
+\code{\link{rkn_plot_diagnostics}}.
 }

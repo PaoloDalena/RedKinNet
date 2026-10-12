@@ -14,7 +14,7 @@
 #'
 #' Randomization uses one of two mechanisms:
 #' \enumerate{
-#'   \item If \code{rule$alpha > 1} and \code{g_sub} is provided, the function samples
+#'   \item If \code{rule$use_largest_ivs} is \code{TRUE} and \code{g_sub} is provided, the function samples
 #'   uniformly among maximum independent vertex sets returned by
 #'   \code{igraph::largest_ivs()} on an induced subgraph of eligible vertices.
 #'   \item Otherwise, it performs simple random sampling within each conflict group
@@ -40,14 +40,14 @@
 #'     \item \code{kept_rules}: list of character expressions.
 #'     \item \code{discarded_rules}: list of character expressions.
 #'     \item \code{conflict_rules}: list of character vectors, each defining a candidate group.
-#'     \item Optional: \code{alpha} (numeric), \code{kept_fn}, \code{discarded_fn}
+#'     \item Optional: \code{use_largest_ivs} (logical), \code{kept_fn}, \code{discarded_fn}
 #'           for graph-dependent deterministic selection.
 #'   }
 #' @param seed Optional integer RNG seed used for randomized choices.
 #' @param return_diagnostics Logical; if \code{TRUE}, returns diagnostics in addition to
 #'   \code{kept} and \code{discarded}.
 #' @param g_sub Optional \pkg{igraph} graph for the same component. Required if using
-#'   the maximum independent set mechanism (\code{rule$alpha > 1}). Vertex names
+#'   the maximum independent set mechanism (\code{rule$use_largest_ivs}). Vertex names
 #'   \code{igraph::V(g_sub)$name} must match \code{fam_df$.name}.
 #'
 #' @return
@@ -82,24 +82,13 @@ rkn_select_random_upto5 <- function(fam_df,
                                     return_diagnostics = FALSE,
                                     g_sub = NULL) {
 
-  # Harmonize identifier columns.
+  if (!is.null(seed)) withr::local_preserve_seed()
+
   if (is.null(fam_df$.name) && !is.null(fam_df$name)) fam_df$.name <- fam_df$name
   if (is.null(fam_df$name)  && !is.null(fam_df$.name)) fam_df$name  <- fam_df$.name
 
-  # Choose the rule database: internal `rules_db` (default) or user-supplied `custom_rules_db`.
-  if (is.null(custom_rules_db)) {
-    if (!exists("rules_db", inherits = TRUE)) {
-      stop("Internal `rules_db` was not found. Reinstall/reload the package, or supply `custom_rules_db`.")
-    }
-    rules_db_use <- rules_db
-  } else {
-    rules_db_use <- custom_rules_db
-  }
-
-  # Match the component to a rule.
-  rule <- find_matching_rule(fam_df, rules_db_use)
-
-  # Build per-node diagnostics (upto5; aligned with 6plus fields).
+  rules_db_use <- if (is.null(custom_rules_db)) RedKinNet::rules_db else custom_rules_db
+  rule <- .rkn_find_matching_rule(fam_df, rules_db_use)
   build_node_diag <- .rkn_build_node_diag_upto5
 
   # No matching rule: discard all nodes.
@@ -143,36 +132,33 @@ rkn_select_random_upto5 <- function(fam_df,
     ))
   }
 
-  # Deterministic (table-driven) selection, plus conflict groups (shared with
-  # rkn_select_criteria_upto5(); see .rkn_apriori_and_conflicts_upto5()).
   ac <- .rkn_apriori_and_conflicts_upto5(fam_df, rule, g_sub)
   kept_apriori      <- ac$kept_apriori
   discarded_apriori <- ac$discarded_apriori
   conflict_groups   <- ac$conflict_groups
   candidates_all    <- ac$candidates_all
 
-  # Randomized resolution.
   used_largest_ivs <- FALSE
   kept_afterrandomization <- character(0)
   discarded_afterrandomization <- character(0)
 
-  if (!is.null(rule$alpha) && isTRUE(rule$alpha > 1) && !is.null(g_sub)) {
+  if (isTRUE(rule$use_largest_ivs) && !is.null(g_sub)) {
 
-    # Eligible nodes: all nodes except discarded a priori; optionally exclude kept a priori
-    # and their 1-hop neighbors.
+    # Nodes adjacent to an a-priori kept node can no longer be selected.
     eligible <- setdiff(fam_df$.name, discarded_apriori)
     eligible <- .rkn_exclude_neighbors_of_kept(g_sub, eligible, kept_apriori)
 
     g_ind <- igraph::induced_subgraph(g_sub, vids = eligible)
     sets  <- igraph::largest_ivs(g_ind)
-    set_names <- lapply(sets, function(s) igraph::V(g_ind)$name[s])
+    ind_names <- igraph::V(g_ind)$name
+    set_names <- vector("list", length(sets))
+    for (j in seq_along(sets)) set_names[[j]] <- ind_names[sets[[j]]]
 
     if (!is.null(seed)) set.seed(seed)
     chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
 
     kept_afterrandomization <- unique(chosen_names)
 
-    # If conflict groups were not defined, use eligible nodes for diagnostics.
     if (length(candidates_all) == 0) candidates_all <- eligible
 
     discarded_afterrandomization <- setdiff(candidates_all, kept_afterrandomization)
@@ -206,14 +192,12 @@ rkn_select_random_upto5 <- function(fam_df,
 
   kept_afterrandomization <- unique(kept_afterrandomization)
 
-  # Final reconciliation (kept overrides discarded).
+  # Kept overrides discarded.
   kept_final <- unique(c(kept_apriori, kept_afterrandomization))
   discarded_final <- unique(c(discarded_apriori, discarded_afterrandomization))
   discarded_final <- setdiff(discarded_final, kept_final)
 
-  # Candidate complexity flag (complex if multiple groups or alpha > 1).
-  is_complex <- (length(conflict_groups) > 1) ||
-    (!is.null(rule$alpha) && isTRUE(rule$alpha > 1))
+  is_complex <- (length(conflict_groups) > 1) || isTRUE(rule$use_largest_ivs)
 
   candidate_complex <- if (is_complex) unique(candidates_all) else character(0)
   candidate_simple  <- if (!is_complex) unique(candidates_all) else character(0)
@@ -222,7 +206,6 @@ rkn_select_random_upto5 <- function(fam_df,
     return(list(kept = kept_final, discarded = discarded_final))
   }
 
-  # Minimal pre-reason map for diagnostics/plotting.
   pre_reason_map <- character(0)
   if (used_largest_ivs && length(candidate_complex) > 0) {
     pre_reason_map[candidate_complex] <- "largest_ivs_fallback"
@@ -273,7 +256,7 @@ rkn_select_random_upto5 <- function(fam_df,
 #' and returns the corresponding node names (from \code{fam_df$.name}) for which the
 #' expression evaluates to \code{TRUE}.
 #'
-#' Expressions are evaluated via \code{.node_filter()}, which treats columns of
+#' Expressions are evaluated via \code{.rkn_node_filter()}, which treats columns of
 #' \code{fam_df} as vectors in the evaluation environment.
 #'
 #' @param fam_df A data frame describing a connected component. Must contain a
@@ -286,7 +269,7 @@ rkn_select_random_upto5 <- function(fam_df,
 #'
 #' @keywords internal
 #' @noRd
-apply_rule_filter <- function(fam_df, rule_exprs) {
+.rkn_apply_rule_filter <- function(fam_df, rule_exprs) {
   if (!is.data.frame(fam_df)) stop("`fam_df` must be a data.frame.")
   if (is.null(fam_df$.name)) stop("`fam_df` must contain a `.name` column.")
   if (length(rule_exprs) == 0) return(character(0))
@@ -294,7 +277,7 @@ apply_rule_filter <- function(fam_df, rule_exprs) {
   out <- character(0)
 
   for (expr_txt in rule_exprs) {
-    mask <- .node_filter(fam_df, expr_txt)
+    mask <- .rkn_node_filter(fam_df, expr_txt)
 
     if (length(mask) == 1L) {
       mask <- rep(isTRUE(mask), nrow(fam_df))
@@ -322,7 +305,7 @@ apply_rule_filter <- function(fam_df, rule_exprs) {
 #'
 #' @keywords internal
 #' @noRd
-find_matching_rule <- function(fam_df, rules_db) {
+.rkn_find_matching_rule <- function(fam_df, rules_db) {
   if (!is.data.frame(fam_df)) stop("`fam_df` must be a data.frame.")
   if (!is.list(rules_db)) stop("`rules_db` must be a list.")
 
@@ -353,7 +336,7 @@ find_matching_rule <- function(fam_df, rules_db) {
 #'
 #' @keywords internal
 #' @noRd
-.node_filter <- function(fam_df, expr_txt) {
+.rkn_node_filter <- function(fam_df, expr_txt) {
   if (!is.data.frame(fam_df)) stop("`fam_df` must be a data.frame.")
   if (!is.character(expr_txt) || length(expr_txt) != 1L) {
     stop("`expr_txt` must be a single character string.")

@@ -46,18 +46,15 @@ rkn_plot_post <- function(g,
   kept <- unique(as.character(kept))
   kept <- kept[kept %in% vnames]
 
-  # ---- Assign colors based on selection outcome -------------------------------
   is_kept <- vnames %in% kept
   vcol <- ifelse(is_kept, col_kept, col_discarded)
 
-  # ---- Compute layout ---------------------------------------------------------
   lay <- switch(
     layout,
     fr = igraph::layout_with_fr(g),
     gem = igraph::layout_with_gem(g)
   )
 
-  # ---- Plot -------------------------------------------------------------------
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
   graphics::par(mar = c(0.5, 0.5, 2, 0.5))
@@ -74,7 +71,6 @@ rkn_plot_post <- function(g,
     main = main
   )
 
-  # ---- Legend -----------------------------------------------------------------
   if (isTRUE(show_legend)) {
     graphics::legend(
       "topright",

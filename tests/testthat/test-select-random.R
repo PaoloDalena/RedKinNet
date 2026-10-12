@@ -55,15 +55,6 @@ test_that("network-level random selection is reproducible", {
                    rkn_select_random(g, seed = 3, verbose = FALSE))
 })
 
-test_that("the families argument accepts NULL, a membership vector or a list", {
-  g <- make_network(12)
-  mem <- igraph::components(g)$membership
-  fam_list <- split(igraph::V(g)$name, mem)
-  k_null <- rkn_select_random(g, seed = 1, verbose = FALSE)
-  expect_identical(sort(rkn_select_random(g, families = mem, seed = 1, verbose = FALSE)), sort(k_null))
-  expect_identical(sort(rkn_select_random(g, families = fam_list, seed = 1, verbose = FALSE)), sort(k_null))
-})
-
 test_that("diagnostics have the documented structure and agree with the selection", {
   g <- make_network(13)
   plain <- rkn_select_random(g, seed = 1, verbose = FALSE)
@@ -92,5 +83,5 @@ test_that("verbose output, plot fallback and input validation behave as document
   expect_error(rkn_select_random(list()), "igraph object")
   g_unnamed <- igraph::make_ring(5)
   expect_error(rkn_select_random(g_unnamed), "must be defined")
-  expect_error(rkn_select_random(g, families = 1:3), "Unsupported 'families' format")
+  expect_error(rkn_select_random(igraph::make_empty_graph(0)), "at least one vertex")
 })

@@ -1,4 +1,3 @@
-# ---------- Helper: stable palette for categorical family identifiers ----------
 .rkn_palette <- function(n) {
   grDevices::hcl(
     h = seq(15, 375, length.out = n + 1)[1:n],
@@ -24,7 +23,7 @@
 #' @param vertex_size Numeric. Size of vertices in the plot.
 #' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
 #' @param show_legend Logical. If TRUE, a legend mapping colors to family IDs is shown.
-#'   For readability, the legend is displayed only if the number of families is ≤ 25.
+#'   For readability, the legend is displayed only if there are at most 25 families.
 #' @param main Character. Title of the plot.
 #'
 #' @return Invisibly returns NULL.
@@ -45,7 +44,6 @@ rkn_plot_pre <- function(g,
     stop("V(g)$name must be defined (vertex identifiers are required).")
   }
 
-  # ---- Determine family identifiers -------------------------------------------
   # Prefer an existing vertex attribute; otherwise, fall back to connected components.
   fam_ids <- igraph::V(g)$family_id
   if (is.null(fam_ids)) {
@@ -57,14 +55,12 @@ rkn_plot_pre <- function(g,
   fam_col_map <- stats::setNames(pal, as.character(fam_levels))
   vcol <- unname(fam_col_map[as.character(fam_ids)])
 
-  # ---- Compute layout ---------------------------------------------------------
   lay <- switch(
     layout,
     fr = igraph::layout_with_fr(g),
     gem = igraph::layout_with_gem(g)
   )
 
-  # ---- Plot -------------------------------------------------------------------
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
   graphics::par(mar = c(0.5, 0.5, 2, 0.5))
@@ -81,7 +77,6 @@ rkn_plot_pre <- function(g,
     main = main
   )
 
-  # ---- Legend -----------------------------------------------------------------
   if (isTRUE(show_legend)) {
     if (length(fam_levels) <= 25) {
       graphics::legend(

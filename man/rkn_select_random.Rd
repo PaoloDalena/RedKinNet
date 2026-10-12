@@ -6,7 +6,6 @@
 \usage{
 rkn_select_random(
   g,
-  families = NULL,
   seed = NULL,
   diagnostics = FALSE,
   return_results_by_family = FALSE,
@@ -17,11 +16,6 @@ rkn_select_random(
 }
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name.}
-
-\item{families}{Optional. If NULL (default), connected components are computed internally.
-Supported formats:
-(i) a membership vector of length vcount(g) (e.g., igraph::components(g)$membership),
-(ii) a list of families, each being a vector of vertex names or vertex indices.}
 
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
 
@@ -52,7 +46,10 @@ kept, discarded, node_diagnostics, family_summary,
 and optionally results_by_family (if return_results_by_family=TRUE).
 }
 \description{
-Random selection over an entire network (connected-component-wise)
+The network is partitioned into families, defined as the connected components of
+\code{g}, and each family is resolved independently. Since no relationship crosses
+two components, the union of the per-family selections is a set of mutually
+unrelated individuals.
 }
 \seealso{
 \code{rkn_plot_pre()}, \code{rkn_plot_post()}, \code{rkn_plot_diagnostics()}.

@@ -1,5 +1,3 @@
-# ---------- Internal helper --------------------------------------------------
-
 #' Internal helper: extract covariate values for a candidate kept-set
 #'
 #' @keywords internal
@@ -11,8 +9,6 @@
   idx <- fam_df$.name %in% kept_ids
   fam_df[[covariate]][idx]
 }
-
-# ---------- Scoring engine ---------------------------------------------------
 
 #' Score a candidate kept-set against one or two covariate criteria
 #'
@@ -77,6 +73,8 @@ rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criteri
                                          criterion_primary,
                                          criterion_secondary = NULL,
                                          seed = NULL) {
+  if (!is.null(seed)) withr::local_preserve_seed()
+
   n_cand <- length(candidate_sets)
   if (n_cand == 0) stop("`candidate_sets` must be a non-empty list.")
   if (n_cand == 1) return(list(chosen_index = 1L, chosen_set = candidate_sets[[1]]))

@@ -46,9 +46,8 @@ rkn_plot_diagnostics <- function(g,
     stop("res$node_diagnostics must contain columns: 'id' and 'pre_class'.")
   }
 
-  # ---- Build class map aligned to the full graph vertex names -----------------
   vnames <- igraph::V(g)$name
-  cls_map <- setNames(rep(NA_character_, length(vnames)), vnames)
+  cls_map <- stats::setNames(rep(NA_character_, length(vnames)), vnames)
 
   nd$id <- as.character(nd$id)
   nd$pre_class <- as.character(nd$pre_class)
@@ -57,7 +56,6 @@ rkn_plot_diagnostics <- function(g,
   # This is acceptable only if duplicates are semantically identical.
   cls_map[intersect(nd$id, vnames)] <- nd$pre_class[match(intersect(nd$id, vnames), nd$id)]
 
-  # ---- Enforce completeness and schema correctness ----------------------------
   allowed <- c("kept_apriori", "discarded_apriori", "candidate_simple", "candidate_complex")
   if (any(is.na(cls_map))) {
     stop("Unclassified nodes found: some V(g)$name values have no diagnostic class in res$node_diagnostics.")
@@ -71,7 +69,6 @@ rkn_plot_diagnostics <- function(g,
     ))
   }
 
-  # ---- Color mapping ----------------------------------------------------------
   col_map <- c(
     kept_apriori = "#1B9E77",
     discarded_apriori = "#B3B3B3",
@@ -93,14 +90,12 @@ rkn_plot_diagnostics <- function(g,
   )
   vcol <- unname(col_map[cls_map])
 
-  # ---- Compute layout ---------------------------------------------------------
   lay <- switch(
     layout,
     fr = igraph::layout_with_fr(g),
     gem = igraph::layout_with_gem(g)
   )
 
-  # ---- Plot -------------------------------------------------------------------
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
   graphics::par(mar = c(0.5, 0.5, 2, 0.5))
@@ -118,8 +113,6 @@ rkn_plot_diagnostics <- function(g,
     main = main
   )
 
-  # ---- Legend -----------------------------------------------------------------
-  # ---- Legend -----------------------------------------------------------------
   if (isTRUE(show_legend)) {
 
     present <- class_order[class_order %in% cls_map]

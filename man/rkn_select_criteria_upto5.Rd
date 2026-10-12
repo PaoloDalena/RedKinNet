@@ -38,7 +38,7 @@ Each rule is expected to provide:
 \item \code{kept_rules}: list of character expressions.
 \item \code{discarded_rules}: list of character expressions.
 \item \code{conflict_rules}: list of character vectors, each defining a candidate group.
-\item Optional: \code{alpha} (numeric), \code{kept_fn}, \code{discarded_fn}
+\item Optional: \code{use_largest_ivs} (logical), \code{kept_fn}, \code{discarded_fn}
 for graph-dependent deterministic selection.
 }}
 
@@ -49,7 +49,7 @@ criterion score(s).}
 \code{kept} and \code{discarded}.}
 
 \item{g_sub}{Optional \pkg{igraph} graph for the same component. Required if using
-the maximum independent set mechanism (\code{rule$alpha > 1}). Vertex names
+the maximum independent set mechanism (\code{rule$use_largest_ivs}). Vertex names
 \code{igraph::V(g_sub)$name} must match \code{fam_df$.name}.}
 }
 \value{
@@ -66,10 +66,11 @@ identical to \code{\link{rkn_select_random_upto5}} (same \code{rules_db}/
 \code{kept_fn}/\code{discarded_fn}). The two functions differ only in how
 the remaining ambiguous conflict group is resolved:
 \itemize{
-\item If \code{rule$alpha > 1} and \code{g_sub} is provided, every maximum
-independent set returned by \code{igraph::largest_ivs()} on the induced
-subgraph of eligible vertices is treated as a candidate, and the
-best-scoring one is kept (see \code{\link{.rkn_select_among_candidates}}).
+\item If \code{rule$use_largest_ivs} is \code{TRUE} and \code{g_sub} is
+provided, every maximum independent set returned by \code{igraph::largest_ivs()}
+on the induced subgraph of eligible vertices is treated as a candidate, and
+the candidate with the best primary score is kept (ties are broken by the
+secondary criterion, if supplied).
 \item Otherwise, each single node in the (unique) conflict group is
 treated as a candidate, and the best-scoring one is kept.
 }

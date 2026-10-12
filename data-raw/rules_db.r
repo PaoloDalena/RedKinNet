@@ -5,6 +5,8 @@
 #   - nodes always kept (kept_rules)
 #   - nodes always discarded (discarded_rules)
 #   - mutually exclusive candidate groups (conflict_rules)
+#   - optionally, use_largest_ivs = TRUE: resolve the remaining ambiguity by choosing
+#     among all maximum independent sets of the eligible nodes
 
 rules_db <- list(
 
@@ -104,7 +106,7 @@ rules_db <- list(
     conflict_rules = list(
       list("TRUE")
     ),
-    alpha = 2
+    use_largest_ivs = TRUE
   ),
 
   ## size 4: 4-cycle / square (degrees 2,2,2,2) --------------------------
@@ -122,7 +124,7 @@ rules_db <- list(
     conflict_rules = list(
       list("TRUE")
     ),
-    alpha = 2
+    use_largest_ivs = TRUE
   ),
 
   ## size 4: clique K4 (degrees 3,3,3,3) ----------------------------------
@@ -233,7 +235,7 @@ rules_db <- list(
     kept_rules = list(),
     discarded_rules = list(),
     conflict_rules = list( list("TRUE") ),         # all candidates
-    alpha = 2                                      # uses largest_ivs()
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: clique K5 (degrees 4,4,4,4,4) --------------------------------
@@ -253,28 +255,7 @@ rules_db <- list(
     )
   ),
 
-  ## size 5: triangle with two tails (degrees 1,1,2,2,3) -----------------
-  list(
-    name = "triangle_two_tails5",
-    size_allowed = 5,
-    match_fn = function(fam_df) {
-      nrow(fam_df) == 5 &&
-        all(sort(fam_df$degree) == c(1,1,2,2,3)) &&
-        sum(fam_df$degree == 1) == 2 &&
-        sum(fam_df$degree == 2) == 2 &&
-        sum(fam_df$degree == 3) == 1
-    },
-    kept_rules = list(
-      c("degree == 1")
-    ),
-    discarded_rules = list(
-      c("degree == 3")
-    ),
-    conflict_rules = list(
-      list("degree == 2")
-    )
-  ),
-
+  ## size 5: 4-cycle with a pendant vertex (degrees 1,2,2,2,3) -------------
   list(
     name = "hub_tail5_iso17_determ",
     size_allowed = 5,
@@ -298,20 +279,24 @@ rules_db <- list(
     conflict_rules = list()
   ),
 
-
-
-  ## size 5: asymmetric hub + tails (degrees 1,2,2,2,3) ------------------
+  ## size 5: triangle with a 2-node tail (degrees 1,2,2,2,3) ----------------
+  ## same degree sequence as hub_tail5_iso17_determ; told apart by the
+  ## degree:eccentricity signature
   list(
     name = "hub_tail5_like_iso15",
     size_allowed = 5,
     match_fn = function(fam_df) {
       nrow(fam_df) == 5 &&
-        paste(sort(fam_df$degree), collapse = ",") == "1,2,2,2,3"
+        paste(sort(fam_df$degree), collapse = ",") == "1,2,2,2,3" &&
+        paste(
+          sort(paste(fam_df$degree, fam_df$max_path_length, sep=":")),
+          collapse = ","
+        ) == "1:3,2:2,2:3,2:3,3:2"
     },
     kept_rules = list(),
     discarded_rules = list(),
     conflict_rules = list( list("TRUE") ),   # all candidates
-    alpha = 2                                # uses largest_ivs
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 1,1,1,2,3 ----------------------------------
@@ -408,7 +393,7 @@ rules_db <- list(
     kept_rules = list(),
     discarded_rules = list(),
     conflict_rules = list( list("TRUE") ),   # all candidates
-    alpha = 2                                # largest_ivs
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 1,3,3,3,4 ----------------------------------
@@ -455,7 +440,7 @@ rules_db <- list(
     conflict_rules = list(
       list("TRUE")
     ),
-    alpha = 2
+    use_largest_ivs = TRUE
   ),
 
 
@@ -497,7 +482,7 @@ rules_db <- list(
     conflict_rules = list(
       list("TRUE")
     ),
-    alpha = 2
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 2,2,3,3,4 ----------------------------------
@@ -511,7 +496,7 @@ rules_db <- list(
     kept_rules = list(),
     discarded_rules = list( list("degree == 4") ),
     conflict_rules = list( list("TRUE") ),
-    alpha = 2
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 2,3,3,3,3 ----------------------------------
@@ -526,7 +511,7 @@ rules_db <- list(
     kept_rules = list(),
     discarded_rules = list(),
     conflict_rules = list( list("TRUE") ),   # all candidates
-    alpha = 2                                # largest_ivs()
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 2,3,3,4,4 ----------------------------------
@@ -563,7 +548,7 @@ rules_db <- list(
     conflict_rules = list(
       list("degree == 3")                      # candidates = {2,3,4,5}
     ),
-    alpha = 2                                  # largest_ivs()
+    use_largest_ivs = TRUE
   ),
 
   ## size 5: degree signature 3,3,4,4,4 ----------------------------------

@@ -70,8 +70,8 @@
 #' @keywords internal
 #' @noRd
 .rkn_apriori_and_conflicts_upto5 <- function(fam_df, rule, g_sub = NULL) {
-  kept_apriori      <- apply_rule_filter(fam_df, unlist(rule$kept_rules))
-  discarded_apriori <- apply_rule_filter(fam_df, unlist(rule$discarded_rules))
+  kept_apriori      <- .rkn_apply_rule_filter(fam_df, unlist(rule$kept_rules))
+  discarded_apriori <- .rkn_apply_rule_filter(fam_df, unlist(rule$discarded_rules))
 
   if (!is.null(g_sub)) {
     if (!is.null(rule$kept_fn) && is.function(rule$kept_fn)) {
@@ -89,7 +89,7 @@
 
   if (length(rule$conflict_rules) > 0) {
     for (grp in rule$conflict_rules) {
-      cand_nodes <- apply_rule_filter(fam_df, grp)
+      cand_nodes <- .rkn_apply_rule_filter(fam_df, grp)
       cand_nodes <- setdiff(cand_nodes, union(kept_apriori, discarded_apriori))
       cand_nodes <- unique(cand_nodes)
       if (length(cand_nodes) > 0) conflict_groups[[length(conflict_groups) + 1]] <- cand_nodes
@@ -113,17 +113,17 @@
 #' Removes \code{kept_apriori} and its 1-hop neighbours in \code{g_sub} from
 #' \code{eligible}, so that a subsequent \code{igraph::largest_ivs()} call on the
 #' induced subgraph of \code{eligible} cannot return a set adjacent to what is already
-#' kept. Shared between \code{rkn_select_random_upto5()} and
-#' \code{rkn_select_criteria_upto5()}'s `alpha`-based resolution branch.
+#' kept. Shared between the `use_largest_ivs` resolution branches of
+#' \code{rkn_select_random_upto5()} and \code{rkn_select_criteria_upto5()}.
 #'
 #' @keywords internal
 #' @noRd
 .rkn_exclude_neighbors_of_kept <- function(g_sub, eligible, kept_apriori) {
   if (length(kept_apriori) == 0) return(eligible)
-  nb_idx  <- igraph::neighborhood(g_sub, order = 1, nodes = kept_apriori)
-  nb_names <- unique(setdiff(
-    unlist(lapply(nb_idx, function(vs) igraph::V(g_sub)$name[vs])),
-    kept_apriori
-  ))
+  nb_idx <- igraph::neighborhood(g_sub, order = 1, nodes = kept_apriori)
+  all_names <- igraph::V(g_sub)$name
+  nb_names <- character(0)
+  for (vs in nb_idx) nb_names <- c(nb_names, all_names[vs])
+  nb_names <- unique(setdiff(nb_names, kept_apriori))
   setdiff(eligible, union(kept_apriori, nb_names))
 }

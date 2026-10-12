@@ -22,7 +22,8 @@ Imports:
     graphics,
     grDevices,
     igraph,
-    stats
+    stats,
+    withr
 Suggests:
     lpSolve,
     testthat (>= 3.0.0)

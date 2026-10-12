@@ -2,8 +2,8 @@
 #'
 #' @description
 #' Criteria-based counterpart of \code{\link{rkn_select_random}}. The network is
-#' partitioned into families (connected components by default), and each family is
-#' resolved independently by \code{\link{rkn_select_criteria_upto5}} (families with at
+#' partitioned into families, defined as the connected components of \code{g}, and
+#' each family is resolved independently by \code{\link{rkn_select_criteria_upto5}} (families with at
 #' most 5 nodes) or \code{\link{rkn_select_criteria_6plus}} (families with 6 or more
 #' nodes). Ambiguous selections are resolved by criterion score rather than uniformly at
 #' random; family construction, aggregation of results, console summary, plotting, and
@@ -30,7 +30,6 @@
 #'
 #' @export
 rkn_select_criteria <- function(g,
-                                families = NULL,
                                 criterion_primary,
                                 criterion_secondary = NULL,
                                 seed = NULL,
@@ -43,6 +42,7 @@ rkn_select_criteria <- function(g,
   plot <- match.arg(plot)
 
   if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
+  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
   if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
   if (!is.list(plot_args)) stop("plot_args must be a named list.")
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
@@ -52,8 +52,7 @@ rkn_select_criteria <- function(g,
     stop("`criterion_secondary` must be an rkn_criterion object or NULL.")
   }
 
-  # ---- Plot mode resolution ---------------------------------------------------
-  # Rationale: diagnostics plotting requires diagnostics-enabled outputs; otherwise we fall back to post-plot.
+  # Diagnostics plotting needs the diagnostics output; otherwise fall back to the post plot.
   plot_effective <- plot
   if (identical(plot, "diagnostics") && !isTRUE(diagnostics)) {
     warning(
@@ -66,46 +65,14 @@ rkn_select_criteria <- function(g,
   all_vnames <- igraph::V(g)$name
   n_nodes <- igraph::vcount(g)
 
-  # ---- Build/normalize family definitions -------------------------------------
-  # Rationale: selection is performed independently within each connected component ("family").
-  if (is.null(families)) {
-    mem <- igraph::components(g)$membership
-    fam_list <- split(seq_along(mem), mem)
-  } else if (is.list(families)) {
-    fam_list <- families
-  } else if (is.atomic(families) && length(families) == n_nodes) {
-    fam_list <- split(seq_along(families), families)
-  } else {
-    stop("Unsupported 'families' format. Use NULL, a list of families, or a membership vector (length vcount(g)).")
-  }
-
-  fam_list <- fam_list[lengths(fam_list) > 0]
-
-  # Convert each family into a unique set of vertex names, discarding invalid entries.
-  fam_nodes <- vector("list", length(fam_list))
-  for (k in seq_along(fam_list)) {
-    x <- fam_list[[k]]
-    if (is.numeric(x) || is.integer(x)) {
-      vn <- all_vnames[as.integer(x)]
-    } else {
-      vn <- as.character(x)
-    }
-    vn <- unique(vn)
-    fam_nodes[[k]] <- vn[vn %in% all_vnames]
-  }
-  fam_nodes <- fam_nodes[lengths(fam_nodes) > 0]
-
+  fam_nodes <- split(all_vnames, igraph::components(g)$membership)
   n_fam <- length(fam_nodes)
-  if (n_fam == 0) stop("No valid families after normalization of 'families'.")
-
   fam_sizes <- lengths(fam_nodes)
 
-  # ---- Optional plotting (pre-selection) --------------------------------------
   if (identical(plot_effective, "pre")) {
     do.call(rkn_plot_pre, c(list(g = g), plot_args))
   }
 
-  # ---- Auxiliary formatting utilities -----------------------------------------
   .pct <- function(x, denom) if (denom == 0) NA_real_ else 100 * x / denom
   .fmt_pct <- function(x, digits = 1) if (is.na(x)) "n/a" else sprintf(paste0("%.", digits, "f%%"), x)
   .fmt_num <- function(x, digits = 2) sprintf(paste0("%.", digits, "f"), x)
@@ -131,7 +98,6 @@ rkn_select_criteria <- function(g,
     df
   }
 
-  # ---- Main loop: apply the appropriate selector per family -------------------
   if (isTRUE(diagnostics) && isTRUE(return_results_by_family)) {
     results_by_family <- vector("list", n_fam)
   } else {
@@ -141,7 +107,7 @@ rkn_select_criteria <- function(g,
   kept_all <- character(0)
   discarded_all <- character(0)
 
-  used_largest_ivs_vec <- rep(NA, n_fam)  # Only meaningful when diagnostics=TRUE.
+  used_largest_ivs_vec <- rep(NA, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
   family_summary_list <- if (diagnostics) vector("list", n_fam) else NULL
 
@@ -208,7 +174,6 @@ rkn_select_criteria <- function(g,
     }
   }
 
-  # ---- Console summary (verbose) ----------------------------------------------
   if (isTRUE(verbose)) {
     n_upto5 <- sum(fam_sizes <= 5)
     n_6plus <- sum(fam_sizes >= 6)
@@ -237,30 +202,25 @@ rkn_select_criteria <- function(g,
     cat(paste0(msg, collapse = "\n"), "\n")
   }
 
-  # ---- Optional plotting (post-selection) -------------------------------------
   if (identical(plot_effective, "post")) {
     do.call(rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
   }
 
-  # ---- Return policy (project rule) -------------------------------------------
-  # diagnostics=FALSE returns only the selected node IDs (kept).
   if (!diagnostics) {
     return(kept_all)
   }
 
-  # diagnostics=TRUE returns structured outputs.
   out_main <- list(
     kept = kept_all,
     discarded = discarded_all,
-    node_diagnostics = dplyr::bind_rows(node_diag_list),
-    family_summary = dplyr::bind_rows(family_summary_list)
+    node_diagnostics = .rkn_rbind_rows(node_diag_list),
+    family_summary = .rkn_rbind_rows(family_summary_list)
   )
 
   if (isTRUE(return_results_by_family)) {
     out_main$results_by_family <- results_by_family
   }
 
-  # ---- Optional plotting (diagnostics) ----------------------------------------
   if (identical(plot_effective, "diagnostics")) {
     do.call(rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
   }

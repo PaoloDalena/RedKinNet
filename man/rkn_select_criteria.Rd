@@ -6,7 +6,6 @@
 \usage{
 rkn_select_criteria(
   g,
-  families = NULL,
   criterion_primary,
   criterion_secondary = NULL,
   seed = NULL,
@@ -19,11 +18,6 @@ rkn_select_criteria(
 }
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name.}
-
-\item{families}{Optional. If NULL (default), connected components are computed internally.
-Supported formats:
-(i) a membership vector of length vcount(g) (e.g., igraph::components(g)$membership),
-(ii) a list of families, each being a vector of vertex names or vertex indices.}
 
 \item{criterion_primary}{An \code{rkn_criterion} object (see
 \code{\link{rkn_criterion_target_mean}} and siblings) used to score candidate
@@ -60,8 +54,8 @@ Same structure as \code{\link{rkn_select_random}}.
 }
 \description{
 Criteria-based counterpart of \code{\link{rkn_select_random}}. The network is
-partitioned into families (connected components by default), and each family is
-resolved independently by \code{\link{rkn_select_criteria_upto5}} (families with at
+partitioned into families, defined as the connected components of \code{g}, and
+each family is resolved independently by \code{\link{rkn_select_criteria_upto5}} (families with at
 most 5 nodes) or \code{\link{rkn_select_criteria_6plus}} (families with 6 or more
 nodes). Ambiguous selections are resolved by criterion score rather than uniformly at
 random; family construction, aggregation of results, console summary, plotting, and

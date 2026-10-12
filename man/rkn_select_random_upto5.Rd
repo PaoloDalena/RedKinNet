@@ -29,7 +29,7 @@ Each rule is expected to provide:
 \item \code{kept_rules}: list of character expressions.
 \item \code{discarded_rules}: list of character expressions.
 \item \code{conflict_rules}: list of character vectors, each defining a candidate group.
-\item Optional: \code{alpha} (numeric), \code{kept_fn}, \code{discarded_fn}
+\item Optional: \code{use_largest_ivs} (logical), \code{kept_fn}, \code{discarded_fn}
 for graph-dependent deterministic selection.
 }}
 
@@ -39,7 +39,7 @@ for graph-dependent deterministic selection.
 \code{kept} and \code{discarded}.}
 
 \item{g_sub}{Optional \pkg{igraph} graph for the same component. Required if using
-the maximum independent set mechanism (\code{rule$alpha > 1}). Vertex names
+the maximum independent set mechanism (\code{rule$use_largest_ivs}). Vertex names
 \code{igraph::V(g_sub)$name} must match \code{fam_df$.name}.}
 }
 \value{
@@ -74,7 +74,7 @@ If no rule matches, all nodes are returned as discarded.
 
 Randomization uses one of two mechanisms:
 \enumerate{
-\item If \code{rule$alpha > 1} and \code{g_sub} is provided, the function samples
+\item If \code{rule$use_largest_ivs} is \code{TRUE} and \code{g_sub} is provided, the function samples
 uniformly among maximum independent vertex sets returned by
 \code{igraph::largest_ivs()} on an induced subgraph of eligible vertices.
 \item Otherwise, it performs simple random sampling within each conflict group

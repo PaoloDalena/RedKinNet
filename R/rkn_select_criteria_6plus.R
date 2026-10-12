@@ -1,12 +1,3 @@
-# rkn_select_criteria_6plus() mirrors rkn_select_random_6plus()'s recognized structures
-# (star, path, clique, cycle) and its deterministic peeling loop exactly, but resolves
-# every ambiguous case by criterion score instead of a uniform random draw. Unlike
-# rkn_select_random_6plus() (left untouched), the shape-recognition step is written once
-# and reused for both the whole-component pass and the post-peeling residual pass, since
-# this is new code with no existing behaviour to preserve duplicated. structure_name uses
-# the same coarse labels as rkn_select_random_6plus() ("pathN", "cycleN", not
-# distinguishing odd/even in the name) for consistency between the two selectors.
-
 #' Internal helper: recognize a canonical structure and build its candidates (6+)
 #'
 #' @description
@@ -27,28 +18,25 @@
   n <- length(all_names)
   deg <- igraph::degree(g, v = all_names)
 
-  # ---- star: one hub of degree n-1, n-1 leaves of degree 1 -------------------
   if (n >= 2 && sum(deg == 1) == (n - 1) && sum(deg == (n - 1)) == 1) {
     hub <- names(deg)[deg == (n - 1)][1]
     leaves <- setdiff(all_names, hub)
     return(list(
       kind = "star", label = "star", n = n, candidate_sets = NULL,
       kept = leaves, discarded = hub,
-      pre_reason = setNames(c(rep("star_deterministic_leaf", length(leaves)), "star_deterministic_hub"),
+      pre_reason = stats::setNames(c(rep("star_deterministic_leaf", length(leaves)), "star_deterministic_hub"),
                             c(leaves, hub))
     ))
   }
 
-  # ---- clique: every node has degree n-1 -------------------------------------
   if (n >= 2 && all(deg == (n - 1))) {
     return(list(
       kind = "clique", label = "clique", n = n, candidate_sets = as.list(all_names),
       kept = character(0), discarded = character(0),
-      pre_reason = setNames(rep("clique_choose1", n), all_names)
+      pre_reason = stats::setNames(rep("clique_choose1", n), all_names)
     ))
   }
 
-  # ---- path: connected, n-1 edges, exactly two degree-1 endpoints -----------
   if (igraph::is_connected(g) && igraph::ecount(g) == (n - 1) &&
       sum(deg == 1) == 2 && all(deg %in% c(1, 2))) {
 
@@ -61,7 +49,7 @@
       return(list(
         kind = "path_odd", label = "path", n = n, candidate_sets = NULL,
         kept = keep_set, discarded = disc_set,
-        pre_reason = setNames(c(rep("path_odd_deterministic_keep", length(keep_set)),
+        pre_reason = stats::setNames(c(rep("path_odd_deterministic_keep", length(keep_set)),
                                 rep("path_odd_deterministic_discard", length(disc_set))),
                               c(keep_set, disc_set))
       ))
@@ -72,11 +60,10 @@
     return(list(
       kind = "path_even", label = "path", n = n, candidate_sets = list(A, B),
       kept = character(0), discarded = character(0),
-      pre_reason = setNames(rep("path_even_bipartite", n), all_names)
+      pre_reason = stats::setNames(rep("path_even_bipartite", n), all_names)
     ))
   }
 
-  # ---- cycle: connected, n edges, every node degree 2 ------------------------
   # A cycle is bipartite iff n is even; checked directly rather than via
   # igraph::bipartite_mapping()'s own res flag, which errors (rather than
   # returning res = FALSE) on a non-bipartite graph in some igraph versions.
@@ -87,15 +74,16 @@
       return(list(
         kind = "cycle_even", label = "cycle", n = n, candidate_sets = list(A, B),
         kept = character(0), discarded = character(0),
-        pre_reason = setNames(rep("cycle_even_bipartite", n), all_names)
+        pre_reason = stats::setNames(rep("cycle_even_bipartite", n), all_names)
       ))
     }
     sets <- igraph::largest_ivs(g)
-    candidate_sets <- lapply(sets, function(s) igraph::V(g)$name[s])
+    candidate_sets <- vector("list", length(sets))
+    for (j in seq_along(sets)) candidate_sets[[j]] <- all_names[sets[[j]]]
     return(list(
       kind = "cycle_odd", label = "cycle", n = n, candidate_sets = candidate_sets,
       kept = character(0), discarded = character(0),
-      pre_reason = setNames(rep("largest_ivs_cycle_odd", n), all_names)
+      pre_reason = stats::setNames(rep("largest_ivs_cycle_odd", n), all_names)
     ))
   }
 
@@ -172,7 +160,7 @@ rkn_select_criteria_6plus <- function(fam_df,
       all_names = all_names, kept_apriori = character(0), discarded_apriori = all_names,
       candidate_simple = character(0), candidate_complex = character(0),
       kept_final = kept_final, discarded_final = discarded_final,
-      pre_reason_map = setNames(rep("n_lt_6_fallback", n0), all_names)
+      pre_reason_map = stats::setNames(rep("n_lt_6_fallback", n0), all_names)
     )
     fam_diag <- data.frame(n_nodes = n0, used_largest_ivs = FALSE, structure_name = "n_lt_6_fallback",
                            stringsAsFactors = FALSE)
@@ -231,7 +219,7 @@ rkn_select_criteria_6plus <- function(fam_df,
 
     if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
 
-    pre_reason_map <- setNames(rep(NA_character_, n0), all_names)
+    pre_reason_map <- stats::setNames(rep(NA_character_, n0), all_names)
     if (!is.null(pre_reason_extra)) pre_reason_map[names(pre_reason_extra)] <- pre_reason_extra
     pre_reason_map[names(res$pre_reason)] <- res$pre_reason
 
@@ -253,20 +241,21 @@ rkn_select_criteria_6plus <- function(fam_df,
     )
   }
 
-  # ---- whole-component pass --------------------------------------------------
   g_whole <- igraph::induced_subgraph(g_sub, vids = all_names)
   res_whole <- resolve_component(g_whole, seed_offset = 0L)
   if (!is.null(res_whole)) return(finalize(res_whole))
 
-  # ---- deterministic peeling loop (identical in spirit to rkn_select_random_6plus()) ----
   kept_apriori <- character(0)
   discarded_apriori <- character(0)
-  pre_reason_map <- setNames(rep(NA_character_, n0), all_names)
+  pre_reason_map <- stats::setNames(rep(NA_character_, n0), all_names)
 
   exclude_neighbors <- function(kept_vec, discarded_vec) {
     if (length(kept_vec) == 0) return(discarded_vec)
     nb_idx <- igraph::neighborhood(g_sub, order = 1, nodes = kept_vec)
-    nb_names <- unique(setdiff(unlist(lapply(nb_idx, function(vs) igraph::V(g_sub)$name[vs])), kept_vec))
+    sub_names <- igraph::V(g_sub)$name
+    nb_names <- character(0)
+    for (vs in nb_idx) nb_names <- c(nb_names, sub_names[vs])
+    nb_names <- unique(setdiff(nb_names, kept_vec))
     unique(c(discarded_vec, nb_names))
   }
 
@@ -345,13 +334,14 @@ rkn_select_criteria_6plus <- function(fam_df,
     ), pre_reason_extra = pre_reason_map))
   }
 
-  # ---- residual pass: same recognizer, reused --------------------------------
   g_r <- igraph::induced_subgraph(g_sub, vids = undecided)
   res_r <- resolve_component(g_r, seed_offset = 1L, fixed_kept = kept_apriori)
 
   if (is.null(res_r)) {
     sets <- igraph::largest_ivs(g_r)
-    candidate_sets <- lapply(sets, function(s) igraph::V(g_r)$name[s])
+    r_names <- igraph::V(g_r)$name
+    candidate_sets <- vector("list", length(sets))
+    for (j in seq_along(sets)) candidate_sets[[j]] <- r_names[sets[[j]]]
     picked <- .rkn_select_among_candidates(
       candidate_sets = candidate_sets, fam_df = fam_df, fixed_kept_ids = kept_apriori,
       criterion_primary = criterion_primary, criterion_secondary = criterion_secondary,
@@ -363,11 +353,10 @@ rkn_select_criteria_6plus <- function(fam_df,
       kept_aftercriteria = picked$chosen_set,
       discarded_aftercriteria = setdiff(igraph::V(g_r)$name, picked$chosen_set),
       candidate_simple = character(0), candidate_complex = igraph::V(g_r)$name,
-      pre_reason = setNames(rep("largest_ivs_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
+      pre_reason = stats::setNames(rep("largest_ivs_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
     )
   }
 
-  # Combine the peeling loop's a priori decisions with the residual's resolution.
   combined <- list(
     structure_name = res_r$structure_name, used_largest_ivs = res_r$used_largest_ivs,
     kept_apriori = unique(c(kept_apriori, res_r$kept_apriori)),

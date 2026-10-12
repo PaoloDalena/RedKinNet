@@ -59,15 +59,16 @@ rkn_select_random_6plus <- function(fam_df,
   if (is.null(fam_df$.name) && !is.null(fam_df$name)) fam_df$.name <- fam_df$name
   if (is.null(fam_df$name)  && !is.null(fam_df$.name)) fam_df$name  <- fam_df$.name
 
-  if (is.null(g_sub)) stop("g_sub non può essere NULL.")
-  if (is.null(igraph::V(g_sub)$name)) stop("g_sub deve avere igraph::V(g_sub)$name valorizzato.")
+  if (is.null(g_sub)) stop("`g_sub` must not be NULL.")
+  if (is.null(igraph::V(g_sub)$name)) stop("`g_sub` must have vertex names (igraph::V(g_sub)$name).")
   if (!all(fam_df$.name %in% igraph::V(g_sub)$name)) {
-    stop("fam_df$.name contiene nodi non presenti in g_sub.")
+    stop("`fam_df$.name` contains nodes that are not in `g_sub`.")
   }
 
   n0 <- nrow(fam_df)
   if (n0 < 6) {
-    warning("rkn_select_random_6plus chiamata con n < 6. Restituisco fallback: tutti discarded.")
+    warning("rkn_select_random_6plus() called on a component with fewer than 6 nodes; ",
+            "all nodes are returned as discarded.")
     kept_final <- character(0)
     discarded_final <- fam_df$.name
     if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
@@ -103,19 +104,24 @@ rkn_select_random_6plus <- function(fam_df,
     ))
   }
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    withr::local_preserve_seed()
+    set.seed(seed)
+  }
 
   all_names <- fam_df$.name
   kept_apriori <- character(0)
   discarded_apriori <- character(0)
 
-  pre_reason_map <- setNames(rep(NA_character_, length(all_names)), all_names)
+  pre_reason_map <- stats::setNames(rep(NA_character_, length(all_names)), all_names)
 
   discard_neighbors_of_kept <- function(g, kept_vec, discarded_vec) {
     if (length(kept_vec) == 0) return(discarded_vec)
     nb_idx <- igraph::neighborhood(g, order = 1, nodes = kept_vec)
-    nb_names <- unique(unlist(lapply(nb_idx, function(vs) igraph::V(g)$name[vs])))
-    nb_names <- setdiff(nb_names, kept_vec)
+    g_names <- igraph::V(g)$name
+    nb_names <- character(0)
+    for (vs in nb_idx) nb_names <- c(nb_names, g_names[vs])
+    nb_names <- setdiff(unique(nb_names), kept_vec)
     unique(c(discarded_vec, nb_names))
   }
 
@@ -248,7 +254,7 @@ rkn_select_random_6plus <- function(fam_df,
 
       A <- ord[seq(1, length(ord), by = 2)]
       B <- ord[seq(2, length(ord), by = 2)]
-      kept_afterrandomization <- if (runif(1) < 0.5) A else B
+      kept_afterrandomization <- if (stats::runif(1) < 0.5) A else B
       discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
 
       kept_final <- kept_afterrandomization
@@ -362,9 +368,8 @@ rkn_select_random_6plus <- function(fam_df,
     if (n_all %% 2 == 0) {
       for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "cycle_even_bipartite"
 
-      # --- Build an explicit cyclic ordering via deterministic traversal -------
-      # Note: ordering vertices by graph distances is insufficient for cycles,
-      # because multiple vertices share the same distance and ties are arbitrary.
+      # Explicit cyclic ordering by traversal: ordering by graph distance is
+      # insufficient for cycles, because several vertices share the same distance.
       start <- all_names[1]
       nbrs <- igraph::neighbors(g_sub, start, mode = "all")
       if (length(nbrs) != 2) stop("Cycle traversal invariant violated: start node degree is not 2.")
@@ -380,18 +385,17 @@ rkn_select_random_6plus <- function(fam_df,
         nb <- igraph::neighbors(g_sub, curr, mode = "all")
         nb_names <- igraph::V(g_sub)$name[nb]
 
-        # In a simple cycle, each vertex has exactly two neighbors.
-        # Advance by selecting the neighbor that is not the previous vertex.
+        # Each vertex of a simple cycle has two neighbours: advance to the one not just visited.
         nxt <- setdiff(nb_names, prev)
         if (length(nxt) != 1) stop("Cycle traversal failed: non-unique next vertex.")
         prev <- curr
         curr <- nxt
       }
 
-      # --- Bipartition along the cyclic ordering (guarantees independence) -----
+      # Alternating along the cyclic ordering guarantees independence.
       A <- ord[seq(1, n_all, by = 2)]
       B <- ord[seq(2, n_all, by = 2)]
-      kept_afterrandomization <- if (runif(1) < 0.5) A else B
+      kept_afterrandomization <- if (stats::runif(1) < 0.5) A else B
       discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
 
       used_largest_ivs <- FALSE
@@ -403,7 +407,9 @@ rkn_select_random_6plus <- function(fam_df,
 
       g_ind <- igraph::induced_subgraph(g_sub, vids = all_names)
       sets <- igraph::largest_ivs(g_ind)
-      set_names <- lapply(sets, function(s) igraph::V(g_ind)$name[s])
+      ind_names <- igraph::V(g_ind)$name
+      set_names <- vector("list", length(sets))
+      for (j in seq_along(sets)) set_names[[j]] <- ind_names[sets[[j]]]
       chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
 
       kept_afterrandomization <- chosen_names
@@ -582,7 +588,7 @@ rkn_select_random_6plus <- function(fam_df,
     if (!isTRUE(b$res)) return(character(0))
     A <- igraph::V(g)$name[b$type]
     B <- igraph::V(g)$name[!b$type]
-    if (runif(1) < 0.5) A else B
+    if (stats::runif(1) < 0.5) A else B
   }
 
   if (nr >= 6 && sum(degr == 1) == (nr - 1) && sum(degr == (nr - 1)) == 1) {
@@ -670,7 +676,9 @@ rkn_select_random_6plus <- function(fam_df,
 
     g_ind <- igraph::induced_subgraph(g_sub, vids = fallback_nodes)
     sets <- igraph::largest_ivs(g_ind)
-    set_names <- lapply(sets, function(s) igraph::V(g_ind)$name[s])
+    ind_names <- igraph::V(g_ind)$name
+    set_names <- vector("list", length(sets))
+    for (j in seq_along(sets)) set_names[[j]] <- ind_names[sets[[j]]]
     chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
 
     kept_afterrandomization <- unique(c(kept_afterrandomization, chosen_names))
@@ -736,13 +744,13 @@ rkn_select_random_6plus <- function(fam_df,
                                        pre_reason_map = NULL) {
   ids <- all_names
 
-  pre_class <- setNames(rep("candidate_complex", length(ids)), ids) # default “non banale”
+  pre_class <- stats::setNames(rep("candidate_complex", length(ids)), ids)
   pre_class[candidate_simple] <- "candidate_simple"
   pre_class[candidate_complex] <- "candidate_complex"
   pre_class[discarded_apriori] <- "discarded_apriori"
   pre_class[kept_apriori] <- "kept_apriori"
 
-  post_class <- setNames(rep(NA_character_, length(ids)), ids)
+  post_class <- stats::setNames(rep(NA_character_, length(ids)), ids)
   post_class[kept_final] <- "kept"
   post_class[discarded_final] <- "discarded"
 
@@ -760,72 +768,5 @@ rkn_select_random_6plus <- function(fam_df,
     is_selected = unname(post_class[ids] == "kept"),
     pre_reason = pre_reason,
     stringsAsFactors = FALSE
-  )
-}
-
-
-#' Internal helper: apply 6+ selection over a family object table
-#'
-#' @description Convenience wrapper that maps the 6+ selection over a table of family objects and returns summary tables.
-#'
-#' @keywords internal
-#' @noRd
-apply_rkn_select_random_6plus <- function(synth, seed = 999) {
-
-  res <- synth$family_objects %>%
-    dplyr::mutate(
-      out = purrr::pmap(
-        list(fam_df, g_sub, family_id),
-        function(fam_df, g_sub, family_id) {
-          rkn_select_random_6plus(
-            fam_df = fam_df,
-            g_sub = g_sub,
-            seed = seed + as.integer(family_id),
-            return_diagnostics = TRUE
-          )
-        }
-      ),
-      structure_name   = purrr::map_chr(out, "structure_name"),
-      used_largest_ivs = purrr::map_lgl(out, "used_largest_ivs"),
-      n_kept           = purrr::map_int(out, ~ length(.x$kept)),
-      n_discarded      = purrr::map_int(out, ~ length(.x$discarded)),
-      n_kept_apriori   = purrr::map_int(out, ~ length(.x$kept_apriori)),
-      n_discarded_apriori = purrr::map_int(out, ~ length(.x$discarded_apriori)),
-      n_simple         = purrr::map_int(out, ~ length(.x$candidate_simple)),
-      n_complex        = purrr::map_int(out, ~ length(.x$candidate_complex))
-    )
-
-  summary_df <- res %>%
-    dplyr::select(
-      family_id, size, type, structure_name, used_largest_ivs,
-      n_kept, n_discarded, n_kept_apriori, n_discarded_apriori,
-      n_simple, n_complex
-    )
-
-  long_nodes <- res %>%
-    dplyr::transmute(
-      family_id,
-      size,
-      type,
-      structure_name,
-      used_largest_ivs,
-      kept_apriori = purrr::map(out, "kept_apriori"),
-      discarded_apriori = purrr::map(out, "discarded_apriori"),
-      candidate_simple = purrr::map(out, "candidate_simple"),
-      candidate_complex = purrr::map(out, "candidate_complex"),
-      kept = purrr::map(out, "kept"),
-      discarded = purrr::map(out, "discarded")
-    ) %>%
-    tidyr::pivot_longer(
-      cols = c(kept_apriori, discarded_apriori, candidate_simple, candidate_complex, kept, discarded),
-      names_to = "class",
-      values_to = "nodes"
-    ) %>%
-    tidyr::unnest(nodes)
-
-  list(
-    results_by_family = res,
-    summary_df = summary_df,
-    long_nodes_df = long_nodes
   )
 }

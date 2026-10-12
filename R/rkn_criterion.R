@@ -1,5 +1,3 @@
-# ---------- Internal constructor -------------------------------------------
-
 #' Internal constructor for `rkn_criterion` objects
 #'
 #' @keywords internal
@@ -185,8 +183,8 @@ rkn_criterion_category_balance <- function(covariate, target_props = NULL) {
       ref_props <- table(all_x) / length(all_x)
 
       lvls <- union(names(kept_props), names(ref_props))
-      kp <- setNames(rep(0, length(lvls)), lvls)
-      rp <- setNames(rep(0, length(lvls)), lvls)
+      kp <- stats::setNames(rep(0, length(lvls)), lvls)
+      rp <- stats::setNames(rep(0, length(lvls)), lvls)
       kp[names(kept_props)] <- as.numeric(kept_props)
       rp[names(ref_props)] <- as.numeric(ref_props)
     } else {
@@ -195,7 +193,7 @@ rkn_criterion_category_balance <- function(covariate, target_props = NULL) {
       # assigned an implicit target of zero: it simply is not part of the comparison,
       # though its members still dilute the proportions of the targeted categories.
       lvls <- names(target_props)
-      kp <- setNames(rep(0, length(lvls)), lvls)
+      kp <- stats::setNames(rep(0, length(lvls)), lvls)
       matched <- intersect(names(kept_props), lvls)
       kp[matched] <- as.numeric(kept_props[matched])
       rp <- as.numeric(target_props)

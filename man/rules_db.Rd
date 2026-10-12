@@ -12,8 +12,10 @@ rules_db
 }
 \description{
 A curated list of structural rules used by \code{\link{rkn_select_random_upto5}}
-to perform deterministic (a priori) keep/discard decisions and to define
-conflict groups for randomized resolution.
+and \code{\link{rkn_select_criteria_upto5}} to perform deterministic (a priori)
+keep/discard decisions and to define conflict groups for the resolution of the
+remaining ambiguity. Every connected graph with at most 5 nodes matches exactly one
+rule.
 }
 \details{
 Each element of the list is a rule with fields such as:
@@ -24,12 +26,14 @@ Each element of the list is a rule with fields such as:
 \item \code{kept_rules}
 \item \code{discarded_rules}
 \item \code{conflict_rules}
-\item optional \code{alpha}, \code{kept_fn}, \code{discarded_fn}
+\item optional \code{use_largest_ivs} (logical): if \code{TRUE}, the remaining
+ambiguity is resolved by choosing among all maximum independent sets of the
+eligible nodes
+\item optional \code{kept_fn}, \code{discarded_fn}
 }
 }
 \examples{
-# Inspect available structure names ruled
-sapply(rules_db, "[[", 1)
-
+length(rules_db)
+rules_db[[2]]$name
 }
 \keyword{datasets}

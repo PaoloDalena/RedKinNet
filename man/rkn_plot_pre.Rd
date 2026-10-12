@@ -28,7 +28,7 @@ computationally expensive; it can be very slow for networks with many families/c
 \item{vertex_label}{Logical. If TRUE, vertex labels (\code{V(g)$name}) are displayed.}
 
 \item{show_legend}{Logical. If TRUE, a legend mapping colors to family IDs is shown.
-For readability, the legend is displayed only if the number of families is ≤ 25.}
+For readability, the legend is displayed only if there are at most 25 families.}
 
 \item{main}{Character. Title of the plot.}
 }

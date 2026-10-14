@@ -75,23 +75,16 @@ rkn_select_random <- function(g,
 
   # Extract a per-family data.frame of vertex attributes (robust to missing attributes).
   .fam_df_from_graph <- function(g_sub) {
-    vn <- igraph::V(g_sub)$name
-    attrs <- igraph::vertex_attr(g_sub)
-    df <- data.frame(.name = vn, stringsAsFactors = FALSE)
-    if (length(attrs) > 0) {
-      for (nm in names(attrs)) df[[nm]] <- attrs[[nm]]
+    cols <- c(list(.name = igraph::V(g_sub)$name), igraph::vertex_attr(g_sub))
+    if (is.null(cols[["name"]])) cols[["name"]] <- cols[[".name"]]
+    # Structural measures required by rules_db; max_path_length is the node eccentricity.
+    if (is.null(cols[["degree"]])) {
+      cols[["degree"]] <- as.integer(igraph::degree(g_sub, mode = "all"))
     }
-    if (is.null(df$name)) df$name <- df$.name
-
-    # Ensure structural measures required by rules_db are present
-    if (is.null(df$degree)) {
-      df$degree <- as.integer(igraph::degree(g_sub, mode = "all"))
+    if (is.null(cols[["max_path_length"]])) {
+      cols[["max_path_length"]] <- as.integer(igraph::eccentricity(g_sub, mode = "all"))
     }
-    if (is.null(df$max_path_length)) {
-      # Node eccentricity = maximum shortest-path length from each node within the component
-      df$max_path_length <- as.integer(igraph::eccentricity(g_sub, mode = "all"))
-    }
-    df
+    do.call(.rkn_df, cols)
   }
 
   if (isTRUE(diagnostics) && isTRUE(return_results_by_family)) {

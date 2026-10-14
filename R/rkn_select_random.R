@@ -100,8 +100,8 @@ rkn_select_random <- function(g,
     results_by_family <- NULL
   }
 
-  kept_all <- character(0)
-  discarded_all <- character(0)
+  kept_list <- vector("list", n_fam)
+  discarded_list <- vector("list", n_fam)
 
   used_largest_ivs_vec <- rep(NA, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
@@ -133,8 +133,8 @@ rkn_select_random <- function(g,
 
     if (!is.null(results_by_family)) results_by_family[[i]] <- out
 
-    kept_all <- unique(c(kept_all, out$kept))
-    discarded_all <- unique(c(discarded_all, out$discarded))
+    kept_list[[i]] <- out$kept
+    discarded_list[[i]] <- out$discarded
 
     if (diagnostics) {
       used_largest_ivs_vec[i] <- if (!is.null(out$used_largest_ivs)) isTRUE(out$used_largest_ivs) else NA
@@ -162,6 +162,9 @@ rkn_select_random <- function(g,
       )
     }
   }
+
+  kept_all <- unique(unlist(kept_list, use.names = FALSE))
+  discarded_all <- unique(unlist(discarded_list, use.names = FALSE))
 
   if (isTRUE(verbose)) {
     n_upto5 <- sum(fam_sizes <= 5)

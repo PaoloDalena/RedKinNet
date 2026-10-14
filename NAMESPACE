@@ -2,6 +2,8 @@
 
 S3method(print,rkn_criterion)
 S3method(print,rkn_selection)
+S3method(print,summary.rkn_selection)
+S3method(summary,rkn_selection)
 export(rkn_criterion_category_balance)
 export(rkn_criterion_cutoff)
 export(rkn_criterion_level)

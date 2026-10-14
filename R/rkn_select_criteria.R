@@ -79,16 +79,22 @@ rkn_select_criteria <- function(g,
   .fmt_num <- function(x, digits = 2) sprintf(paste0("%.", digits, "f"), x)
 
   # Extract a per-family data.frame of vertex attributes (robust to missing attributes).
-  .fam_df_from_graph <- function(g_sub) {
-    cols <- c(list(.name = igraph::V(g_sub)$name), igraph::vertex_attr(g_sub))
-    if (is.null(cols[["name"]])) cols[["name"]] <- cols[[".name"]]
-    # Structural measures required by rules_db; max_path_length is the node eccentricity.
-    if (is.null(cols[["degree"]])) {
-      cols[["degree"]] <- as.integer(igraph::degree(g_sub, mode = "all"))
-    }
-    if (is.null(cols[["max_path_length"]])) {
-      cols[["max_path_length"]] <- as.integer(igraph::eccentricity(g_sub, mode = "all"))
-    }
+  # Node attributes and the structural measures required by rules_db are computed once
+  # on the whole graph: repeating these igraph calls for every family dominates the run
+  # time on large networks. Degree and eccentricity (max_path_length) are within-family
+  # quantities, since igraph ignores vertices in other components.
+  node_cols <- c(list(.name = igraph::V(g)$name), igraph::vertex_attr(g))
+  if (is.null(node_cols[["name"]])) node_cols[["name"]] <- node_cols[[".name"]]
+  if (is.null(node_cols[["degree"]])) {
+    node_cols[["degree"]] <- as.integer(igraph::degree(g, mode = "all"))
+  }
+  if (is.null(node_cols[["max_path_length"]])) {
+    node_cols[["max_path_length"]] <- as.integer(igraph::eccentricity(g, mode = "all"))
+  }
+
+  .fam_df_from_ids <- function(ids) {
+    cols <- node_cols
+    for (j in seq_along(cols)) cols[[j]] <- cols[[j]][ids]
     do.call(.rkn_df, cols)
   }
 
@@ -117,7 +123,7 @@ rkn_select_criteria <- function(g,
   for (i in seq_len(n_fam)) {
     g_sub <- igraph::induced_subgraph(g, vids = fam_idx[[i]])
 
-    fam_df <- .fam_df_from_graph(g_sub)
+    fam_df <- .fam_df_from_ids(fam_idx[[i]])
     fam_seed <- if (is.null(seed)) NULL else as.integer(seed + i)
 
     if (nrow(fam_df) <= 5) {

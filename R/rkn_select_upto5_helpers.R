@@ -44,13 +44,12 @@
     pre_reason[names(pre_reason_map)] <- unname(pre_reason_map)
   }
 
-  data.frame(
+  .rkn_df(
     id = ids,
     pre_class = unname(pre_class[ids]),
     post_class = unname(post_class[ids]),
     is_selected = unname(post_class[ids] == "kept"),
-    pre_reason = unname(pre_reason[ids]),
-    stringsAsFactors = FALSE
+    pre_reason = unname(pre_reason[ids])
   )
 }
 

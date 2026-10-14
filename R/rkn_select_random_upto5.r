@@ -101,20 +101,18 @@ rkn_select_random_upto5 <- function(fam_df,
       return(list(kept = kept_final, discarded = discarded_final))
     }
 
-    node_diagnostics <- data.frame(
+    node_diagnostics <- .rkn_df(
       id = fam_df$.name,
       pre_class = rep("discarded_apriori", nrow(fam_df)),
       post_class = rep("discarded", nrow(fam_df)),
       is_selected = rep(FALSE, nrow(fam_df)),
-      pre_reason = rep("no_matching_rule", nrow(fam_df)),
-      stringsAsFactors = FALSE
+      pre_reason = rep("no_matching_rule", nrow(fam_df))
     )
 
-    family_diagnostics <- data.frame(
+    family_diagnostics <- .rkn_df(
       n_nodes = nrow(fam_df),
       used_largest_ivs = FALSE,
-      structure_name = "unknown",
-      stringsAsFactors = FALSE
+      structure_name = "unknown"
     )
 
     return(list(
@@ -227,11 +225,10 @@ rkn_select_random_upto5 <- function(fam_df,
     pre_reason_map = pre_reason_map
   )
 
-  family_diagnostics <- data.frame(
+  family_diagnostics <- .rkn_df(
     n_nodes = nrow(fam_df),
     used_largest_ivs = used_largest_ivs,
-    structure_name = rule$name,
-    stringsAsFactors = FALSE
+    structure_name = rule$name
   )
 
   list(

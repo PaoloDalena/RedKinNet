@@ -74,19 +74,17 @@ rkn_select_random_6plus <- function(fam_df,
     discarded_final <- fam_df$.name
     if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
 
-    node_diag <- data.frame(
+    node_diag <- .rkn_df(
       id = fam_df$.name,
       pre_class = rep("discarded_apriori", length(fam_df$.name)),
       post_class = rep("discarded", length(fam_df$.name)),
       is_selected = rep(FALSE, length(fam_df$.name)),
-      pre_reason = rep("n_lt_6_fallback", length(fam_df$.name)),
-      stringsAsFactors = FALSE
+      pre_reason = rep("n_lt_6_fallback", length(fam_df$.name))
     )
-    fam_diag <- data.frame(
+    fam_diag <- .rkn_df(
       n_nodes = n0,
       used_largest_ivs = FALSE,
-      structure_name = "n_lt_6_fallback",
-      stringsAsFactors = FALSE
+      structure_name = "n_lt_6_fallback"
     )
 
     return(list(
@@ -159,11 +157,10 @@ rkn_select_random_6plus <- function(fam_df,
       pre_reason_map = pre_reason_map
     )
 
-    fam_diag <- data.frame(
+    fam_diag <- .rkn_df(
       n_nodes = n_all,
       used_largest_ivs = FALSE,
-      structure_name = structure_name,
-      stringsAsFactors = FALSE
+      structure_name = structure_name
     )
 
     return(list(
@@ -227,11 +224,10 @@ rkn_select_random_6plus <- function(fam_df,
         pre_reason_map = pre_reason_map
       )
 
-      fam_diag <- data.frame(
+      fam_diag <- .rkn_df(
         n_nodes = n_all,
         used_largest_ivs = FALSE,
-        structure_name = structure_name,
-        stringsAsFactors = FALSE
+        structure_name = structure_name
       )
 
       return(list(
@@ -274,11 +270,10 @@ rkn_select_random_6plus <- function(fam_df,
         pre_reason_map = pre_reason_map
       )
 
-      fam_diag <- data.frame(
+      fam_diag <- .rkn_df(
         n_nodes = n_all,
         used_largest_ivs = FALSE,
-        structure_name = structure_name,
-        stringsAsFactors = FALSE
+        structure_name = structure_name
       )
 
       return(list(
@@ -331,11 +326,10 @@ rkn_select_random_6plus <- function(fam_df,
       pre_reason_map = pre_reason_map
     )
 
-    fam_diag <- data.frame(
+    fam_diag <- .rkn_df(
       n_nodes = n_all,
       used_largest_ivs = FALSE,
-      structure_name = structure_name,
-      stringsAsFactors = FALSE
+      structure_name = structure_name
     )
 
     return(list(
@@ -433,11 +427,10 @@ rkn_select_random_6plus <- function(fam_df,
       pre_reason_map = pre_reason_map
     )
 
-    fam_diag <- data.frame(
+    fam_diag <- .rkn_df(
       n_nodes = n_all,
       used_largest_ivs = used_largest_ivs,
-      structure_name = structure_name,
-      stringsAsFactors = FALSE
+      structure_name = structure_name
     )
 
     return(list(
@@ -545,11 +538,10 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_final = discarded_final,
       pre_reason_map = pre_reason_map
     )
-    fam_diag <- data.frame(
+    fam_diag <- .rkn_df(
       n_nodes = n0,
       used_largest_ivs = FALSE,
-      structure_name = "reduced_to_empty",
-      stringsAsFactors = FALSE
+      structure_name = "reduced_to_empty"
     )
 
     return(list(
@@ -706,11 +698,10 @@ rkn_select_random_6plus <- function(fam_df,
     pre_reason_map = pre_reason_map
   )
 
-  fam_diag <- data.frame(
+  fam_diag <- .rkn_df(
     n_nodes = n0,
     used_largest_ivs = used_largest_ivs,
-    structure_name = structure_name,
-    stringsAsFactors = FALSE
+    structure_name = structure_name
   )
 
   return(list(
@@ -762,12 +753,11 @@ rkn_select_random_6plus <- function(fam_df,
     pre_reason <- unname(pre_reason_map[ids])
   }
 
-  data.frame(
+  .rkn_df(
     id = ids,
     pre_class = unname(pre_class[ids]),
     post_class = unname(post_class[ids]),
     is_selected = unname(post_class[ids] == "kept"),
-    pre_reason = pre_reason,
-    stringsAsFactors = FALSE
+    pre_reason = pre_reason
   )
 }

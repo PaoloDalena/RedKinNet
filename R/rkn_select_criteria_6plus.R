@@ -163,8 +163,7 @@ rkn_select_criteria_6plus <- function(fam_df,
       kept_final = kept_final, discarded_final = discarded_final,
       pre_reason_map = stats::setNames(rep("n_lt_6_fallback", n0), all_names)
     )
-    fam_diag <- data.frame(n_nodes = n0, used_largest_ivs = FALSE, structure_name = "n_lt_6_fallback",
-                           stringsAsFactors = FALSE)
+    fam_diag <- .rkn_df(n_nodes = n0, used_largest_ivs = FALSE, structure_name = "n_lt_6_fallback")
     return(list(
       structure_name = "n_lt_6_fallback", kept_apriori = character(0), discarded_apriori = all_names,
       candidate_simple = character(0), candidate_complex = character(0),
@@ -229,8 +228,8 @@ rkn_select_criteria_6plus <- function(fam_df,
       candidate_simple = res$candidate_simple, candidate_complex = res$candidate_complex,
       kept_final = kept_final, discarded_final = discarded_final, pre_reason_map = pre_reason_map
     )
-    fam_diag <- data.frame(n_nodes = n0, used_largest_ivs = res$used_largest_ivs,
-                           structure_name = res$structure_name, stringsAsFactors = FALSE)
+    fam_diag <- .rkn_df(n_nodes = n0, used_largest_ivs = res$used_largest_ivs,
+                           structure_name = res$structure_name)
 
     list(
       structure_name = res$structure_name, kept_apriori = unique(res$kept_apriori),

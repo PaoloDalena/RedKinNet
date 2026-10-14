@@ -105,7 +105,16 @@ rkn_select_random <- function(g,
 
   used_largest_ivs_vec <- rep(NA, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
-  family_summary_list <- if (diagnostics) vector("list", n_fam) else NULL
+  if (diagnostics) {
+    fs_selector <- character(n_fam)
+    fs_structure <- rep(NA_character_, n_fam)
+    fs_n_kept <- integer(n_fam)
+    fs_n_discarded <- integer(n_fam)
+    fs_n_kept_apriori <- rep(NA_integer_, n_fam)
+    fs_n_discarded_apriori <- rep(NA_integer_, n_fam)
+    fs_n_candidate_simple <- rep(NA_integer_, n_fam)
+    fs_n_candidate_complex <- rep(NA_integer_, n_fam)
+  }
 
   for (i in seq_len(n_fam)) {
     g_sub <- igraph::induced_subgraph(g, vids = fam_idx[[i]])
@@ -139,27 +148,15 @@ rkn_select_random <- function(g,
     if (diagnostics) {
       used_largest_ivs_vec[i] <- if (!is.null(out$used_largest_ivs)) isTRUE(out$used_largest_ivs) else NA
 
-      nd <- out$node_diagnostics
-      if (!is.null(nd) && nrow(nd) > 0) {
-        nd$family_id <- i
-        nd$family_size <- nrow(fam_df)
-      }
-      node_diag_list[[i]] <- nd
-
-      family_summary_list[[i]] <- data.frame(
-        family_id = i,
-        family_size = nrow(fam_df),
-        selector = selector_used,
-        structure_name = if (!is.null(out$structure_name)) out$structure_name else NA_character_,
-        used_largest_ivs = used_largest_ivs_vec[i],
-        n_kept = length(out$kept),
-        n_discarded = length(out$discarded),
-        n_kept_apriori = if (!is.null(out$kept_apriori)) length(out$kept_apriori) else NA_integer_,
-        n_discarded_apriori = if (!is.null(out$discarded_apriori)) length(out$discarded_apriori) else NA_integer_,
-        n_candidate_simple = if (!is.null(out$candidate_simple)) length(out$candidate_simple) else NA_integer_,
-        n_candidate_complex = if (!is.null(out$candidate_complex)) length(out$candidate_complex) else NA_integer_,
-        stringsAsFactors = FALSE
-      )
+      node_diag_list[[i]] <- out$node_diagnostics
+      fs_selector[i] <- selector_used
+      if (!is.null(out$structure_name)) fs_structure[i] <- out$structure_name
+      fs_n_kept[i] <- length(out$kept)
+      fs_n_discarded[i] <- length(out$discarded)
+      if (!is.null(out$kept_apriori)) fs_n_kept_apriori[i] <- length(out$kept_apriori)
+      if (!is.null(out$discarded_apriori)) fs_n_discarded_apriori[i] <- length(out$discarded_apriori)
+      if (!is.null(out$candidate_simple)) fs_n_candidate_simple[i] <- length(out$candidate_simple)
+      if (!is.null(out$candidate_complex)) fs_n_candidate_complex[i] <- length(out$candidate_complex)
     }
   }
 
@@ -202,11 +199,35 @@ rkn_select_random <- function(g,
     return(kept_all)
   }
 
+  # Tables are assembled once here: building them family by family is the main
+  # cost of the diagnostics.
+  node_diagnostics <- .rkn_rbind_rows(node_diag_list)
+  nd_rows <- integer(n_fam)
+  for (i in seq_len(n_fam)) {
+    if (!is.null(node_diag_list[[i]])) nd_rows[i] <- nrow(node_diag_list[[i]])
+  }
+  node_diagnostics$family_id <- rep(seq_len(n_fam), nd_rows)
+  node_diagnostics$family_size <- rep(unname(fam_sizes), nd_rows)
+
+  family_summary <- .rkn_df(
+    family_id = seq_len(n_fam),
+    family_size = unname(fam_sizes),
+    selector = fs_selector,
+    structure_name = fs_structure,
+    used_largest_ivs = used_largest_ivs_vec,
+    n_kept = fs_n_kept,
+    n_discarded = fs_n_discarded,
+    n_kept_apriori = fs_n_kept_apriori,
+    n_discarded_apriori = fs_n_discarded_apriori,
+    n_candidate_simple = fs_n_candidate_simple,
+    n_candidate_complex = fs_n_candidate_complex
+  )
+
   out_main <- list(
     kept = kept_all,
     discarded = discarded_all,
-    node_diagnostics = .rkn_rbind_rows(node_diag_list),
-    family_summary = .rkn_rbind_rows(family_summary_list)
+    node_diagnostics = node_diagnostics,
+    family_summary = family_summary
   )
 
   if (isTRUE(return_results_by_family)) {

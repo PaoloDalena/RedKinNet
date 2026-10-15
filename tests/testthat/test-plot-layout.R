@@ -34,3 +34,22 @@ test_that("the grid layout gives each family a region that no other family enter
   }
   expect_false(overlap)
 })
+
+test_that("a family keeps its shape when the smaller families are filtered out", {
+  g <- make_network(31)
+  comp <- igraph::components(g)
+  keep <- which(comp$csize[comp$membership] >= 8)
+  sub <- igraph::induced_subgraph(g, keep)
+  shape <- function(xy) {
+    xy[, 1] <- xy[, 1] - mean(xy[, 1])
+    xy[, 2] <- xy[, 2] - mean(xy[, 2])
+    xy / max(abs(xy))
+  }
+  for (layout in c("components", "grid")) {
+    full <- .rkn_layout(g, layout, seed = 1)
+    part <- .rkn_layout(sub, layout, seed = 1, family_id = comp$membership[keep])
+    for (f in unique(comp$membership[keep])) {
+      expect_equal(shape(part[comp$membership[keep] == f, ]), shape(full[comp$membership == f, ]))
+    }
+  }
+})

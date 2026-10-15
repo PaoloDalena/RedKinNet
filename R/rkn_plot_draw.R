@@ -15,9 +15,25 @@
                           candidate_simple = "decided among single candidates",
                           candidate_complex = "decided among alternative sets")
 
+#' Internal helper: keep the families with at least a given number of members
+#'
+#' Returns the subgraph of the families of \code{g} with at least
+#' \code{min_family_size} members and, for each of its vertices, the identifier of its
+#' family in \code{g}, which the layout uses to keep the shape of each family.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_filter_families <- function(g, min_family_size) {
+  comp <- igraph::components(g)
+  keep <- which(comp$csize[comp$membership] >= min_family_size)
+  if (length(keep) == 0) stop("No family has at least ", min_family_size, " members.", call. = FALSE)
+  list(g = igraph::induced_subgraph(g, keep), family_id = comp$membership[keep])
+}
+
 #' Internal helper: draw a network of families
 #'
-#' Lays out \code{g} with \code{.rkn_layout()} and draws it with straight edges. When
+#' Lays out \code{g} with \code{.rkn_layout()}, passing on \code{family_id}, and draws it
+#' with straight edges. When
 #' \code{vertex_size} is \code{NULL}, it decreases with the number of vertices, and
 #' frames are thinned on vertices smaller than size 4. The
 #' legend, a list with elements \code{labels}, \code{fill}, \code{ncol} and optionally
@@ -30,9 +46,9 @@
 #'
 #' @keywords internal
 #' @noRd
-.rkn_draw_network <- function(g, fill, frame_col, frame_width, layout, seed, vertex_size,
-                              edge_width, vertex_label, legend, main) {
-  xy <- .rkn_layout(g, layout, seed)
+.rkn_draw_network <- function(g, fill, frame_col, frame_width, layout, seed, family_id,
+                              vertex_size, edge_width, vertex_label, legend, main) {
+  xy <- .rkn_layout(g, layout, seed, family_id)
   if (is.null(vertex_size)) vertex_size <- min(6, max(0.5, 55 / sqrt(igraph::vcount(g))))
   # On small vertices a full-width frame would hide the fill colour.
   frame_width <- frame_width * min(1, vertex_size / 4)

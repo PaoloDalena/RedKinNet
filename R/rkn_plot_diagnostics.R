@@ -11,9 +11,11 @@
 #' @keywords internal
 #' @noRd
 .rkn_plot_diagnostics <- function(g, res, palette = "colorblind", show_outcome = TRUE,
-                                  layout = "auto", seed = 1, vertex_size = NULL,
-                                  edge_width = 1, vertex_label = FALSE,
+                                  layout = "auto", seed = 1, min_family_size = 1,
+                                  vertex_size = NULL, edge_width = 1, vertex_label = FALSE,
                                   show_legend = TRUE, main = NULL) {
+  fam <- .rkn_filter_families(g, min_family_size)
+  g <- fam$g
   pal <- .rkn_palettes[[palette]]
   nd <- res$node_diagnostics
   row <- match(igraph::V(g)$name, nd$id)
@@ -31,7 +33,8 @@
   }
 
   if (is.null(main)) {
-    main <- sprintf("How each individual was decided (%s of %s selected)",
+    main <- sprintf("How each individual was decided%s (%s of %s selected)",
+                    if (min_family_size > 1) sprintf(" in families of %d+", min_family_size) else "",
                     format(sum(is_kept), big.mark = ","), format(n, big.mark = ","))
   }
   present <- names(.rkn_decision_labels)[names(.rkn_decision_labels) %in% decision]
@@ -40,7 +43,8 @@
                  title = if (isTRUE(show_outcome)) "Filled: selected. Hollow: discarded.")
 
   .rkn_draw_network(g, fill = fill, frame_col = frame_col, frame_width = frame_width,
-                    layout = layout, seed = seed, vertex_size = vertex_size,
+                    layout = layout, seed = seed, family_id = fam$family_id,
+                    vertex_size = vertex_size,
                     edge_width = edge_width, vertex_label = vertex_label,
                     legend = if (isTRUE(show_legend)) legend, main = main)
 }

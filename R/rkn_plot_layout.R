@@ -1,7 +1,10 @@
 #' Internal helper: coordinates of a network of separate families
 #'
 #' Each family (connected component) is laid out on its own with the
-#' Fruchterman-Reingold algorithm, using the seed \code{seed + k} for the k-th family.
+#' Fruchterman-Reingold algorithm, using the seed \code{seed + k} for the family with
+#' identifier k. Identifiers are the component numbers of \code{g} unless
+#' \code{family_id} gives them, one per vertex: a subgraph of whole families then keeps
+#' the identifiers, hence the shapes, of the network it was taken from.
 #' The families are then arranged on the page: packed together by diffusion-limited
 #' aggregation (\code{"components"}, as in \code{igraph::layout_components()}) or given
 #' one cell each, by decreasing size (\code{"grid"}); \code{"auto"} chooses the former
@@ -11,12 +14,14 @@
 #'
 #' @keywords internal
 #' @noRd
-.rkn_layout <- function(g, layout, seed) {
+.rkn_layout <- function(g, layout, seed, family_id = NULL) {
   n <- igraph::vcount(g)
   if (identical(layout, "auto")) layout <- if (n <= 500) "components" else "grid"
   withr::local_preserve_seed()
 
-  fams <- split(seq_len(n), igraph::components(g)$membership)
+  if (is.null(family_id)) family_id <- igraph::components(g)$membership
+  fams <- split(seq_len(n), family_id)
+  ids <- as.integer(names(fams))
   subs <- vector("list", length(fams))
   local <- vector("list", length(fams))
   for (k in seq_along(fams)) {
@@ -24,7 +29,7 @@
     if (length(fams[[k]]) == 1) {
       local[[k]] <- matrix(0, 1, 2)
     } else {
-      set.seed(seed + k)
+      set.seed(seed + ids[k])
       local[[k]] <- igraph::layout_with_fr(subs[[k]])
     }
   }

@@ -53,6 +53,12 @@
 #'   of its family, in the classes 1, 2, 3, 4, 5 and 6 or more; \code{"family"} gives
 #'   each family its own colour, which is useful only for a handful of families and is
 #'   drawn without a legend.
+#' @param min_family_size Integer. Only the families with at least this many members
+#'   are drawn; the default, 1, draws all of them. In a large cohort,
+#'   \code{min_family_size = 6} shows the few large families, where the selection is
+#'   least obvious, which would otherwise be lost among pairs and singletons. Each family
+#'   keeps the shape it has in the plot of the whole network, and the title states the
+#'   filter.
 #' @param vertex_size Numeric. Size of the vertices. By default (\code{NULL}) it
 #'   decreases with the number of individuals. Enlarging the graphics device does not
 #'   separate overlapping vertices, because vertex sizes are relative to the plotting
@@ -78,6 +84,7 @@ rkn_plot_pre <- function(g,
                          layout = c("auto", "components", "grid"),
                          seed = 1,
                          colour_by = c("size", "family"),
+                         min_family_size = 1,
                          vertex_size = NULL,
                          edge_width = 1,
                          vertex_label = FALSE,
@@ -94,6 +101,8 @@ rkn_plot_pre <- function(g,
     stop("V(g)$name must be defined (vertex identifiers are required).")
   }
 
+  fam <- .rkn_filter_families(g, min_family_size)
+  g <- fam$g
   comp <- igraph::components(g)
   fam_size <- comp$csize[comp$membership]
 
@@ -110,12 +119,14 @@ rkn_plot_pre <- function(g,
   }
 
   if (is.null(main)) {
-    main <- sprintf("%s individuals in %s families",
-                    format(igraph::vcount(g), big.mark = ","), format(comp$no, big.mark = ","))
+    main <- sprintf("%s individuals in %s families%s",
+                    format(igraph::vcount(g), big.mark = ","), format(comp$no, big.mark = ","),
+                    if (min_family_size > 1) sprintf(" of %d+ members", min_family_size) else "")
   }
 
   .rkn_draw_network(g, fill = fill, frame_col = "grey25", frame_width = 1,
-                    layout = layout, seed = seed, vertex_size = vertex_size,
+                    layout = layout, seed = seed, family_id = fam$family_id,
+                    vertex_size = vertex_size,
                     edge_width = edge_width, vertex_label = vertex_label,
                     legend = if (isTRUE(show_legend)) legend, main = main)
   invisible(NULL)

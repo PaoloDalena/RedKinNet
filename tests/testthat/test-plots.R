@@ -64,3 +64,19 @@ test_that("the diagnostics plot fills selected individuals and leaves discarded 
   expect_equal(outcome$fill[kept], plain$fill[kept])
   expect_false(any(plain$fill == "white"))
 })
+
+test_that("min_family_size draws only the families with at least that many members", {
+  sel <- make_selection()
+  sizes <- igraph::components(sel$graph)$csize
+  n_large <- sum(sizes[sizes >= 8])
+  expect_lt(n_large, igraph::vcount(sel$graph))
+
+  grDevices::pdf(NULL)
+  post <- .rkn_plot_post(sel$graph, kept = sel$kept, min_family_size = 8)
+  diagnostics <- .rkn_plot_diagnostics(sel$graph, res = sel, min_family_size = 8)
+  expect_no_error(plot(sel, type = "pre", min_family_size = 8))
+  expect_error(plot(sel, min_family_size = 100), "No family has at least 100 members")
+  grDevices::dev.off()
+  expect_length(post$fill, n_large)
+  expect_length(diagnostics$fill, n_large)
+})

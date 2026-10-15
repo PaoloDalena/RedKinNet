@@ -13,6 +13,7 @@
   palette = c("colorblind", "classic"),
   show_outcome = TRUE,
   colour_by = c("size", "family"),
+  min_family_size = 1,
   vertex_size = NULL,
   edge_width = 1,
   vertex_label = FALSE,
@@ -26,6 +27,7 @@ rkn_plot_pre(
   layout = c("auto", "components", "grid"),
   seed = 1,
   colour_by = c("size", "family"),
+  min_family_size = 1,
   vertex_size = NULL,
   edge_width = 1,
   vertex_label = FALSE,
@@ -79,6 +81,13 @@ decided.}
 of its family, in the classes 1, 2, 3, 4, 5 and 6 or more; \code{"family"} gives
 each family its own colour, which is useful only for a handful of families and is
 drawn without a legend.}
+
+\item{min_family_size}{Integer. Only the families with at least this many members
+are drawn; the default, 1, draws all of them. In a large cohort,
+\code{min_family_size = 6} shows the few large families, where the selection is
+least obvious, which would otherwise be lost among pairs and singletons. Each family
+keeps the shape it has in the plot of the whole network, and the title states the
+filter.}
 
 \item{vertex_size}{Numeric. Size of the vertices. By default (\code{NULL}) it
 decreases with the number of individuals. Enlarging the graphics device does not

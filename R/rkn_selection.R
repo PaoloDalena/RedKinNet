@@ -256,9 +256,9 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
 plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"),
                                layout = c("auto", "components", "grid"), seed = 1,
                                palette = c("colorblind", "classic"), show_outcome = TRUE,
-                               colour_by = c("size", "family"), vertex_size = NULL,
-                               edge_width = 1, vertex_label = FALSE, show_legend = TRUE,
-                               main = NULL, ...) {
+                               colour_by = c("size", "family"), min_family_size = 1,
+                               vertex_size = NULL, edge_width = 1, vertex_label = FALSE,
+                               show_legend = TRUE, main = NULL, ...) {
   type <- match.arg(type)
   layout <- match.arg(layout)
   palette <- match.arg(palette)
@@ -269,7 +269,8 @@ plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"),
     type <- "post"
   }
 
-  common <- list(layout = layout, seed = seed, vertex_size = vertex_size, edge_width = edge_width,
+  common <- list(layout = layout, seed = seed, min_family_size = min_family_size,
+                 vertex_size = vertex_size, edge_width = edge_width,
                  vertex_label = vertex_label, show_legend = show_legend, main = main)
   if (identical(type, "post")) {
     do.call(.rkn_plot_post, c(list(x$graph, kept = x$kept, palette = palette), common))

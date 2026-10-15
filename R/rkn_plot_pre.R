@@ -16,10 +16,20 @@
 #' Graphs are assumed to be undirected by design.
 #'
 #' @param g An igraph object. Vertex identifiers must be stored in `V(g)$name`.
-#' @param layout Character. Graph layout algorithm; one of:
-#'   - `"fr"`: Fruchterman-Reingold (default; recommended for multi-component graphs),
-#'   - `"gem"`: Graph Embedder Method (can yield aesthetically pleasing layouts but may be
-#'     computationally expensive; it can be very slow for networks with many families/components).
+#' @param layout Character. How the network is laid out. Each family (connected
+#'   component) is always drawn on its own; the options differ in how the families are
+#'   arranged:
+#'   \itemize{
+#'     \item \code{"auto"} (default): \code{"components"} for networks of up to 500
+#'       individuals, \code{"grid"} for larger networks;
+#'     \item \code{"components"}: the families are packed together around the centre;
+#'     \item \code{"grid"}: each family gets its own cell, ordered by family size
+#'       (largest first), which keeps large networks readable.
+#'   }
+#' @param seed Integer. Seed of the random layout, applied locally: the random number
+#'   generator of the session is left untouched. The same seed always gives the same
+#'   coordinates, so plots of the same network can be compared; another value gives a
+#'   different arrangement.
 #' @param vertex_size Numeric. Size of vertices in the plot.
 #' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
 #' @param show_legend Logical. If TRUE, a legend mapping colors to family IDs is shown.
@@ -29,7 +39,8 @@
 #' @return Invisibly returns NULL.
 #' @export
 rkn_plot_pre <- function(g,
-                         layout = c("fr", "gem"),
+                         layout = c("auto", "components", "grid"),
+                         seed = 1,
                          vertex_size = 4,
                          vertex_label = FALSE,
                          show_legend = FALSE,
@@ -55,11 +66,7 @@ rkn_plot_pre <- function(g,
   fam_col_map <- stats::setNames(pal, as.character(fam_levels))
   vcol <- unname(fam_col_map[as.character(fam_ids)])
 
-  lay <- switch(
-    layout,
-    fr = igraph::layout_with_fr(g),
-    gem = igraph::layout_with_gem(g)
-  )
+  lay <- .rkn_layout(g, layout, seed)
 
   op <- graphics::par(mar = c(0.5, 0.5, 2, 0.5))
   on.exit(graphics::par(op), add = TRUE)
@@ -67,6 +74,9 @@ rkn_plot_pre <- function(g,
   igraph::plot.igraph(
     g,
     layout = lay,
+    rescale = FALSE,
+    xlim = c(-1.05, 1.05),
+    ylim = c(-1.05, 1.05),
     vertex.color = vcol,
     vertex.size = vertex_size,
     vertex.label = if (isTRUE(vertex_label)) igraph::V(g)$name else NA,

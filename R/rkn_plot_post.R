@@ -8,9 +8,6 @@
 #'
 #' @param g An igraph object. Vertex identifiers must be stored in `V(g)$name`.
 #' @param kept Character vector of vertex identifiers selected by the algorithm.
-#' @param layout Character. Graph layout algorithm; one of:
-#'   - `"fr"`: Fruchterman-Reingold (default; recommended),
-#'   - `"gem"`: Graph Embedder Method (may be slow for networks with many components).
 #' @param vertex_size Numeric. Size of vertices in the plot.
 #' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
 #' @param col_kept Character. Color used for kept vertices (default: "#1B9E77").
@@ -18,11 +15,14 @@
 #' @param show_legend Logical. If TRUE, a legend indicating kept vs discarded nodes is displayed.
 #' @param main Character. Title of the plot.
 #'
+#' @inheritParams rkn_plot_pre
+#'
 #' @return Invisibly returns NULL.
 #' @export
 rkn_plot_post <- function(g,
                           kept,
-                          layout = c("fr", "gem"),
+                          layout = c("auto", "components", "grid"),
+                          seed = 1,
                           vertex_size = 4,
                           vertex_label = FALSE,
                           col_kept = "#1B9E77",
@@ -49,11 +49,7 @@ rkn_plot_post <- function(g,
   is_kept <- vnames %in% kept
   vcol <- ifelse(is_kept, col_kept, col_discarded)
 
-  lay <- switch(
-    layout,
-    fr = igraph::layout_with_fr(g),
-    gem = igraph::layout_with_gem(g)
-  )
+  lay <- .rkn_layout(g, layout, seed)
 
   op <- graphics::par(mar = c(0.5, 0.5, 2, 0.5))
   on.exit(graphics::par(op), add = TRUE)
@@ -61,6 +57,9 @@ rkn_plot_post <- function(g,
   igraph::plot.igraph(
     g,
     layout = lay,
+    rescale = FALSE,
+    xlim = c(-1.05, 1.05),
+    ylim = c(-1.05, 1.05),
     vertex.color = vcol,
     vertex.size = vertex_size,
     vertex.label = if (isTRUE(vertex_label)) vnames else NA,

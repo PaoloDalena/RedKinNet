@@ -39,3 +39,9 @@ test_that("a session without a random seed stays without one after a seeded sele
   rkn_select_random(g, seed = 1, verbose = FALSE)
   expect_false(exists(".Random.seed", envir = globalenv()))
 })
+
+test_that("the plot layout leaves the caller's random number stream untouched", {
+  g <- make_network(41)
+  expect_identical(runif_after(function() .rkn_layout(g, "components", seed = 1)), reference())
+  expect_identical(runif_after(function() .rkn_layout(g, "grid", seed = 1)), reference())
+})

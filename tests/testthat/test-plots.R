@@ -4,7 +4,7 @@ test_that("the three plotting functions run without error", {
 
   grDevices::pdf(NULL)
   expect_no_error(rkn_plot_pre(g))
-  expect_no_error(rkn_plot_pre(g, layout = "gem", show_legend = TRUE))
+  expect_no_error(rkn_plot_pre(g, layout = "grid", seed = 2, show_legend = TRUE))
   expect_no_error(rkn_plot_post(g, kept = res$kept))
   expect_no_error(rkn_plot_diagnostics(g, res = res))
   grDevices::dev.off()

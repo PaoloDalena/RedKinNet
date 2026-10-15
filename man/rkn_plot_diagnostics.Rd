@@ -7,7 +7,8 @@
 rkn_plot_diagnostics(
   g,
   res,
-  layout = c("fr", "gem"),
+  layout = c("auto", "components", "grid"),
+  seed = 1,
   vertex_size = 4,
   vertex_label = FALSE,
   show_legend = TRUE,
@@ -20,12 +21,21 @@ rkn_plot_diagnostics(
 \item{res}{A diagnostics-enabled selection output (e.g., from \code{rkn_select_random()} with
 \code{diagnostics = TRUE}). Must contain \code{res$node_diagnostics} with columns \code{id} and \code{pre_class}.}
 
-\item{layout}{Character. Graph layout algorithm; one of:
+\item{layout}{Character. How the network is laid out. Each family (connected
+component) is always drawn on its own; the options differ in how the families are
+arranged:
 \itemize{
-\item \code{"fr"}: Fruchterman-Reingold (default; recommended for multi-component graphs),
-\item \code{"gem"}: Graph Embedder Method (may be computationally expensive; can be very slow for
-networks with many families/components).
+\item \code{"auto"} (default): \code{"components"} for networks of up to 500
+individuals, \code{"grid"} for larger networks;
+\item \code{"components"}: the families are packed together around the centre;
+\item \code{"grid"}: each family gets its own cell, ordered by family size
+(largest first), which keeps large networks readable.
 }}
+
+\item{seed}{Integer. Seed of the random layout, applied locally: the random number
+generator of the session is left untouched. The same seed always gives the same
+coordinates, so plots of the same network can be compared; another value gives a
+different arrangement.}
 
 \item{vertex_size}{Numeric. Size of vertices in the plot.}
 

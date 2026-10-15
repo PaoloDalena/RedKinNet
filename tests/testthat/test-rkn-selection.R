@@ -86,7 +86,7 @@ test_that("plot draws the three types and returns x invisibly", {
   on.exit(grDevices::dev.off())
   expect_no_error(plot(sel))
   expect_no_error(plot(sel, type = "diagnostics"))
-  expect_no_error(plot(sel, type = "pre", layout = "gem"))
+  expect_no_error(plot(sel, type = "pre", layout = "grid", seed = 2))
   out <- withVisible(plot(sel))
   expect_false(out$visible)
   expect_identical(out$value, sel)

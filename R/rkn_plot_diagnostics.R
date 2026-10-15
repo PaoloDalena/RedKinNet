@@ -9,20 +9,19 @@
 #' @param g An igraph object. Vertex identifiers must be stored in `V(g)$name`.
 #' @param res A diagnostics-enabled selection output (e.g., from `rkn_select_random()` with
 #'   `diagnostics = TRUE`). Must contain `res$node_diagnostics` with columns `id` and `pre_class`.
-#' @param layout Character. Graph layout algorithm; one of:
-#'   - `"fr"`: Fruchterman-Reingold (default; recommended for multi-component graphs),
-#'   - `"gem"`: Graph Embedder Method (may be computationally expensive; can be very slow for
-#'     networks with many families/components).
 #' @param vertex_size Numeric. Size of vertices in the plot.
 #' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
 #' @param show_legend Logical. If TRUE, a legend is displayed for the diagnostic classes present.
 #' @param main Character. Title of the plot.
 #'
+#' @inheritParams rkn_plot_pre
+#'
 #' @return Invisibly returns NULL.
 #' @export
 rkn_plot_diagnostics <- function(g,
                                  res,
-                                 layout = c("fr", "gem"),
+                                 layout = c("auto", "components", "grid"),
+                                 seed = 1,
                                  vertex_size = 4,
                                  vertex_label = FALSE,
                                  show_legend = TRUE,
@@ -90,11 +89,7 @@ rkn_plot_diagnostics <- function(g,
   )
   vcol <- unname(col_map[cls_map])
 
-  lay <- switch(
-    layout,
-    fr = igraph::layout_with_fr(g),
-    gem = igraph::layout_with_gem(g)
-  )
+  lay <- .rkn_layout(g, layout, seed)
 
   op <- graphics::par(mar = c(0.5, 0.5, 2, 0.5))
   on.exit(graphics::par(op), add = TRUE)
@@ -102,6 +97,9 @@ rkn_plot_diagnostics <- function(g,
   igraph::plot.igraph(
     g,
     layout = lay,
+    rescale = FALSE,
+    xlim = c(-1.05, 1.05),
+    ylim = c(-1.05, 1.05),
     vertex.color = vcol,
     vertex.size = vertex_size,
     vertex.label = if (isTRUE(vertex_label)) vnames else NA,

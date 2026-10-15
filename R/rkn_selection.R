@@ -1,3 +1,50 @@
+#' Selections of unrelated individuals
+#'
+#' @description
+#' \code{\link{rkn_select_random}} and \code{\link{rkn_select_criteria}} return an object
+#' of class \code{rkn_selection}: a list holding the selected individuals, the network
+#' they were selected from and, when computed, diagnostics on how each individual and
+#' each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
+#' \code{\link[=summary.rkn_selection]{summary}} and
+#' \code{\link[=plot.rkn_selection]{plot}} methods.
+#'
+#' @section Components:
+#' \describe{
+#'   \item{\code{kept}}{character vector, the identifiers of the selected individuals;}
+#'   \item{\code{discarded}}{character vector, the identifiers of the other individuals;}
+#'   \item{\code{family_sizes}}{integer vector, the size of each family (connected
+#'     component of the network);}
+#'   \item{\code{method}}{\code{"random"} or \code{"criteria"};}
+#'   \item{\code{criteria}}{for criteria-based selections, a list with the
+#'     \code{primary} and, if given, the \code{secondary} criterion; \code{NULL}
+#'     otherwise;}
+#'   \item{\code{seed}}{the seed of the selection, or \code{NULL};}
+#'   \item{\code{diagnostics}}{logical, whether diagnostics were computed;}
+#'   \item{\code{node_diagnostics}}{a data frame with one row per individual, or
+#'     \code{NULL} without diagnostics. Columns: \code{id}; \code{pre_class}, how the
+#'     individual was decided (\code{"kept_apriori"}, \code{"discarded_apriori"},
+#'     \code{"candidate_simple"} or \code{"candidate_complex"}, described in
+#'     \code{\link{plot.rkn_selection}}); \code{post_class}, \code{"kept"} or
+#'     \code{"discarded"}; \code{is_selected}, the outcome as a logical;
+#'     \code{pre_reason}, an internal label of the rule or procedure that decided the
+#'     individual; \code{family_id} and \code{family_size};}
+#'   \item{\code{family_summary}}{a data frame with one row per family, or \code{NULL}
+#'     without diagnostics. Columns: \code{family_id} and \code{family_size};
+#'     \code{selector}, \code{"upto5"} for families resolved by the structural rules in
+#'     \code{\link{rules_db}} and \code{"6plus"} for larger families;
+#'     \code{structure_name}, an internal label of the recognised structure;
+#'     \code{used_largest_ivs}, whether the family was resolved by enumerating its
+#'     maximum sets of unrelated individuals; the numbers of kept and discarded
+#'     individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
+#'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
+#'     \code{n_candidate_complex});}
+#'   \item{\code{graph}}{the igraph network the selection was made on;}
+#'   \item{\code{call}}{the call that produced the selection.}
+#' }
+#'
+#' @name rkn_selection
+NULL
+
 #' Internal constructor for rkn_selection objects
 #'
 #' @keywords internal
@@ -49,6 +96,8 @@
 #'
 #' @return \code{x}, invisibly.
 #'
+#' @seealso \code{\link{rkn_selection}}
+#'
 #' @export
 print.rkn_selection <- function(x, ...) {
   n_ind <- length(x$kept) + length(x$discarded)
@@ -96,6 +145,8 @@ print.rkn_selection <- function(x, ...) {
 #'     (a priori or among candidates) and outcome (kept or discarded), or \code{NULL}
 #'     if diagnostics were not computed.}
 #' }
+#'
+#' @seealso \code{\link{rkn_selection}}
 #'
 #' @export
 summary.rkn_selection <- function(object, ...) {
@@ -178,37 +229,11 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
   invisible(x)
 }
 
-#' Plot an rkn_selection object
-#'
-#' Draws the relatedness network of a selection. Each family (connected component) is
-#' laid out on its own, and every plot type puts each individual in the same position,
-#' so the plots can be compared or combined in panels (for instance with
-#' \code{par(mfrow = c(1, 3))}).
-#'
-#' @param x An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
-#'   or \code{\link{rkn_select_criteria}}.
-#' @param type What the colours show:
-#'   \itemize{
-#'     \item \code{"post"} (default): selected and discarded individuals;
-#'     \item \code{"diagnostics"}: how each individual was decided (see Details);
-#'       requires a selection computed with \code{diagnostics = TRUE};
-#'     \item \code{"pre"}: the families before the selection, as in
-#'       \code{\link{rkn_plot_pre}}.
-#'   }
-#' @param palette Character. Colours of the \code{"post"} and \code{"diagnostics"}
-#'   plots. \code{"colorblind"} (default) uses the Okabe-Ito colours, which remain
-#'   distinguishable with the most common forms of colour blindness; \code{"classic"}
-#'   uses the earlier colours of the package, which pair red with green.
-#' @param show_outcome Logical. In the \code{"diagnostics"} plot, if \code{TRUE}
-#'   (default), selected individuals are drawn as filled vertices and discarded
-#'   individuals as hollow vertices with a frame in the colour of their class, so the
-#'   plot shows both how and with which outcome each individual was decided.
 #' @param ... Not used.
-#' @inheritParams rkn_plot_pre
 #'
 #' @details
-#' The \code{"diagnostics"} plot distinguishes four ways in which an individual is
-#' decided:
+#' The \code{"diagnostics"} plot of a selection distinguishes four ways in which an
+#' individual is decided:
 #' \describe{
 #'   \item{kept by a structural rule}{a rule based on the structure of the family keeps
 #'     the individual without any choice being made (for instance the leaves of a
@@ -225,8 +250,8 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
 #' \code{\link{rkn_select_random}} and by the criteria in
 #' \code{\link{rkn_select_criteria}}.
 #'
-#' @return \code{x}, invisibly.
-#'
+#' @rdname rkn_plot_pre
+#' @order 1
 #' @export
 plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"),
                                layout = c("auto", "components", "grid"), seed = 1,

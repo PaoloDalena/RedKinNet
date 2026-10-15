@@ -1,10 +1,40 @@
-#' Plot a relatedness network by family
+#' Plot a relatedness network
 #'
-#' Draws the network before any selection. Families are the connected components of
-#' \code{g}; each family is laid out on its own, and vertices are coloured by the size
-#' of their family or, alternatively, with one colour per family.
+#' @description
+#' Draws a relatedness network in which each family (connected component) is laid out
+#' on its own.
+#' \itemize{
+#'   \item \code{rkn_plot_pre()} draws any network, for instance before a selection,
+#'     with the vertices coloured by the size of their family or by family.
+#'   \item \code{plot()} draws a selection returned by \code{\link{rkn_select_random}}
+#'     or \code{\link{rkn_select_criteria}} (an \code{\link{rkn_selection}} object): the
+#'     selected and discarded individuals, how each individual was decided, or the
+#'     families before the selection, as \code{rkn_plot_pre()} does.
+#' }
+#' All plots of the same network put each individual in the same position, so they can
+#' be compared or combined in panels, for instance with \code{par(mfrow = c(1, 3))}.
 #'
-#' @param g An igraph object. Vertex identifiers must be stored in \code{V(g)$name}.
+#' @param x,g The network to draw: for \code{plot()}, an \code{\link{rkn_selection}}
+#'   object; for \code{rkn_plot_pre()}, an igraph object with the vertex identifiers
+#'   in \code{V(g)$name}.
+#' @param type What the colours show (\code{plot()} only):
+#'   \itemize{
+#'     \item \code{"post"} (default): selected and discarded individuals;
+#'     \item \code{"diagnostics"}: how each individual was decided (see Details);
+#'       requires a selection computed with \code{diagnostics = TRUE};
+#'     \item \code{"pre"}: the families before the selection, as drawn by
+#'       \code{rkn_plot_pre()}.
+#'   }
+#' @param palette Character. Colours of the \code{"post"} and \code{"diagnostics"}
+#'   plots (\code{plot()} only). \code{"colorblind"} (default) uses the Okabe-Ito
+#'   colours, which remain distinguishable with the most common forms of colour
+#'   blindness; \code{"classic"} uses the earlier colours of the package, which pair red
+#'   with green.
+#' @param show_outcome Logical. In the \code{"diagnostics"} plot (\code{plot()} only),
+#'   if \code{TRUE} (default), selected individuals are drawn as filled vertices and
+#'   discarded individuals as hollow vertices with a frame in the colour of their
+#'   class, so the plot shows both how and with which outcome each individual was
+#'   decided.
 #' @param layout Character. How the network is laid out. Each family (connected
 #'   component) is always drawn on its own; the options differ in how the families are
 #'   arranged:
@@ -37,8 +67,12 @@
 #'   individuals; replace it with \code{main = "My title"} or remove it with
 #'   \code{main = ""}.
 #'
-#' @return \code{NULL}, invisibly.
+#' @return \code{rkn_plot_pre()} returns \code{NULL} and \code{plot()} returns \code{x},
+#'   both invisibly.
 #'
+#' @seealso \code{\link{rkn_selection}}
+#'
+#' @order 2
 #' @export
 rkn_plot_pre <- function(g,
                          layout = c("auto", "components", "grid"),

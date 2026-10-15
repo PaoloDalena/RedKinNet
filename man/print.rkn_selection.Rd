@@ -20,3 +20,6 @@ Prints a brief summary of a selection of unrelated individuals: how the selectio
 was made, how many individuals were retained, and how the network decomposes into
 families.
 }
+\seealso{
+\code{\link{rkn_selection}}
+}

@@ -32,3 +32,6 @@ Computes summary tables of a selection of unrelated individuals: selection count
 family size and, when diagnostics were computed, the structures recognised in the
 families and how each individual was decided.
 }
+\seealso{
+\code{\link{rkn_selection}}
+}

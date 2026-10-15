@@ -4,24 +4,111 @@
 \alias{plot.rkn_selection}
 \title{Plot an rkn_selection object}
 \usage{
-\method{plot}{rkn_selection}(x, type = c("post", "diagnostics", "pre"), ...)
+\method{plot}{rkn_selection}(
+  x,
+  type = c("post", "diagnostics", "pre"),
+  layout = c("auto", "components", "grid"),
+  seed = 1,
+  palette = c("colorblind", "classic"),
+  show_outcome = TRUE,
+  colour_by = c("size", "family"),
+  vertex_size = NULL,
+  edge_width = 1,
+  vertex_label = FALSE,
+  show_legend = TRUE,
+  main = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
 or \code{\link{rkn_select_criteria}}.}
 
-\item{type}{One of \code{"post"} (default; selected vs discarded individuals, see
-\code{\link{rkn_plot_post}}), \code{"diagnostics"} (individuals coloured by type of
-decision, see \code{\link{rkn_plot_diagnostics}}; requires diagnostics) or
-\code{"pre"} (families before the selection, see \code{\link{rkn_plot_pre}}).}
+\item{type}{What the colours show:
+\itemize{
+\item \code{"post"} (default): selected and discarded individuals;
+\item \code{"diagnostics"}: how each individual was decided (see Details);
+requires a selection computed with \code{diagnostics = TRUE};
+\item \code{"pre"}: the families before the selection, as in
+\code{\link{rkn_plot_pre}}.
+}}
 
-\item{...}{Further arguments passed to the plotting function selected by
-\code{type}, for instance \code{layout} or \code{vertex_size}.}
+\item{layout}{Character. How the network is laid out. Each family (connected
+component) is always drawn on its own; the options differ in how the families are
+arranged:
+\itemize{
+\item \code{"auto"} (default): \code{"components"} for networks of up to 500
+individuals, \code{"grid"} for larger networks;
+\item \code{"components"}: the families are packed together around the centre;
+\item \code{"grid"}: each family gets its own cell, ordered by family size
+(largest first), which keeps large networks readable.
+}}
+
+\item{seed}{Integer. Seed of the random layout, applied locally: the random number
+generator of the session is left untouched. The same seed always gives the same
+coordinates, so plots of the same network can be compared; another value gives a
+different arrangement.}
+
+\item{palette}{Character. Colours of the \code{"post"} and \code{"diagnostics"}
+plots. \code{"colorblind"} (default) uses the Okabe-Ito colours, which remain
+distinguishable with the most common forms of colour blindness; \code{"classic"}
+uses the earlier colours of the package, which pair red with green.}
+
+\item{show_outcome}{Logical. In the \code{"diagnostics"} plot, if \code{TRUE}
+(default), selected individuals are drawn as filled vertices and discarded
+individuals as hollow vertices with a frame in the colour of their class, so the
+plot shows both how and with which outcome each individual was decided.}
+
+\item{colour_by}{Character. \code{"size"} (default) colours each vertex by the size
+of its family, in the classes 1, 2, 3, 4, 5 and 6 or more; \code{"family"} gives
+each family its own colour, which is useful only for a handful of families and is
+drawn without a legend.}
+
+\item{vertex_size}{Numeric. Size of the vertices. By default (\code{NULL}) it
+decreases with the number of individuals. Enlarging the graphics device does not
+separate overlapping vertices, because vertex sizes are relative to the plotting
+region; reduce \code{vertex_size} instead.}
+
+\item{edge_width}{Numeric. Width of the edges.}
+
+\item{vertex_label}{Logical. If \code{TRUE}, the vertex identifiers are written next
+to the vertices; this is readable only for small networks.}
+
+\item{show_legend}{Logical. If \code{TRUE} (default), a legend is drawn below the
+network.}
+
+\item{main}{Character. Title of the plot. By default (\code{NULL}) an informative
+title is generated, such as the number of individuals and families or of selected
+individuals; replace it with \code{main = "My title"} or remove it with
+\code{main = ""}.}
+
+\item{...}{Not used.}
 }
 \value{
 \code{x}, invisibly.
 }
 \description{
-Draws the relatedness network of a selection, with the vertices coloured according
-to \code{type}.
+Draws the relatedness network of a selection. Each family (connected component) is
+laid out on its own, and every plot type puts each individual in the same position,
+so the plots can be compared or combined in panels (for instance with
+\code{par(mfrow = c(1, 3))}).
+}
+\details{
+The \code{"diagnostics"} plot distinguishes four ways in which an individual is
+decided:
+\describe{
+\item{kept by a structural rule}{a rule based on the structure of the family keeps
+the individual without any choice being made (for instance the leaves of a
+star-shaped family);}
+\item{discarded by a structural rule}{a structural rule discards the individual
+(for instance the centre of a star);}
+\item{decided among single candidates}{the remaining choice is among
+interchangeable candidates of a single group, such as the two members of a
+related pair, and one of them is selected;}
+\item{decided among alternative sets}{several maximum sets remain that differ in
+more than one individual, and one of them is selected.}
+}
+The choices among candidates are made at random by
+\code{\link{rkn_select_random}} and by the criteria in
+\code{\link{rkn_select_criteria}}.
 }

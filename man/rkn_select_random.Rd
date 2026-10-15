@@ -30,14 +30,14 @@ in a list (potentially large object).}
 \itemize{
 \item \code{"no"}: do not produce any plot (default);
 \item \code{"pre"}: plot the full network pre-selection, colored by family (calls \code{rkn_plot_pre()});
-\item \code{"post"}: plot the full network post-selection, colored by kept vs discarded (calls \code{rkn_plot_post()});
-\item \code{"diagnostics"}: plot the full network colored by diagnostic classes (calls \code{rkn_plot_diagnostics()}).
+\item \code{"post"}: plot the full network post-selection, colored by kept vs discarded;
+\item \code{"diagnostics"}: plot the full network colored by diagnostic classes.
 }
 If \code{plot="diagnostics"} is requested with \code{diagnostics=FALSE}, a warning is issued and the function
 falls back to \code{plot="post"} (kept vs discarded).}
 
-\item{plot_args}{Optional named list of arguments passed to the corresponding \code{rkn_plot_*()} function.
-For details, see the documentation of \code{rkn_plot_pre()}, \code{rkn_plot_post()}, and \code{rkn_plot_diagnostics()}.}
+\item{plot_args}{Optional named list of arguments passed to the plotting function; see
+\code{\link{rkn_plot_pre}} and \code{\link{plot.rkn_selection}}.}
 }
 \value{
 If diagnostics=FALSE: a character vector of selected node IDs (kept).
@@ -52,5 +52,5 @@ two components, the union of the per-family selections is a set of mutually
 unrelated individuals.
 }
 \seealso{
-\code{rkn_plot_pre()}, \code{rkn_plot_post()}, \code{rkn_plot_diagnostics()}.
+\code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
 }

@@ -25,8 +25,7 @@
 #' @return Same structure as \code{\link{rkn_select_random}}.
 #'
 #' @seealso \code{\link{rkn_select_random}}, \code{\link{rkn_criterion_target_mean}},
-#'   \code{\link{rules_db}}, \code{\link{rkn_plot_pre}}, \code{\link{rkn_plot_post}},
-#'   \code{\link{rkn_plot_diagnostics}}.
+#'   \code{\link{rules_db}}, \code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
 #'
 #' @export
 rkn_select_criteria <- function(g,
@@ -200,7 +199,7 @@ rkn_select_criteria <- function(g,
   }
 
   if (identical(plot_effective, "post")) {
-    do.call(rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
+    do.call(.rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
   }
 
   if (!diagnostics) {
@@ -243,7 +242,7 @@ rkn_select_criteria <- function(g,
   }
 
   if (identical(plot_effective, "diagnostics")) {
-    do.call(rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
+    do.call(.rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
   }
 
   out_main

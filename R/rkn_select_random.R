@@ -16,20 +16,20 @@
 #'   \itemize{
 #'     \item \code{"no"}: do not produce any plot (default);
 #'     \item \code{"pre"}: plot the full network pre-selection, colored by family (calls \code{rkn_plot_pre()});
-#'     \item \code{"post"}: plot the full network post-selection, colored by kept vs discarded (calls \code{rkn_plot_post()});
-#'     \item \code{"diagnostics"}: plot the full network colored by diagnostic classes (calls \code{rkn_plot_diagnostics()}).
+#'     \item \code{"post"}: plot the full network post-selection, colored by kept vs discarded;
+#'     \item \code{"diagnostics"}: plot the full network colored by diagnostic classes.
 #'   }
 #'   If \code{plot="diagnostics"} is requested with \code{diagnostics=FALSE}, a warning is issued and the function
 #'   falls back to \code{plot="post"} (kept vs discarded).
-#' @param plot_args Optional named list of arguments passed to the corresponding \code{rkn_plot_*()} function.
-#'   For details, see the documentation of \code{rkn_plot_pre()}, \code{rkn_plot_post()}, and \code{rkn_plot_diagnostics()}.
+#' @param plot_args Optional named list of arguments passed to the plotting function; see
+#'   \code{\link{rkn_plot_pre}} and \code{\link{plot.rkn_selection}}.
 #'
 #' @return If diagnostics=FALSE: a character vector of selected node IDs (kept).
 #'         If diagnostics=TRUE: a list with elements:
 #'           kept, discarded, node_diagnostics, family_summary,
 #'           and optionally results_by_family (if return_results_by_family=TRUE).
 #'
-#' @seealso \code{rkn_plot_pre()}, \code{rkn_plot_post()}, \code{rkn_plot_diagnostics()}.
+#' @seealso \code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
 #'
 #' @export
 rkn_select_random <- function(g,
@@ -191,7 +191,7 @@ rkn_select_random <- function(g,
   }
 
   if (identical(plot_effective, "post")) {
-    do.call(rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
+    do.call(.rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
   }
 
   if (!diagnostics) {
@@ -234,7 +234,7 @@ rkn_select_random <- function(g,
   }
 
   if (identical(plot_effective, "diagnostics")) {
-    do.call(rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
+    do.call(.rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
   }
 
   out_main

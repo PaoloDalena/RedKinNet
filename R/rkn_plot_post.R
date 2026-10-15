@@ -1,89 +1,31 @@
-#' Plot the full network after selection, highlighting kept vs discarded nodes.
+#' Internal helper: plot the network after selection
 #'
-#' This function is graph-first and visualizes the outcome of the selection step.
-#' Vertices are colored according to whether they are kept or discarded.
-#' Nodes not included in `kept` are treated as discarded.
+#' Selected individuals are drawn in the \code{kept} colour of \code{palette}, the
+#' others in the \code{discarded} colour. Called by \code{plot.rkn_selection()}, whose
+#' documentation describes the arguments.
 #'
-#' Graphs are assumed to be undirected by design.
+#' @return The vertex encodings, invisibly.
 #'
-#' @param g An igraph object. Vertex identifiers must be stored in `V(g)$name`.
-#' @param kept Character vector of vertex identifiers selected by the algorithm.
-#' @param vertex_size Numeric. Size of vertices in the plot.
-#' @param vertex_label Logical. If TRUE, vertex labels (`V(g)$name`) are displayed.
-#' @param col_kept Character. Color used for kept vertices (default: "#1B9E77").
-#' @param col_discarded Character. Color used for discarded vertices (default: "#B3B3B3").
-#' @param show_legend Logical. If TRUE, a legend indicating kept vs discarded nodes is displayed.
-#' @param main Character. Title of the plot.
-#'
-#' @inheritParams rkn_plot_pre
-#'
-#' @return Invisibly returns NULL.
-#' @export
-rkn_plot_post <- function(g,
-                          kept,
-                          layout = c("auto", "components", "grid"),
-                          seed = 1,
-                          vertex_size = 4,
-                          vertex_label = FALSE,
-                          col_kept = "#1B9E77",
-                          col_discarded = "#B3B3B3",
-                          show_legend = TRUE,
-                          main = "Full network post-selection") {
+#' @keywords internal
+#' @noRd
+.rkn_plot_post <- function(g, kept, palette = "colorblind", layout = "auto", seed = 1,
+                           vertex_size = NULL, edge_width = 1, vertex_label = FALSE,
+                           show_legend = TRUE, main = NULL) {
+  pal <- .rkn_palettes[[palette]]
+  is_kept <- igraph::V(g)$name %in% kept
+  n <- length(is_kept)
 
-  layout <- match.arg(layout)
-
-  if (!igraph::is_igraph(g)) {
-    stop("g must be an igraph object.")
+  if (is.null(main)) {
+    main <- sprintf("Selected %s of %s individuals (%.1f%%)",
+                    format(sum(is_kept), big.mark = ","), format(n, big.mark = ","),
+                    100 * sum(is_kept) / n)
   }
-  if (is.null(igraph::V(g)$name)) {
-    stop("V(g)$name must be defined (vertex identifiers are required).")
-  }
-  if (missing(kept)) {
-    stop("Argument 'kept' must be provided.")
-  }
+  legend <- list(labels = c("selected", "discarded"),
+                 fill = unname(pal[c("kept", "discarded")]), ncol = 2)
 
-  vnames <- igraph::V(g)$name
-  kept <- unique(as.character(kept))
-  kept <- kept[kept %in% vnames]
-
-  is_kept <- vnames %in% kept
-  vcol <- ifelse(is_kept, col_kept, col_discarded)
-
-  lay <- .rkn_layout(g, layout, seed)
-
-  op <- graphics::par(mar = c(0.5, 0.5, 2, 0.5))
-  on.exit(graphics::par(op), add = TRUE)
-
-  igraph::plot.igraph(
-    g,
-    layout = lay,
-    rescale = FALSE,
-    xlim = c(-1.05, 1.05),
-    ylim = c(-1.05, 1.05),
-    vertex.color = vcol,
-    vertex.size = vertex_size,
-    vertex.label = if (isTRUE(vertex_label)) vnames else NA,
-    vertex.label.cex = 0.6,
-    edge.arrow.size = 0,   # graphs are undirected by design
-    edge.curved = 0.1,
-    main = main
-  )
-
-  if (isTRUE(show_legend)) {
-    graphics::legend(
-      "topright",
-      legend = c("Kept", "Discarded"),
-      col = c(col_kept, col_discarded),
-      pch = 19,
-      pt.cex = 1.1,
-      cex = 0.8,
-      bty = "o",
-      bg = grDevices::adjustcolor("white", alpha.f = 0.85),
-      box.col = "grey40",
-      box.lwd = 0.8,
-      y.intersp = 0.8
-    )
-  }
-
-  invisible(NULL)
+  .rkn_draw_network(g, fill = unname(ifelse(is_kept, pal["kept"], pal["discarded"])),
+                    frame_col = "grey25", frame_width = 1,
+                    layout = layout, seed = seed, vertex_size = vertex_size,
+                    edge_width = edge_width, vertex_label = vertex_label,
+                    legend = if (isTRUE(show_legend)) legend, main = main)
 }

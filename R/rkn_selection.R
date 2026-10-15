@@ -180,35 +180,79 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
 
 #' Plot an rkn_selection object
 #'
-#' Draws the relatedness network of a selection, with the vertices coloured according
-#' to \code{type}.
+#' Draws the relatedness network of a selection. Each family (connected component) is
+#' laid out on its own, and every plot type puts each individual in the same position,
+#' so the plots can be compared or combined in panels (for instance with
+#' \code{par(mfrow = c(1, 3))}).
 #'
 #' @param x An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
 #'   or \code{\link{rkn_select_criteria}}.
-#' @param type One of \code{"post"} (default; selected vs discarded individuals, see
-#'   \code{\link{rkn_plot_post}}), \code{"diagnostics"} (individuals coloured by type of
-#'   decision, see \code{\link{rkn_plot_diagnostics}}; requires diagnostics) or
-#'   \code{"pre"} (families before the selection, see \code{\link{rkn_plot_pre}}).
-#' @param ... Further arguments passed to the plotting function selected by
-#'   \code{type}, for instance \code{layout} or \code{vertex_size}.
+#' @param type What the colours show:
+#'   \itemize{
+#'     \item \code{"post"} (default): selected and discarded individuals;
+#'     \item \code{"diagnostics"}: how each individual was decided (see Details);
+#'       requires a selection computed with \code{diagnostics = TRUE};
+#'     \item \code{"pre"}: the families before the selection, as in
+#'       \code{\link{rkn_plot_pre}}.
+#'   }
+#' @param palette Character. Colours of the \code{"post"} and \code{"diagnostics"}
+#'   plots. \code{"colorblind"} (default) uses the Okabe-Ito colours, which remain
+#'   distinguishable with the most common forms of colour blindness; \code{"classic"}
+#'   uses the earlier colours of the package, which pair red with green.
+#' @param show_outcome Logical. In the \code{"diagnostics"} plot, if \code{TRUE}
+#'   (default), selected individuals are drawn as filled vertices and discarded
+#'   individuals as hollow vertices with a frame in the colour of their class, so the
+#'   plot shows both how and with which outcome each individual was decided.
+#' @param ... Not used.
+#' @inheritParams rkn_plot_pre
+#'
+#' @details
+#' The \code{"diagnostics"} plot distinguishes four ways in which an individual is
+#' decided:
+#' \describe{
+#'   \item{kept by a structural rule}{a rule based on the structure of the family keeps
+#'     the individual without any choice being made (for instance the leaves of a
+#'     star-shaped family);}
+#'   \item{discarded by a structural rule}{a structural rule discards the individual
+#'     (for instance the centre of a star);}
+#'   \item{decided among single candidates}{the remaining choice is among
+#'     interchangeable candidates of a single group, such as the two members of a
+#'     related pair, and one of them is selected;}
+#'   \item{decided among alternative sets}{several maximum sets remain that differ in
+#'     more than one individual, and one of them is selected.}
+#' }
+#' The choices among candidates are made at random by
+#' \code{\link{rkn_select_random}} and by the criteria in
+#' \code{\link{rkn_select_criteria}}.
 #'
 #' @return \code{x}, invisibly.
 #'
 #' @export
-plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"), ...) {
+plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"),
+                               layout = c("auto", "components", "grid"), seed = 1,
+                               palette = c("colorblind", "classic"), show_outcome = TRUE,
+                               colour_by = c("size", "family"), vertex_size = NULL,
+                               edge_width = 1, vertex_label = FALSE, show_legend = TRUE,
+                               main = NULL, ...) {
   type <- match.arg(type)
+  layout <- match.arg(layout)
+  palette <- match.arg(palette)
+  colour_by <- match.arg(colour_by)
   if (identical(type, "diagnostics") && !x$diagnostics) {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); plotting ",
             "selected vs discarded instead. Rerun with diagnostics = TRUE for the diagnostics plot.")
     type <- "post"
   }
 
+  common <- list(layout = layout, seed = seed, vertex_size = vertex_size, edge_width = edge_width,
+                 vertex_label = vertex_label, show_legend = show_legend, main = main)
   if (identical(type, "post")) {
-    rkn_plot_post(x$graph, kept = x$kept, ...)
+    do.call(.rkn_plot_post, c(list(x$graph, kept = x$kept, palette = palette), common))
   } else if (identical(type, "diagnostics")) {
-    rkn_plot_diagnostics(x$graph, res = x, ...)
+    do.call(.rkn_plot_diagnostics, c(list(x$graph, res = x, palette = palette,
+                                          show_outcome = show_outcome), common))
   } else {
-    rkn_plot_pre(x$graph, ...)
+    do.call(rkn_plot_pre, c(list(x$graph, colour_by = colour_by), common))
   }
   invisible(x)
 }

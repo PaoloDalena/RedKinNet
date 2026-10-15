@@ -2,16 +2,18 @@
 % Please edit documentation in R/rkn_plot_pre.R
 \name{rkn_plot_pre}
 \alias{rkn_plot_pre}
-\title{Plot the full network before selection, coloring vertices by family.}
+\title{Plot a relatedness network by family}
 \usage{
 rkn_plot_pre(
   g,
   layout = c("auto", "components", "grid"),
   seed = 1,
-  vertex_size = 4,
+  colour_by = c("size", "family"),
+  vertex_size = NULL,
+  edge_width = 1,
   vertex_label = FALSE,
-  show_legend = FALSE,
-  main = "Full network pre-selection: families"
+  show_legend = TRUE,
+  main = NULL
 )
 }
 \arguments{
@@ -33,24 +35,34 @@ generator of the session is left untouched. The same seed always gives the same
 coordinates, so plots of the same network can be compared; another value gives a
 different arrangement.}
 
-\item{vertex_size}{Numeric. Size of vertices in the plot.}
+\item{colour_by}{Character. \code{"size"} (default) colours each vertex by the size
+of its family, in the classes 1, 2, 3, 4, 5 and 6 or more; \code{"family"} gives
+each family its own colour, which is useful only for a handful of families and is
+drawn without a legend.}
 
-\item{vertex_label}{Logical. If TRUE, vertex labels (\code{V(g)$name}) are displayed.}
+\item{vertex_size}{Numeric. Size of the vertices. By default (\code{NULL}) it
+decreases with the number of individuals. Enlarging the graphics device does not
+separate overlapping vertices, because vertex sizes are relative to the plotting
+region; reduce \code{vertex_size} instead.}
 
-\item{show_legend}{Logical. If TRUE, a legend mapping colors to family IDs is shown.
-For readability, the legend is displayed only if there are at most 25 families.}
+\item{edge_width}{Numeric. Width of the edges.}
 
-\item{main}{Character. Title of the plot.}
+\item{vertex_label}{Logical. If \code{TRUE}, the vertex identifiers are written next
+to the vertices; this is readable only for small networks.}
+
+\item{show_legend}{Logical. If \code{TRUE} (default), a legend is drawn below the
+network.}
+
+\item{main}{Character. Title of the plot. By default (\code{NULL}) an informative
+title is generated, such as the number of individuals and families or of selected
+individuals; replace it with \code{main = "My title"} or remove it with
+\code{main = ""}.}
 }
 \value{
-Invisibly returns NULL.
+\code{NULL}, invisibly.
 }
 \description{
-This function is graph-first and does not depend on the selection step.
-Vertices are colored according to their family membership. If the vertex
-attribute \code{family_id} is available, it is used directly; otherwise,
-connected components are computed internally and used as family identifiers.
-}
-\details{
-Graphs are assumed to be undirected by design.
+Draws the network before any selection. Families are the connected components of
+\code{g}; each family is laid out on its own, and vertices are coloured by the size
+of their family or, alternatively, with one colour per family.
 }

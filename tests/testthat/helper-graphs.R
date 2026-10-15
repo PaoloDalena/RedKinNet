@@ -113,3 +113,22 @@ selection_problems <- function(g, kept, discarded, alpha) {
   if (length(kept) != alpha) p <- c(p, sprintf("kept size %d differs from alpha %d", length(kept), alpha))
   p
 }
+
+# Until the selectors return rkn_selection objects, test objects are assembled from
+# their current outputs.
+make_selection <- function(diagnostics = TRUE, method = "random", criteria = NULL) {
+  g <- make_network(51)
+  res <- rkn_select_random(g, seed = 1, diagnostics = TRUE, verbose = FALSE)
+  .new_rkn_selection(
+    kept = res$kept,
+    discarded = res$discarded,
+    family_sizes = as.integer(igraph::components(g)$csize),
+    method = method,
+    criteria = criteria,
+    seed = 1,
+    node_diagnostics = if (diagnostics) res$node_diagnostics else NULL,
+    family_summary = if (diagnostics) res$family_summary else NULL,
+    graph = g,
+    call = quote(rkn_select_random(g = g, seed = 1))
+  )
+}

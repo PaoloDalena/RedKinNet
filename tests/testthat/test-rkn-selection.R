@@ -1,22 +1,3 @@
-# Until the selectors return rkn_selection objects, test objects are assembled from
-# their current outputs.
-make_selection <- function(diagnostics = TRUE, method = "random", criteria = NULL) {
-  g <- make_network(51)
-  res <- rkn_select_random(g, seed = 1, diagnostics = TRUE, verbose = FALSE)
-  .new_rkn_selection(
-    kept = res$kept,
-    discarded = res$discarded,
-    family_sizes = as.integer(igraph::components(g)$csize),
-    method = method,
-    criteria = criteria,
-    seed = 1,
-    node_diagnostics = if (diagnostics) res$node_diagnostics else NULL,
-    family_summary = if (diagnostics) res$family_summary else NULL,
-    graph = g,
-    call = quote(rkn_select_random(g = g, seed = 1))
-  )
-}
-
 test_that("the constructor returns an object of class rkn_selection", {
   sel <- make_selection()
   expect_s3_class(sel, "rkn_selection")

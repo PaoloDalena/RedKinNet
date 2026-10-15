@@ -96,9 +96,8 @@ rkn_plot_diagnostics <- function(g,
     gem = igraph::layout_with_gem(g)
   )
 
-  op <- graphics::par(no.readonly = TRUE)
+  op <- graphics::par(mar = c(0.5, 0.5, 2, 0.5))
   on.exit(graphics::par(op), add = TRUE)
-  graphics::par(mar = c(0.5, 0.5, 2, 0.5))
 
   igraph::plot.igraph(
     g,

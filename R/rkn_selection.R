@@ -177,3 +177,38 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
   print(x$decisions)
   invisible(x)
 }
+
+#' Plot an rkn_selection object
+#'
+#' Draws the relatedness network of a selection, with the vertices coloured according
+#' to \code{type}.
+#'
+#' @param x An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
+#'   or \code{\link{rkn_select_criteria}}.
+#' @param type One of \code{"post"} (default; selected vs discarded individuals, see
+#'   \code{\link{rkn_plot_post}}), \code{"diagnostics"} (individuals coloured by type of
+#'   decision, see \code{\link{rkn_plot_diagnostics}}; requires diagnostics) or
+#'   \code{"pre"} (families before the selection, see \code{\link{rkn_plot_pre}}).
+#' @param ... Further arguments passed to the plotting function selected by
+#'   \code{type}, for instance \code{layout} or \code{vertex_size}.
+#'
+#' @return \code{x}, invisibly.
+#'
+#' @export
+plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"), ...) {
+  type <- match.arg(type)
+  if (identical(type, "diagnostics") && !x$diagnostics) {
+    message("Node-level diagnostics were not computed (diagnostics = FALSE); plotting ",
+            "selected vs discarded instead. Rerun with diagnostics = TRUE for the diagnostics plot.")
+    type <- "post"
+  }
+
+  if (identical(type, "post")) {
+    rkn_plot_post(x$graph, kept = x$kept, ...)
+  } else if (identical(type, "diagnostics")) {
+    rkn_plot_diagnostics(x$graph, res = x, ...)
+  } else {
+    rkn_plot_pre(x$graph, ...)
+  }
+  invisible(x)
+}

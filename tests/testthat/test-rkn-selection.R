@@ -79,3 +79,24 @@ test_that("the summary print shows its sections and signals missing diagnostics"
   expect_false(out$visible)
   expect_message(expect_output(print(summary(make_selection(diagnostics = FALSE)))), "diagnostics = TRUE")
 })
+
+test_that("plot draws the three types and returns x invisibly", {
+  sel <- make_selection()
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_no_error(plot(sel))
+  expect_no_error(plot(sel, type = "diagnostics"))
+  expect_no_error(plot(sel, type = "pre", layout = "gem"))
+  out <- withVisible(plot(sel))
+  expect_false(out$visible)
+  expect_identical(out$value, sel)
+  expect_error(plot(sel, type = "histogram"))
+})
+
+test_that("plot falls back to the post plot when diagnostics were not computed", {
+  sel <- make_selection(diagnostics = FALSE)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_message(plot(sel, type = "diagnostics"), "selected vs discarded instead")
+  expect_no_message(plot(sel))
+})

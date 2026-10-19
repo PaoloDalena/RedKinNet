@@ -7,3 +7,4 @@
 ^README\.rmd$
 ^tests/testthat/_problems$
 ^tests/testthat/testthat-problems\.rds$
+^man-roxygen$

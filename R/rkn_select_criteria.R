@@ -28,6 +28,21 @@
 #'   \code{\link{plot.rkn_selection}}, \code{\link{rkn_select_random}},
 #'   \code{\link{rkn_criterion_target_mean}}, \code{\link{rules_db}}.
 #'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' # Where the structure of a family leaves a choice, prefer women ...
+#' rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1)$kept
+#'
+#' # ... or a mean age close to 40
+#' rkn_select_criteria(g, rkn_criterion_target_mean("age", target = 40, tolerance = 20),
+#'                     seed = 1)$kept
+#'
+#' # A secondary criterion breaks the ties left by the primary one
+#' sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"),
+#'                            rkn_criterion_target_mean("age", target = 40, tolerance = 20),
+#'                            seed = 1)
+#' sel
+#'
 #' @export
 rkn_select_criteria <- function(g,
                                 criterion_primary,

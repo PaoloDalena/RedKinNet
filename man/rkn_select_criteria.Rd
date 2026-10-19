@@ -48,6 +48,34 @@ families and the returned object are as in \code{rkn_select_random()}.
 Covariates referenced by the criteria are read from the vertex attributes of
 \code{g}.
 }
+\examples{
+# A small relatedness network: two parents and their child (P1, P2, C1), a pair of
+# siblings (S1, S2), three mutually related individuals (T1, T2, T3), a larger family
+# (parents D1 and D2, their children K1 and K2, and K3, born to D2 and D3, a
+# half-sibling of K1 and K2) and an unrelated individual (U1).
+g <- igraph::graph_from_literal(P1 - C1 - P2, S1 - S2, T1 - T2 - T3 - T1,
+                                D1 - K1 - D2, D1 - K2 - D2, K1 - K2,
+                                D2 - K3 - D3, K1 - K3, K2 - K3, U1)
+sex <- c(P1 = "F", C1 = "M", P2 = "M", S1 = "M", S2 = "F", T1 = "M", T2 = "F", T3 = "M",
+         D1 = "M", K1 = "F", D2 = "F", K2 = "M", K3 = "F", D3 = "M", U1 = "F")
+age <- c(P1 = 52, C1 = 21, P2 = 55, S1 = 34, S2 = 31, T1 = 60, T2 = 33, T3 = 29,
+         D1 = 63, K1 = 35, D2 = 61, K2 = 38, K3 = 30, D3 = 58, U1 = 44)
+igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
+igraph::V(g)$age <- unname(age[igraph::V(g)$name])
+# Where the structure of a family leaves a choice, prefer women ...
+rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1)$kept
+
+# ... or a mean age close to 40
+rkn_select_criteria(g, rkn_criterion_target_mean("age", target = 40, tolerance = 20),
+                    seed = 1)$kept
+
+# A secondary criterion breaks the ties left by the primary one
+sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"),
+                           rkn_criterion_target_mean("age", target = 40, tolerance = 20),
+                           seed = 1)
+sel
+
+}
 \seealso{
 \code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
 \code{\link{plot.rkn_selection}}, \code{\link{rkn_select_random}},

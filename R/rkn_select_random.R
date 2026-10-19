@@ -23,6 +23,16 @@
 #' @seealso \code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
 #'   \code{\link{plot.rkn_selection}}, \code{\link{rkn_select_criteria}}.
 #'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' sel <- rkn_select_random(g, seed = 1)
+#' sel
+#' sel$kept
+#' summary(sel)
+#'
+#' # The selection alone, without diagnostics
+#' rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
+#'
 #' @export
 rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE) {
 

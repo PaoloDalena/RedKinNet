@@ -7,7 +7,8 @@
 rkn_criterion_level(covariate, level)
 }
 \arguments{
-\item{covariate}{Character. Name of a column expected in \code{fam_df}.}
+\item{covariate}{Character. Name of a vertex attribute of the network, such as
+\code{"sex"} for \code{V(g)$sex}.}
 
 \item{level}{The preferred value of \code{covariate} (matched with \code{==}).}
 }
@@ -15,11 +16,20 @@ rkn_criterion_level(covariate, level)
 An object of class \code{c("rkn_criterion_level", "rkn_criterion")}.
 }
 \description{
-Scores a candidate kept-set by the proportion of its nodes whose \code{covariate} value
-equals \code{level}. Intended for dichotomous covariates, but works for any covariate
-type supporting \code{==}.
+Scores a candidate set of individuals by the proportion of its members whose
+\code{covariate} value equals \code{level}. Intended for dichotomous covariates, but works for
+any covariate type supporting \code{==}.
+
+Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+the structural rules leave several sets of unrelated individuals to choose from,
+each candidate set is scored and the best one is selected.
+}
+\examples{
+# Prefer women
+rkn_criterion_level("sex", "F")
+
 }
 \seealso{
-\code{\link{rkn_criterion_target_mean}}, \code{\link{rkn_criterion_cutoff}},
-\code{\link{rkn_criterion_category_balance}}
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
+\code{\link{rkn_criterion_cutoff}}, \code{\link{rkn_criterion_category_balance}}
 }

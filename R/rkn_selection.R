@@ -80,6 +80,14 @@
 #' \code{\link{rkn_select_random}} and by the criteria in
 #' \code{\link{rkn_select_criteria}}.
 #'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' sel <- rkn_select_random(g, seed = 1)
+#' names(sel)
+#' sel$kept
+#' head(sel$node_diagnostics)
+#' sel$family_summary[, c("family_id", "family_size", "structure_name")]
+#'
 #' @name rkn_selection
 NULL
 
@@ -146,13 +154,20 @@ NULL
 #'
 #' @seealso \code{\link{rkn_selection}}
 #'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' sel <- rkn_select_random(g, seed = 1)
+#' sel # the same as print(sel)
+#'
+#' print(rkn_select_random(g, seed = 1, diagnostics = FALSE))
+#'
 #' @export
 print.rkn_selection <- function(x, ...) {
   n_ind <- length(x$kept) + length(x$discarded)
   sizes <- x$family_sizes
 
   cat(sprintf("<rkn_selection> %s\n", .rkn_selection_header(x)))
-  cat(sprintf("Call: %s\n", paste(deparse(x$call), collapse = " ")))
+  cat(sprintf("Call: %s\n", paste(trimws(deparse(x$call)), collapse = " ")))
   cat(sprintf("Individuals: %d | selected: %d (%.1f%%)\n",
               n_ind, length(x$kept), 100 * length(x$kept) / n_ind))
   cat(sprintf("Families: %d | size min/mean/max: %d / %.2f / %d\n",
@@ -196,6 +211,16 @@ print.rkn_selection <- function(x, ...) {
 #' }
 #'
 #' @seealso \code{\link{rkn_selection}}
+#'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' sel <- rkn_select_random(g, seed = 1)
+#' summary(sel)
+#'
+#' # The tables as data
+#' s <- summary(sel)
+#' s$by_structure
+#' s$decisions
 #'
 #' @export
 summary.rkn_selection <- function(object, ...) {

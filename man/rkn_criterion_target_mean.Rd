@@ -7,24 +7,34 @@
 rkn_criterion_target_mean(covariate, target, tolerance)
 }
 \arguments{
-\item{covariate}{Character. Name of a numeric column expected in \code{fam_df}.}
+\item{covariate}{Character. Name of a numeric vertex attribute of the network, such
+as \code{"age"} for \code{V(g)$age}.}
 
-\item{target}{Numeric. Target value for the mean of \code{covariate} within the kept-set.}
+\item{target}{Numeric. Target value for the mean of \code{covariate} within the candidate
+set.}
 
 \item{tolerance}{Numeric (> 0). Distance from \code{target} at which the score reaches 0.
 There is no default: the appropriate scale depends on the covariate and must be
-supplied explicitly, since within-family variability is not a reliable estimator
-of scale for the small family sizes handled by \code{rkn_select_criteria_upto5()}.}
+supplied explicitly, since the variability within a family, which has only a few
+members, is not a reliable estimate of scale.}
 }
 \value{
 An object of class \code{c("rkn_criterion_target_mean", "rkn_criterion")}.
 }
 \description{
-Scores a candidate kept-set by how close the mean of \code{covariate}, computed over
-the nodes in the kept-set, is to a target value. The score is 1 when the mean
-equals \code{target} and decreases linearly to 0 at a distance of \code{tolerance}.
+Scores a candidate set of individuals by how close the mean of \code{covariate} over its
+members is to a target value. The score is 1 when the mean equals \code{target} and
+decreases linearly to 0 at a distance of \code{tolerance}.
+
+Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+the structural rules leave several sets of unrelated individuals to choose from,
+each candidate set is scored and the best one is selected.
+}
+\examples{
+rkn_criterion_target_mean("age", target = 40, tolerance = 20)
+
 }
 \seealso{
-\code{\link{rkn_criterion_cutoff}}, \code{\link{rkn_criterion_level}},
-\code{\link{rkn_criterion_category_balance}}
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_cutoff}},
+\code{\link{rkn_criterion_level}}, \code{\link{rkn_criterion_category_balance}}
 }

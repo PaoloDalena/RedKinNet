@@ -7,7 +7,8 @@
 rkn_criterion_cutoff(covariate, cutoff, prefer = c("above", "below"))
 }
 \arguments{
-\item{covariate}{Character. Name of a numeric column expected in \code{fam_df}.}
+\item{covariate}{Character. Name of a numeric vertex attribute of the network, such
+as \code{"age"} for \code{V(g)$age}.}
 
 \item{cutoff}{Numeric. Threshold value.}
 
@@ -18,10 +19,19 @@ rkn_criterion_cutoff(covariate, cutoff, prefer = c("above", "below"))
 An object of class \code{c("rkn_criterion_cutoff", "rkn_criterion")}.
 }
 \description{
-Scores a candidate kept-set by the proportion of its nodes whose \code{covariate} value
-satisfies the preferred direction relative to \code{cutoff}.
+Scores a candidate set of individuals by the proportion of its members whose
+\code{covariate} value lies on the preferred side of \code{cutoff}.
+
+Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+the structural rules leave several sets of unrelated individuals to choose from,
+each candidate set is scored and the best one is selected.
+}
+\examples{
+# Prefer individuals younger than 50
+rkn_criterion_cutoff("age", cutoff = 50, prefer = "below")
+
 }
 \seealso{
-\code{\link{rkn_criterion_target_mean}}, \code{\link{rkn_criterion_level}},
-\code{\link{rkn_criterion_category_balance}}
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
+\code{\link{rkn_criterion_level}}, \code{\link{rkn_criterion_category_balance}}
 }

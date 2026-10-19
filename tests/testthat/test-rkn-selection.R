@@ -96,3 +96,10 @@ test_that("plot falls back to the post plot when diagnostics were not computed",
   expect_message(plot(sel, type = "diagnostics"), "selected vs discarded instead")
   expect_no_message(plot(sel))
 })
+
+test_that("print shows a long call on one line without indentation", {
+  sel <- make_selection()
+  sel$call <- quote(rkn_select_criteria(g = g, criterion_primary = rkn_criterion_level("sex", "F"),
+                                        criterion_secondary = rkn_criterion_target_mean("age", target = 40, tolerance = 20)))
+  expect_output(print(sel), 'criterion_primary = rkn_criterion_level("sex", "F"), criterion_secondary', fixed = TRUE)
+})

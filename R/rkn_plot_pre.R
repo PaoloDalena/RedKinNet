@@ -79,6 +79,24 @@
 #'
 #' @seealso \code{\link{rkn_selection}}
 #'
+#' @example man-roxygen/example-network.R
+#' @examples
+#' rkn_plot_pre(g)
+#'
+#' sel <- rkn_select_random(g, seed = 1)
+#' plot(sel)
+#' plot(sel, type = "diagnostics")
+#'
+#' # The three plots side by side: each individual keeps its position
+#' op <- par(mfrow = c(1, 3))
+#' plot(sel, type = "pre")
+#' plot(sel)
+#' plot(sel, type = "diagnostics")
+#' par(op)
+#'
+#' # Only the families with at least 3 members, without a title
+#' plot(sel, min_family_size = 3, main = "")
+#'
 #' @order 2
 #' @export
 rkn_plot_pre <- function(g,

@@ -12,21 +12,31 @@
 #' Preference for the mean of a continuous covariate
 #'
 #' @description
-#' Scores a candidate kept-set by how close the mean of `covariate`, computed over
-#' the nodes in the kept-set, is to a target value. The score is 1 when the mean
-#' equals `target` and decreases linearly to 0 at a distance of `tolerance`.
+#' Scores a candidate set of individuals by how close the mean of `covariate` over its
+#' members is to a target value. The score is 1 when the mean equals `target` and
+#' decreases linearly to 0 at a distance of `tolerance`.
 #'
-#' @param covariate Character. Name of a numeric column expected in `fam_df`.
-#' @param target Numeric. Target value for the mean of `covariate` within the kept-set.
+#' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+#' the structural rules leave several sets of unrelated individuals to choose from,
+#' each candidate set is scored and the best one is selected.
+#'
+#' @param covariate Character. Name of a numeric vertex attribute of the network, such
+#'   as \code{"age"} for \code{V(g)$age}.
+#' @param target Numeric. Target value for the mean of `covariate` within the candidate
+#'   set.
 #' @param tolerance Numeric (> 0). Distance from `target` at which the score reaches 0.
 #'   There is no default: the appropriate scale depends on the covariate and must be
-#'   supplied explicitly, since within-family variability is not a reliable estimator
-#'   of scale for the small family sizes handled by \code{rkn_select_criteria_upto5()}.
+#'   supplied explicitly, since the variability within a family, which has only a few
+#'   members, is not a reliable estimate of scale.
 #'
 #' @return An object of class \code{c("rkn_criterion_target_mean", "rkn_criterion")}.
 #'
-#' @seealso \code{\link{rkn_criterion_cutoff}}, \code{\link{rkn_criterion_level}},
-#'   \code{\link{rkn_criterion_category_balance}}
+#' @seealso \code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_cutoff}},
+#'   \code{\link{rkn_criterion_level}}, \code{\link{rkn_criterion_category_balance}}
+#'
+#' @examples
+#' rkn_criterion_target_mean("age", target = 40, tolerance = 20)
+#'
 #' @export
 rkn_criterion_target_mean <- function(covariate, target, tolerance) {
   if (!is.character(covariate) || length(covariate) != 1L) {
@@ -57,18 +67,28 @@ rkn_criterion_target_mean <- function(covariate, target, tolerance) {
 #' Preference for values above or below a cutoff on a continuous covariate
 #'
 #' @description
-#' Scores a candidate kept-set by the proportion of its nodes whose `covariate` value
-#' satisfies the preferred direction relative to `cutoff`.
+#' Scores a candidate set of individuals by the proportion of its members whose
+#' `covariate` value lies on the preferred side of `cutoff`.
 #'
-#' @param covariate Character. Name of a numeric column expected in `fam_df`.
+#' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+#' the structural rules leave several sets of unrelated individuals to choose from,
+#' each candidate set is scored and the best one is selected.
+#'
+#' @param covariate Character. Name of a numeric vertex attribute of the network, such
+#'   as \code{"age"} for \code{V(g)$age}.
 #' @param cutoff Numeric. Threshold value.
 #' @param prefer Character. Either `"above"` (prefer \code{covariate > cutoff}) or
 #'   `"below"` (prefer \code{covariate < cutoff}).
 #'
 #' @return An object of class \code{c("rkn_criterion_cutoff", "rkn_criterion")}.
 #'
-#' @seealso \code{\link{rkn_criterion_target_mean}}, \code{\link{rkn_criterion_level}},
-#'   \code{\link{rkn_criterion_category_balance}}
+#' @seealso \code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
+#'   \code{\link{rkn_criterion_level}}, \code{\link{rkn_criterion_category_balance}}
+#'
+#' @examples
+#' # Prefer individuals younger than 50
+#' rkn_criterion_cutoff("age", cutoff = 50, prefer = "below")
+#'
 #' @export
 rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")) {
   prefer <- match.arg(prefer)
@@ -97,17 +117,27 @@ rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")
 #' Preference for a specific level of a covariate
 #'
 #' @description
-#' Scores a candidate kept-set by the proportion of its nodes whose `covariate` value
-#' equals `level`. Intended for dichotomous covariates, but works for any covariate
-#' type supporting `==`.
+#' Scores a candidate set of individuals by the proportion of its members whose
+#' `covariate` value equals `level`. Intended for dichotomous covariates, but works for
+#' any covariate type supporting `==`.
 #'
-#' @param covariate Character. Name of a column expected in `fam_df`.
+#' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+#' the structural rules leave several sets of unrelated individuals to choose from,
+#' each candidate set is scored and the best one is selected.
+#'
+#' @param covariate Character. Name of a vertex attribute of the network, such as
+#'   \code{"sex"} for \code{V(g)$sex}.
 #' @param level The preferred value of `covariate` (matched with `==`).
 #'
 #' @return An object of class \code{c("rkn_criterion_level", "rkn_criterion")}.
 #'
-#' @seealso \code{\link{rkn_criterion_target_mean}}, \code{\link{rkn_criterion_cutoff}},
-#'   \code{\link{rkn_criterion_category_balance}}
+#' @seealso \code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
+#'   \code{\link{rkn_criterion_cutoff}}, \code{\link{rkn_criterion_category_balance}}
+#'
+#' @examples
+#' # Prefer women
+#' rkn_criterion_level("sex", "F")
+#'
 #' @export
 rkn_criterion_level <- function(covariate, level) {
   if (!is.character(covariate) || length(covariate) != 1L) {
@@ -134,28 +164,40 @@ rkn_criterion_level <- function(covariate, level) {
 #' Preference for preserving categorical balance
 #'
 #' @description
-#' Scores a candidate kept-set by 1 minus the total variation distance between the
-#' category proportions of `covariate` within the kept-set and a reference
-#' distribution. Total variation distance is bounded in `[0, 1]`, so the resulting
-#' score is as well.
+#' Scores a candidate set of individuals by 1 minus the total variation distance between
+#' the category proportions of `covariate` among its members and a reference
+#' distribution. Total variation distance lies between 0 and 1, and so does the score.
 #'
-#' @param covariate Character. Name of a column expected in `fam_df`.
+#' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
+#' the structural rules leave several sets of unrelated individuals to choose from,
+#' each candidate set is scored and the best one is selected.
+#'
+#' @param covariate Character. Name of a vertex attribute of the network, such as
+#'   \code{"sex"} for \code{V(g)$sex}.
 #' @param target_props Optional named numeric vector of reference proportions
 #'   (must sum to 1), one entry per targeted category level, e.g.
 #'   \code{c(male = 0.5, female = 0.5)}. Categories absent from `target_props` are not
 #'   assigned an implicit target of zero: the comparison is restricted to the named
-#'   categories only, using their absolute proportion within the kept-set (so kept-set
+#'   categories only, using their absolute proportion within the candidate set (so
 #'   members falling in an unlisted category still dilute these proportions, but their
 #'   mere presence is not itself penalized against an explicit zero target).
-#'   If `NULL` (default), the reference distribution is the family's own observed
-#'   category proportions in `fam_df` (i.e. "preserve this family's natural mix"); in
+#'   If `NULL` (default), the reference distribution is the observed category
+#'   proportions of the whole family (i.e. "preserve this family's natural mix"); in
 #'   that case every observed level already has a real reference proportion, so there
 #'   are no omitted categories to begin with.
 #'
 #' @return An object of class \code{c("rkn_criterion_category_balance", "rkn_criterion")}.
 #'
-#' @seealso \code{\link{rkn_criterion_target_mean}}, \code{\link{rkn_criterion_cutoff}},
-#'   \code{\link{rkn_criterion_level}}
+#' @seealso \code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
+#'   \code{\link{rkn_criterion_cutoff}}, \code{\link{rkn_criterion_level}}
+#'
+#' @examples
+#' # Keep the mix of each family
+#' rkn_criterion_category_balance("sex")
+#'
+#' # Aim at equal proportions of women and men
+#' rkn_criterion_category_balance("sex", c(F = 0.5, M = 0.5))
+#'
 #' @export
 rkn_criterion_category_balance <- function(covariate, target_props = NULL) {
   if (!is.character(covariate) || length(covariate) != 1L) {

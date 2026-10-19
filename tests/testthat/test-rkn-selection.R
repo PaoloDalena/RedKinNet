@@ -35,27 +35,45 @@ test_that("summary returns a summary.rkn_selection with consistent tables", {
   expect_s3_class(s, "summary.rkn_selection")
   expect_equal(s$overall$n_individuals, n_ind)
   expect_equal(s$overall$n_selected, length(sel$kept))
-  expect_equal(sum(s$by_size$n_families), length(sel$family_sizes))
-  expect_equal(sum(s$by_size$n_individuals), n_ind)
-  expect_equal(sum(s$by_size$n_selected), length(sel$kept))
-  expect_equal(sum(s$structures$n_families), length(sel$family_sizes))
+  expect_equal(sum(s$by_structure$n_families), length(sel$family_sizes))
+  expect_equal(sum(s$by_structure$n_individuals), n_ind)
+  expect_equal(sum(s$by_structure$n_selected), length(sel$kept))
   expect_equal(sum(s$decisions), n_ind)
-  expect_equal(sum(s$decisions[, "kept"]), length(sel$kept))
+  expect_equal(sum(s$decisions[, "selected"]), length(sel$kept))
 })
 
-test_that("summary without diagnostics keeps the size table and drops the diagnostic tables", {
+test_that("summary assigns each family to its structure", {
+  parts <- list(igraph::make_empty_graph(1, directed = FALSE), igraph::make_ring(2),
+                igraph::make_ring(3, circular = FALSE), igraph::make_ring(3), igraph::make_star(4, mode = "undirected"),
+                igraph::make_ring(5), igraph::make_ring(7), igraph::make_ring(9, circular = FALSE))
+  g <- igraph::make_empty_graph(0, directed = FALSE)
+  for (p in parts) g <- igraph::disjoint_union(g, p)
+  igraph::V(g)$name <- paste0("id", seq_len(igraph::vcount(g)))
+  res <- rkn_select_random(g, seed = 1, diagnostics = TRUE, verbose = FALSE)
+  sel <- .new_rkn_selection(kept = res$kept, discarded = res$discarded,
+                            family_sizes = as.integer(igraph::components(g)$csize),
+                            method = "random", criteria = NULL, seed = 1,
+                            node_diagnostics = NULL, family_summary = NULL, graph = g,
+                            call = quote(rkn_select_random(g = g, seed = 1)))
+  s <- summary(sel)
+  expect_equal(s$by_structure$family_size, c("1", "2", "3", "3", "4", "5", "7-9"))
+  expect_equal(s$by_structure$structure, .rkn_structure_classes)
+  expect_equal(s$by_structure$n_families, c(1, 1, 1, 1, 1, 1, 2))
+  expect_equal(s$by_structure$n_selected, c(1, 1, 2, 1, 3, 2, 8))
+})
+
+test_that("summary without diagnostics keeps the structure table and drops the decision table", {
   s <- summary(make_selection(diagnostics = FALSE))
-  expect_equal(sum(s$by_size$n_individuals), s$overall$n_individuals)
-  expect_null(s$structures)
+  expect_equal(sum(s$by_structure$n_individuals), s$overall$n_individuals)
   expect_null(s$decisions)
 })
 
 test_that("the summary print shows its sections and signals missing diagnostics", {
   s <- summary(make_selection())
   expect_output(print(s), "<rkn_selection summary> Random selection, seed 1")
-  expect_output(print(s), "Selection by family size")
-  expect_output(print(s), "Families by recognised structure")
+  expect_output(print(s), "Selection by family structure")
   expect_output(print(s), "Individuals by type of decision and outcome")
+  expect_output(print(s), "decided among alternative sets")
   capture.output(out <- withVisible(print(s)))
   expect_false(out$visible)
   expect_message(expect_output(print(summary(make_selection(diagnostics = FALSE)))), "diagnostics = TRUE")

@@ -18,19 +18,20 @@ An object of class \code{summary.rkn_selection}: a list with elements
 \item{\code{header}}{a one-line description of how the selection was made;}
 \item{\code{overall}}{a one-row data frame with the numbers of individuals, of
 selected individuals and of families;}
-\item{\code{by_size}}{a data frame with one row per family size, giving the number
-of families, of individuals and of selected individuals;}
-\item{\code{structures}}{a data frame with the number of families per recognised
-structure, or \code{NULL} if diagnostics were not computed;}
-\item{\code{decisions}}{a contingency table of individuals by type of decision
-(a priori or among candidates) and outcome (kept or discarded), or \code{NULL}
-if diagnostics were not computed.}
+\item{\code{by_structure}}{a data frame with one row per family structure present,
+giving the family size (a range for families of 6 or more members), the
+structure, and the numbers of families, of individuals and of selected
+individuals;}
+\item{\code{decisions}}{a contingency table of individuals by type of decision and
+outcome (selected or discarded), or \code{NULL} if diagnostics were not
+computed.}
 }
 }
 \description{
-Computes summary tables of a selection of unrelated individuals: selection counts by
-family size and, when diagnostics were computed, the structures recognised in the
-families and how each individual was decided.
+Computes summary tables of a selection of unrelated individuals: the selection by
+family structure and, when diagnostics were computed, how each individual was
+decided. The family structures and the types of decision are described in the
+sections Family structures and Types of decision of \code{\link{rkn_selection}}.
 }
 \seealso{
 \code{\link{rkn_selection}}

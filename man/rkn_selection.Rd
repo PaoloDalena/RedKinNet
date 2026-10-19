@@ -27,8 +27,8 @@ otherwise;}
 \item{\code{node_diagnostics}}{a data frame with one row per individual, or
 \code{NULL} without diagnostics. Columns: \code{id}; \code{pre_class}, how the
 individual was decided (\code{"kept_apriori"}, \code{"discarded_apriori"},
-\code{"candidate_simple"} or \code{"candidate_complex"}, described in
-\code{\link{plot.rkn_selection}}); \code{post_class}, \code{"kept"} or
+\code{"candidate_simple"} or \code{"candidate_complex"}, described in the section
+Types of decision below); \code{post_class}, \code{"kept"} or
 \code{"discarded"}; \code{is_selected}, the outcome as a logical;
 \code{pre_reason}, an internal label of the rule or procedure that decided the
 individual; \code{family_id} and \code{family_size};}
@@ -45,5 +45,47 @@ individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 \item{\code{graph}}{the igraph network the selection was made on;}
 \item{\code{call}}{the call that produced the selection.}
 }
+}
+
+\section{Family structures}{
+
+A family is a connected component of the relatedness network: a group of
+individuals linked, directly or through other members, by relatedness above the
+threshold used to build the network. \code{\link{summary.rkn_selection}} groups the
+families into seven structures:
+\describe{
+\item{single individual}{an individual related to no one else in the cohort;}
+\item{related pair}{two related individuals;}
+\item{chain of three}{three individuals of whom two are not related to each other
+but both are related to the third, typically two parents and their child;}
+\item{three mutually related}{three individuals all related to each other, for
+instance three siblings or a parent and two children;}
+\item{family of 4, of 5, and of 6 or more members}{larger families. Families of up
+to 5 members are resolved by the structural rules in \code{\link{rules_db}},
+larger families by reducing the family step by step with structural rules and
+resolving what remains.}
+}
+}
+
+\section{Types of decision}{
+
+Within each family, every individual is decided in one of four ways, reported by
+\code{\link{summary.rkn_selection}} and shown by the \code{"diagnostics"} plot (see
+\code{\link{plot.rkn_selection}}):
+\describe{
+\item{kept by a structural rule}{a rule based on the structure of the family keeps
+the individual without any choice being made (for instance the leaves of a
+star-shaped family);}
+\item{discarded by a structural rule}{a structural rule discards the individual
+(for instance the centre of a star);}
+\item{decided among single candidates}{the remaining choice is among
+interchangeable candidates of a single group, such as the two members of a
+related pair, and one of them is selected;}
+\item{decided among alternative sets}{several maximum sets remain that differ in
+more than one individual, and one of them is selected.}
+}
+The choices among candidates are made at random by
+\code{\link{rkn_select_random}} and by the criteria in
+\code{\link{rkn_select_criteria}}.
 }
 

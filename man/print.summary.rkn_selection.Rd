@@ -4,13 +4,11 @@
 \alias{print.summary.rkn_selection}
 \title{Print a summary of an rkn_selection object}
 \usage{
-\method{print}{summary.rkn_selection}(x, max_structures = 10, ...)
+\method{print}{summary.rkn_selection}(x, ...)
 }
 \arguments{
 \item{x}{A \code{summary.rkn_selection} object, as returned by
 \code{\link{summary.rkn_selection}}.}
-
-\item{max_structures}{Maximum number of recognised structures to list.}
 
 \item{...}{Not used.}
 }

@@ -10,11 +10,6 @@
 .rkn_size_class_colours <- c("1" = "#C6DBEF", "2" = "#9ECAE1", "3" = "#6BAED6",
                              "4" = "#4292C6", "5" = "#2171B5", "6+" = "#084594")
 
-.rkn_decision_labels <- c(kept_apriori = "kept by a structural rule",
-                          discarded_apriori = "discarded by a structural rule",
-                          candidate_simple = "decided among single candidates",
-                          candidate_complex = "decided among alternative sets")
-
 #' Internal helper: keep the families with at least a given number of members
 #'
 #' Returns the subgraph of the families of \code{g} with at least

@@ -23,8 +23,8 @@
 #'   \item{\code{node_diagnostics}}{a data frame with one row per individual, or
 #'     \code{NULL} without diagnostics. Columns: \code{id}; \code{pre_class}, how the
 #'     individual was decided (\code{"kept_apriori"}, \code{"discarded_apriori"},
-#'     \code{"candidate_simple"} or \code{"candidate_complex"}, described in
-#'     \code{\link{plot.rkn_selection}}); \code{post_class}, \code{"kept"} or
+#'     \code{"candidate_simple"} or \code{"candidate_complex"}, described in the section
+#'     Types of decision below); \code{post_class}, \code{"kept"} or
 #'     \code{"discarded"}; \code{is_selected}, the outcome as a logical;
 #'     \code{pre_reason}, an internal label of the rule or procedure that decided the
 #'     individual; \code{family_id} and \code{family_size};}
@@ -42,8 +42,56 @@
 #'   \item{\code{call}}{the call that produced the selection.}
 #' }
 #'
+#' @section Family structures:
+#' A family is a connected component of the relatedness network: a group of
+#' individuals linked, directly or through other members, by relatedness above the
+#' threshold used to build the network. \code{\link{summary.rkn_selection}} groups the
+#' families into seven structures:
+#' \describe{
+#'   \item{single individual}{an individual related to no one else in the cohort;}
+#'   \item{related pair}{two related individuals;}
+#'   \item{chain of three}{three individuals of whom two are not related to each other
+#'     but both are related to the third, typically two parents and their child;}
+#'   \item{three mutually related}{three individuals all related to each other, for
+#'     instance three siblings or a parent and two children;}
+#'   \item{family of 4, of 5, and of 6 or more members}{larger families. Families of up
+#'     to 5 members are resolved by the structural rules in \code{\link{rules_db}},
+#'     larger families by reducing the family step by step with structural rules and
+#'     resolving what remains.}
+#' }
+#'
+#' @section Types of decision:
+#' Within each family, every individual is decided in one of four ways, reported by
+#' \code{\link{summary.rkn_selection}} and shown by the \code{"diagnostics"} plot (see
+#' \code{\link{plot.rkn_selection}}):
+#' \describe{
+#'   \item{kept by a structural rule}{a rule based on the structure of the family keeps
+#'     the individual without any choice being made (for instance the leaves of a
+#'     star-shaped family);}
+#'   \item{discarded by a structural rule}{a structural rule discards the individual
+#'     (for instance the centre of a star);}
+#'   \item{decided among single candidates}{the remaining choice is among
+#'     interchangeable candidates of a single group, such as the two members of a
+#'     related pair, and one of them is selected;}
+#'   \item{decided among alternative sets}{several maximum sets remain that differ in
+#'     more than one individual, and one of them is selected.}
+#' }
+#' The choices among candidates are made at random by
+#' \code{\link{rkn_select_random}} and by the criteria in
+#' \code{\link{rkn_select_criteria}}.
+#'
 #' @name rkn_selection
 NULL
+
+.rkn_structure_classes <- c("single individual", "related pair",
+                            "chain of three (e.g. parents and child)", "three mutually related",
+                            "family of 4 members", "family of 5 members",
+                            "family of 6 or more members")
+
+.rkn_decision_labels <- c(kept_apriori = "kept by a structural rule",
+                          discarded_apriori = "discarded by a structural rule",
+                          candidate_simple = "decided among single candidates",
+                          candidate_complex = "decided among alternative sets")
 
 #' Internal constructor for rkn_selection objects
 #'
@@ -124,9 +172,10 @@ print.rkn_selection <- function(x, ...) {
 
 #' Summarise an rkn_selection object
 #'
-#' Computes summary tables of a selection of unrelated individuals: selection counts by
-#' family size and, when diagnostics were computed, the structures recognised in the
-#' families and how each individual was decided.
+#' Computes summary tables of a selection of unrelated individuals: the selection by
+#' family structure and, when diagnostics were computed, how each individual was
+#' decided. The family structures and the types of decision are described in the
+#' sections Family structures and Types of decision of \code{\link{rkn_selection}}.
 #'
 #' @param object An \code{rkn_selection} object, as returned by
 #'   \code{\link{rkn_select_random}} or \code{\link{rkn_select_criteria}}.
@@ -137,58 +186,72 @@ print.rkn_selection <- function(x, ...) {
 #'   \item{\code{header}}{a one-line description of how the selection was made;}
 #'   \item{\code{overall}}{a one-row data frame with the numbers of individuals, of
 #'     selected individuals and of families;}
-#'   \item{\code{by_size}}{a data frame with one row per family size, giving the number
-#'     of families, of individuals and of selected individuals;}
-#'   \item{\code{structures}}{a data frame with the number of families per recognised
-#'     structure, or \code{NULL} if diagnostics were not computed;}
-#'   \item{\code{decisions}}{a contingency table of individuals by type of decision
-#'     (a priori or among candidates) and outcome (kept or discarded), or \code{NULL}
-#'     if diagnostics were not computed.}
+#'   \item{\code{by_structure}}{a data frame with one row per family structure present,
+#'     giving the family size (a range for families of 6 or more members), the
+#'     structure, and the numbers of families, of individuals and of selected
+#'     individuals;}
+#'   \item{\code{decisions}}{a contingency table of individuals by type of decision and
+#'     outcome (selected or discarded), or \code{NULL} if diagnostics were not
+#'     computed.}
 #' }
 #'
 #' @seealso \code{\link{rkn_selection}}
 #'
 #' @export
 summary.rkn_selection <- function(object, ...) {
-  sizes <- object$family_sizes
-  membership <- igraph::components(object$graph)$membership
-  names(membership) <- igraph::V(object$graph)$name
-  kept_per_family <- tabulate(membership[object$kept], nbins = length(sizes))
+  g <- object$graph
+  comp <- igraph::components(g)
+  size <- comp$csize
+  n_edges <- tabulate(comp$membership[igraph::ends(g, igraph::E(g), names = FALSE)[, 1]],
+                      nbins = comp$no)
+  kept_per_family <- tabulate(comp$membership[match(object$kept, igraph::V(g)$name)],
+                              nbins = comp$no)
 
-  size_levels <- sort(unique(sizes))
-  n_families <- integer(length(size_levels))
-  n_selected <- integer(length(size_levels))
-  for (k in seq_along(size_levels)) {
-    in_level <- sizes == size_levels[k]
-    n_families[k] <- sum(in_level)
-    n_selected[k] <- sum(kept_per_family[in_level])
+  # Index into .rkn_structure_classes: sizes 1 and 2, then three individuals as a chain
+  # (two relationships) or all related (three), then 4, 5 and 6 or more members.
+  class_id <- ifelse(size <= 2, size, pmin(size, 6) + 1)
+  class_id[size == 3 & n_edges == 2] <- 3
+
+  present <- sort(unique(class_id))
+  family_size <- character(length(present))
+  n_families <- integer(length(present))
+  n_individuals <- integer(length(present))
+  n_selected <- integer(length(present))
+  for (k in seq_along(present)) {
+    in_class <- class_id == present[k]
+    r <- range(size[in_class])
+    family_size[k] <- if (r[1] == r[2]) as.character(r[1]) else paste0(r[1], "-", r[2])
+    n_families[k] <- sum(in_class)
+    n_individuals[k] <- sum(size[in_class])
+    n_selected[k] <- sum(kept_per_family[in_class])
   }
-  by_size <- .rkn_df(
-    family_size = size_levels,
+  by_structure <- .rkn_df(
+    family_size = family_size,
+    structure = .rkn_structure_classes[present],
     n_families = n_families,
-    n_individuals = size_levels * n_families,
+    n_individuals = n_individuals,
     n_selected = n_selected
   )
 
-  n_ind <- length(object$kept) + length(object$discarded)
   overall <- .rkn_df(
-    n_individuals = n_ind,
+    n_individuals = length(object$kept) + length(object$discarded),
     n_selected = length(object$kept),
-    n_families = length(sizes)
+    n_families = comp$no
   )
 
-  structures <- NULL
   decisions <- NULL
   if (object$diagnostics) {
-    counts <- sort(table(object$family_summary$structure_name), decreasing = TRUE)
-    structures <- .rkn_df(structure = names(counts), n_families = as.integer(counts))
-    decisions <- table(decision = object$node_diagnostics$pre_class,
-                       outcome = object$node_diagnostics$post_class)
+    nd <- object$node_diagnostics
+    decisions <- table(
+      decision = factor(.rkn_decision_labels[nd$pre_class], levels = .rkn_decision_labels),
+      outcome = factor(ifelse(nd$post_class == "kept", "selected", "discarded"),
+                       levels = c("selected", "discarded"))
+    )
   }
 
   structure(
-    list(header = .rkn_selection_header(object), overall = overall, by_size = by_size,
-         structures = structures, decisions = decisions),
+    list(header = .rkn_selection_header(object), overall = overall,
+         by_structure = by_structure, decisions = decisions),
     class = "summary.rkn_selection"
   )
 }
@@ -197,32 +260,29 @@ summary.rkn_selection <- function(object, ...) {
 #'
 #' @param x A \code{summary.rkn_selection} object, as returned by
 #'   \code{\link{summary.rkn_selection}}.
-#' @param max_structures Maximum number of recognised structures to list.
 #' @param ... Not used.
 #'
 #' @return \code{x}, invisibly.
 #'
 #' @method print summary.rkn_selection
 #' @export
-print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
+print.summary.rkn_selection <- function(x, ...) {
   o <- x$overall
   cat(sprintf("<rkn_selection summary> %s\n", x$header))
   cat(sprintf("Individuals: %d | selected: %d (%.1f%%) | families: %d\n\n",
               o$n_individuals, o$n_selected, 100 * o$n_selected / o$n_individuals, o$n_families))
 
-  cat("Selection by family size:\n")
-  print(x$by_size, row.names = FALSE)
+  # Short headers keep the table within 80 columns.
+  by_structure <- x$by_structure
+  names(by_structure) <- c("size", "structure", "families", "individuals", "selected")
+  cat("Selection by family structure:\n")
+  print(by_structure, row.names = FALSE)
 
-  if (is.null(x$structures)) {
+  if (is.null(x$decisions)) {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); ",
             "rerun with diagnostics = TRUE for a richer output.")
     return(invisible(x))
   }
-
-  n_struct <- nrow(x$structures)
-  cat(sprintf("\nFamilies by recognised structure (%s):\n",
-              if (n_struct > max_structures) sprintf("top %d of %d", max_structures, n_struct) else "all"))
-  print(x$structures[seq_len(min(n_struct, max_structures)), , drop = FALSE], row.names = FALSE)
 
   cat("\nIndividuals by type of decision and outcome:\n")
   print(x$decisions)
@@ -230,25 +290,6 @@ print.summary.rkn_selection <- function(x, max_structures = 10, ...) {
 }
 
 #' @param ... Not used.
-#'
-#' @details
-#' The \code{"diagnostics"} plot of a selection distinguishes four ways in which an
-#' individual is decided:
-#' \describe{
-#'   \item{kept by a structural rule}{a rule based on the structure of the family keeps
-#'     the individual without any choice being made (for instance the leaves of a
-#'     star-shaped family);}
-#'   \item{discarded by a structural rule}{a structural rule discards the individual
-#'     (for instance the centre of a star);}
-#'   \item{decided among single candidates}{the remaining choice is among
-#'     interchangeable candidates of a single group, such as the two members of a
-#'     related pair, and one of them is selected;}
-#'   \item{decided among alternative sets}{several maximum sets remain that differ in
-#'     more than one individual, and one of them is selected.}
-#' }
-#' The choices among candidates are made at random by
-#' \code{\link{rkn_select_random}} and by the criteria in
-#' \code{\link{rkn_select_criteria}}.
 #'
 #' @rdname rkn_plot_pre
 #' @order 1

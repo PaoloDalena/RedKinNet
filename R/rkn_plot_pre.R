@@ -20,8 +20,9 @@
 #' @param type What the colours show (\code{plot()} only):
 #'   \itemize{
 #'     \item \code{"post"} (default): selected and discarded individuals;
-#'     \item \code{"diagnostics"}: how each individual was decided (see Details);
-#'       requires a selection computed with \code{diagnostics = TRUE};
+#'     \item \code{"diagnostics"}: how each individual was decided, as described in the
+#'       section Types of decision of \code{\link{rkn_selection}}; requires a selection
+#'       computed with \code{diagnostics = TRUE};
 #'     \item \code{"pre"}: the families before the selection, as drawn by
 #'       \code{rkn_plot_pre()}.
 #'   }

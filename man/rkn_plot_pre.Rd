@@ -43,8 +43,9 @@ in \code{V(g)$name}.}
 \item{type}{What the colours show (\code{plot()} only):
 \itemize{
 \item \code{"post"} (default): selected and discarded individuals;
-\item \code{"diagnostics"}: how each individual was decided (see Details);
-requires a selection computed with \code{diagnostics = TRUE};
+\item \code{"diagnostics"}: how each individual was decided, as described in the
+section Types of decision of \code{\link{rkn_selection}}; requires a selection
+computed with \code{diagnostics = TRUE};
 \item \code{"pre"}: the families before the selection, as drawn by
 \code{rkn_plot_pre()}.
 }}
@@ -126,25 +127,6 @@ families before the selection, as \code{rkn_plot_pre()} does.
 }
 All plots of the same network put each individual in the same position, so they can
 be compared or combined in panels, for instance with \code{par(mfrow = c(1, 3))}.
-}
-\details{
-The \code{"diagnostics"} plot of a selection distinguishes four ways in which an
-individual is decided:
-\describe{
-\item{kept by a structural rule}{a rule based on the structure of the family keeps
-the individual without any choice being made (for instance the leaves of a
-star-shaped family);}
-\item{discarded by a structural rule}{a structural rule discards the individual
-(for instance the centre of a star);}
-\item{decided among single candidates}{the remaining choice is among
-interchangeable candidates of a single group, such as the two members of a
-related pair, and one of them is selected;}
-\item{decided among alternative sets}{several maximum sets remain that differ in
-more than one individual, and one of them is selected.}
-}
-The choices among candidates are made at random by
-\code{\link{rkn_select_random}} and by the criteria in
-\code{\link{rkn_select_criteria}}.
 }
 \seealso{
 \code{\link{rkn_selection}}

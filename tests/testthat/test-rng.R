@@ -13,8 +13,8 @@ test_that("seeded network-level selections leave the caller's random number stre
   g <- make_network(41)
   igraph::V(g)$sex <- rep(c("F", "M"), length.out = igraph::vcount(g))
   crit <- rkn_criterion_level("sex", "F")
-  expect_identical(runif_after(function() rkn_select_random(g, seed = 1, verbose = FALSE)), reference())
-  expect_identical(runif_after(function() rkn_select_criteria(g, crit, seed = 1, verbose = FALSE)), reference())
+  expect_identical(runif_after(function() rkn_select_random(g, seed = 1)), reference())
+  expect_identical(runif_after(function() rkn_select_criteria(g, crit, seed = 1)), reference())
 })
 
 test_that("seeded per-family selections leave the caller's random number stream untouched", {
@@ -36,7 +36,7 @@ test_that("seeded per-family selections leave the caller's random number stream 
 test_that("a session without a random seed stays without one after a seeded selection", {
   g <- make_network(42)
   if (exists(".Random.seed", envir = globalenv())) rm(".Random.seed", envir = globalenv())
-  rkn_select_random(g, seed = 1, verbose = FALSE)
+  rkn_select_random(g, seed = 1)
   expect_false(exists(".Random.seed", envir = globalenv()))
 })
 

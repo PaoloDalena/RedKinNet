@@ -9,11 +9,7 @@ rkn_select_criteria(
   criterion_primary,
   criterion_secondary = NULL,
   seed = NULL,
-  diagnostics = FALSE,
-  return_results_by_family = FALSE,
-  verbose = TRUE,
-  plot = c("no", "pre", "post", "diagnostics"),
-  plot_args = list()
+  diagnostics = TRUE
 )
 }
 \arguments{
@@ -29,28 +25,16 @@ resolutions within each family.}
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived
 as seed + family_id and are used only to break exact ties in the criterion score(s).}
 
-\item{diagnostics}{Logical. If TRUE, returns node-level diagnostics and a standardized family summary.}
-
-\item{return_results_by_family}{Logical. If TRUE (and diagnostics=TRUE), also returns the per-family raw outputs
-in a list (potentially large object).}
-
-\item{verbose}{Logical. If TRUE, prints a formatted summary to the console.}
-
-\item{plot}{Character. One of:
-\itemize{
-\item \code{"no"}: do not produce any plot (default);
-\item \code{"pre"}: plot the full network pre-selection, colored by family (calls \code{rkn_plot_pre()});
-\item \code{"post"}: plot the full network post-selection, colored by kept vs discarded;
-\item \code{"diagnostics"}: plot the full network colored by diagnostic classes.
-}
-If \code{plot="diagnostics"} is requested with \code{diagnostics=FALSE}, a warning is issued and the function
-falls back to \code{plot="post"} (kept vs discarded).}
-
-\item{plot_args}{Optional named list of arguments passed to the plotting function; see
-\code{\link{rkn_plot_pre}} and \code{\link{plot.rkn_selection}}.}
+\item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
+how each individual and each family was resolved (\code{node_diagnostics} and
+\code{family_summary}), which \code{print()}, \code{summary()} and
+\code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
+of the returned object; on very large networks, \code{diagnostics = FALSE} returns
+the selection alone.}
 }
 \value{
-Same structure as \code{\link{rkn_select_random}}.
+An object of class \code{\link{rkn_selection}}, as for
+\code{\link{rkn_select_random}}; its \code{criteria} element holds the criteria.
 }
 \description{
 Criteria-based counterpart of \code{\link{rkn_select_random}}. The network is
@@ -58,14 +42,14 @@ partitioned into families, defined as the connected components of \code{g}, and
 each family is resolved independently: families with at most 5 nodes through the
 structural rules in \code{\link{rules_db}}, larger families through structural
 reductions followed by the resolution of the remaining ambiguity. Ambiguous
-selections are resolved by criterion score rather than uniformly at random; family
-construction, aggregation of results, console summary, plotting, and return
-structure are identical to \code{rkn_select_random()}.
+selections are resolved by criterion score rather than at random; the partition into
+families and the returned object are as in \code{rkn_select_random()}.
 
 Covariates referenced by the criteria are read from the vertex attributes of
 \code{g}.
 }
 \seealso{
-\code{\link{rkn_select_random}}, \code{\link{rkn_criterion_target_mean}},
-\code{\link{rules_db}}, \code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
+\code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
+\code{\link{plot.rkn_selection}}, \code{\link{rkn_select_random}},
+\code{\link{rkn_criterion_target_mean}}, \code{\link{rules_db}}.
 }

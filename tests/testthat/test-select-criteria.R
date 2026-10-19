@@ -99,8 +99,7 @@ test_that("network-level criteria selection reads covariates from vertex attribu
     set.seed(seed)
     igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
     igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
-    res <- rkn_select_criteria(g, criterion_primary = crits$level, seed = seed,
-                               diagnostics = TRUE, verbose = FALSE)
+    res <- rkn_select_criteria(g, criterion_primary = crits$level, seed = seed)
     expect_identical(selection_problems(g, res$kept, res$discarded, network_alpha(g)), character(0))
   }
 })
@@ -109,6 +108,19 @@ test_that("network-level criteria selection is reproducible", {
   g <- make_network(21)
   set.seed(21)
   igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
-  expect_identical(rkn_select_criteria(g, criterion_primary = crits$level, seed = 2, verbose = FALSE),
-                   rkn_select_criteria(g, criterion_primary = crits$level, seed = 2, verbose = FALSE))
+  expect_identical(rkn_select_criteria(g, criterion_primary = crits$level, seed = 2),
+                   rkn_select_criteria(g, criterion_primary = crits$level, seed = 2))
+})
+
+test_that("the criteria selection records its criteria in the rkn_selection object", {
+  g <- make_network(22)
+  set.seed(22)
+  igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
+  igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
+  sel <- rkn_select_criteria(g, crits$level, crits$target_mean, seed = 2, diagnostics = FALSE)
+  expect_s3_class(sel, "rkn_selection")
+  expect_identical(sel$method, "criteria")
+  expect_identical(sel$criteria, list(primary = crits$level, secondary = crits$target_mean))
+  expect_identical(sel$seed, 2)
+  expect_false(sel$diagnostics)
 })

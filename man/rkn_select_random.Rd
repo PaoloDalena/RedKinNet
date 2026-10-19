@@ -4,53 +4,33 @@
 \alias{rkn_select_random}
 \title{Random selection over an entire network (connected-component-wise)}
 \usage{
-rkn_select_random(
-  g,
-  seed = NULL,
-  diagnostics = FALSE,
-  return_results_by_family = FALSE,
-  verbose = TRUE,
-  plot = c("no", "pre", "post", "diagnostics"),
-  plot_args = list()
-)
+rkn_select_random(g, seed = NULL, diagnostics = TRUE)
 }
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name.}
 
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
 
-\item{diagnostics}{Logical. If TRUE, returns node-level diagnostics and a standardized family summary.}
-
-\item{return_results_by_family}{Logical. If TRUE (and diagnostics=TRUE), also returns the per-family raw outputs
-in a list (potentially large object).}
-
-\item{verbose}{Logical. If TRUE, prints a formatted summary to the console.}
-
-\item{plot}{Character. One of:
-\itemize{
-\item \code{"no"}: do not produce any plot (default);
-\item \code{"pre"}: plot the full network pre-selection, colored by family (calls \code{rkn_plot_pre()});
-\item \code{"post"}: plot the full network post-selection, colored by kept vs discarded;
-\item \code{"diagnostics"}: plot the full network colored by diagnostic classes.
-}
-If \code{plot="diagnostics"} is requested with \code{diagnostics=FALSE}, a warning is issued and the function
-falls back to \code{plot="post"} (kept vs discarded).}
-
-\item{plot_args}{Optional named list of arguments passed to the plotting function; see
-\code{\link{rkn_plot_pre}} and \code{\link{plot.rkn_selection}}.}
+\item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
+how each individual and each family was resolved (\code{node_diagnostics} and
+\code{family_summary}), which \code{print()}, \code{summary()} and
+\code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
+of the returned object; on very large networks, \code{diagnostics = FALSE} returns
+the selection alone.}
 }
 \value{
-If diagnostics=FALSE: a character vector of selected node IDs (kept).
-If diagnostics=TRUE: a list with elements:
-kept, discarded, node_diagnostics, family_summary,
-and optionally results_by_family (if return_results_by_family=TRUE).
+An object of class \code{\link{rkn_selection}}, with \code{print},
+\code{summary} and \code{plot} methods; \code{$kept} holds the identifiers of the
+selected individuals.
 }
 \description{
 The network is partitioned into families, defined as the connected components of
 \code{g}, and each family is resolved independently. Since no relationship crosses
 two components, the union of the per-family selections is a set of mutually
-unrelated individuals.
+unrelated individuals. Where several maximum sets of unrelated individuals are
+possible, the choice among them is made at random.
 }
 \seealso{
-\code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
+\code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
+\code{\link{plot.rkn_selection}}, \code{\link{rkn_select_criteria}}.
 }

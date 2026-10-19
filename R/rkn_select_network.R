@@ -2,26 +2,16 @@
 #'
 #' Partitions \code{g} into families (connected components), resolves each family with
 #' \code{select_upto5} (families of at most 5 individuals) or \code{select_6plus}
-#' (larger families), and assembles the results, the console summary, the diagnostics
-#' tables and the requested plot. Both per-family functions are called with the
+#' (larger families), and returns the selection as an \code{rkn_selection} object, with
+#' the diagnostics tables when requested. Both per-family functions are called with the
 #' arguments \code{fam_df}, \code{g_sub}, \code{seed} and \code{return_diagnostics};
-#' \code{caller} names the exported selector in the console summary. The arguments are
-#' validated by the exported selectors.
+#' \code{method}, \code{criteria} and \code{call} are stored in the object. The
+#' arguments are validated by the exported selectors.
 #'
 #' @keywords internal
 #' @noRd
 .rkn_select_network <- function(g, select_upto5, select_6plus, seed, diagnostics,
-                                return_results_by_family, verbose, plot, plot_args, caller) {
-  # Diagnostics plotting needs the diagnostics output; otherwise fall back to the post plot.
-  plot_effective <- plot
-  if (identical(plot, "diagnostics") && !isTRUE(diagnostics)) {
-    warning(
-      "plot='diagnostics' requires diagnostics=TRUE. Falling back to plot='post' (kept vs discarded).",
-      call. = FALSE
-    )
-    plot_effective <- "post"
-  }
-
+                                method, criteria, call) {
   n_nodes <- igraph::vcount(g)
 
   # Families are extracted by integer vertex id: extraction by name scans the
@@ -29,14 +19,6 @@
   fam_idx <- split(seq_len(n_nodes), igraph::components(g)$membership)
   n_fam <- length(fam_idx)
   fam_sizes <- lengths(fam_idx)
-
-  if (identical(plot_effective, "pre")) {
-    do.call(rkn_plot_pre, c(list(g = g), plot_args))
-  }
-
-  .pct <- function(x, denom) if (denom == 0) NA_real_ else 100 * x / denom
-  .fmt_pct <- function(x, digits = 1) if (is.na(x)) "n/a" else sprintf(paste0("%.", digits, "f%%"), x)
-  .fmt_num <- function(x, digits = 2) sprintf(paste0("%.", digits, "f"), x)
 
   # Extract a per-family data.frame of vertex attributes (robust to missing attributes).
   # Node attributes and the structural measures required by rules_db are computed once
@@ -56,12 +38,6 @@
     cols <- node_cols
     for (j in seq_along(cols)) cols[[j]] <- cols[[j]][ids]
     do.call(.rkn_df, cols)
-  }
-
-  if (isTRUE(diagnostics) && isTRUE(return_results_by_family)) {
-    results_by_family <- vector("list", n_fam)
-  } else {
-    results_by_family <- NULL
   }
 
   kept_list <- vector("list", n_fam)
@@ -104,8 +80,6 @@
       selector_used <- "6plus"
     }
 
-    if (!is.null(results_by_family)) results_by_family[[i]] <- out
-
     kept_list[[i]] <- out$kept
     discarded_list[[i]] <- out$discarded
 
@@ -127,80 +101,44 @@
   kept_all <- unique(unlist(kept_list, use.names = FALSE))
   discarded_all <- unique(unlist(discarded_list, use.names = FALSE))
 
-  if (isTRUE(verbose)) {
-    n_upto5 <- sum(fam_sizes <= 5)
-    n_6plus <- sum(fam_sizes >= 6)
-    nodes_selected <- length(kept_all)
-
-    msg <- c(
-      sprintf("=== %s() summary ===", caller),
-      sprintf("Total families: %d | size (min/mean/max): %d / %s / %d",
-              n_fam, min(fam_sizes), .fmt_num(mean(fam_sizes), 2), max(fam_sizes)),
-      sprintf("Families <=5: %d (%s) | Families 6+: %d (%s)",
-              n_upto5, .fmt_pct(.pct(n_upto5, n_fam)),
-              n_6plus, .fmt_pct(.pct(n_6plus, n_fam))),
-      sprintf("Total nodes: %d | Selected nodes: %d (%s)",
-              n_nodes, nodes_selected, .fmt_pct(.pct(nodes_selected, n_nodes)))
-    )
-
-    if (isTRUE(diagnostics)) {
-      n_livs <- sum(used_largest_ivs_vec %in% TRUE, na.rm = TRUE)
-      msg <- c(msg, sprintf("Families resolved via largest_ivs: %d (%s)",
-                            n_livs, .fmt_pct(.pct(n_livs, n_fam))))
-    } else {
-      msg <- c(msg, "Families resolved via largest_ivs: n/a (available only with diagnostics=TRUE)")
+  node_diagnostics <- NULL
+  family_summary <- NULL
+  if (diagnostics) {
+    # Tables are assembled once here: building them family by family is the main
+    # cost of the diagnostics.
+    node_diagnostics <- .rkn_rbind_rows(node_diag_list)
+    nd_rows <- integer(n_fam)
+    for (i in seq_len(n_fam)) {
+      if (!is.null(node_diag_list[[i]])) nd_rows[i] <- nrow(node_diag_list[[i]])
     }
+    node_diagnostics$family_id <- rep(seq_len(n_fam), nd_rows)
+    node_diagnostics$family_size <- rep(unname(fam_sizes), nd_rows)
 
-    msg <- c(msg, "================================")
-    cat(paste0(msg, collapse = "\n"), "\n")
+    family_summary <- .rkn_df(
+      family_id = seq_len(n_fam),
+      family_size = unname(fam_sizes),
+      selector = fs_selector,
+      structure_name = fs_structure,
+      used_largest_ivs = used_largest_ivs_vec,
+      n_kept = fs_n_kept,
+      n_discarded = fs_n_discarded,
+      n_kept_apriori = fs_n_kept_apriori,
+      n_discarded_apriori = fs_n_discarded_apriori,
+      n_candidate_simple = fs_n_candidate_simple,
+      n_candidate_complex = fs_n_candidate_complex
+    )
   }
 
-  if (identical(plot_effective, "post")) {
-    do.call(.rkn_plot_post, c(list(g = g, kept = kept_all), plot_args))
-  }
-
-  if (!diagnostics) {
-    return(kept_all)
-  }
-
-  # Tables are assembled once here: building them family by family is the main
-  # cost of the diagnostics.
-  node_diagnostics <- .rkn_rbind_rows(node_diag_list)
-  nd_rows <- integer(n_fam)
-  for (i in seq_len(n_fam)) {
-    if (!is.null(node_diag_list[[i]])) nd_rows[i] <- nrow(node_diag_list[[i]])
-  }
-  node_diagnostics$family_id <- rep(seq_len(n_fam), nd_rows)
-  node_diagnostics$family_size <- rep(unname(fam_sizes), nd_rows)
-
-  family_summary <- .rkn_df(
-    family_id = seq_len(n_fam),
-    family_size = unname(fam_sizes),
-    selector = fs_selector,
-    structure_name = fs_structure,
-    used_largest_ivs = used_largest_ivs_vec,
-    n_kept = fs_n_kept,
-    n_discarded = fs_n_discarded,
-    n_kept_apriori = fs_n_kept_apriori,
-    n_discarded_apriori = fs_n_discarded_apriori,
-    n_candidate_simple = fs_n_candidate_simple,
-    n_candidate_complex = fs_n_candidate_complex
-  )
-
-  out_main <- list(
+  .new_rkn_selection(
     kept = kept_all,
     discarded = discarded_all,
+    family_sizes = unname(fam_sizes),
+    method = method,
+    criteria = criteria,
+    seed = seed,
     node_diagnostics = node_diagnostics,
-    family_summary = family_summary
+    family_summary = family_summary,
+    graph = g,
+    call = call
   )
-
-  if (isTRUE(return_results_by_family)) {
-    out_main$results_by_family <- results_by_family
-  }
-
-  if (identical(plot_effective, "diagnostics")) {
-    do.call(.rkn_plot_diagnostics, c(list(g = g, res = out_main), plot_args))
-  }
-
-  out_main
 }

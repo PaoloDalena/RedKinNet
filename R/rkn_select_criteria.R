@@ -6,9 +6,8 @@
 #' each family is resolved independently: families with at most 5 nodes through the
 #' structural rules in \code{\link{rules_db}}, larger families through structural
 #' reductions followed by the resolution of the remaining ambiguity. Ambiguous
-#' selections are resolved by criterion score rather than uniformly at random; family
-#' construction, aggregation of results, console summary, plotting, and return
-#' structure are identical to \code{rkn_select_random()}.
+#' selections are resolved by criterion score rather than at random; the partition into
+#' families and the returned object are as in \code{rkn_select_random()}.
 #'
 #' Covariates referenced by the criteria are read from the vertex attributes of
 #' \code{g}.
@@ -22,28 +21,23 @@
 #' @param seed Optional integer base seed. If provided, family-specific seeds are derived
 #'   as seed + family_id and are used only to break exact ties in the criterion score(s).
 #'
-#' @return Same structure as \code{\link{rkn_select_random}}.
+#' @return An object of class \code{\link{rkn_selection}}, as for
+#'   \code{\link{rkn_select_random}}; its \code{criteria} element holds the criteria.
 #'
-#' @seealso \code{\link{rkn_select_random}}, \code{\link{rkn_criterion_target_mean}},
-#'   \code{\link{rules_db}}, \code{\link{rkn_plot_pre}}, \code{\link{plot.rkn_selection}}.
+#' @seealso \code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
+#'   \code{\link{plot.rkn_selection}}, \code{\link{rkn_select_random}},
+#'   \code{\link{rkn_criterion_target_mean}}, \code{\link{rules_db}}.
 #'
 #' @export
 rkn_select_criteria <- function(g,
                                 criterion_primary,
                                 criterion_secondary = NULL,
                                 seed = NULL,
-                                diagnostics = FALSE,
-                                return_results_by_family = FALSE,
-                                verbose = TRUE,
-                                plot = c("no", "pre", "post", "diagnostics"),
-                                plot_args = list()) {
-
-  plot <- match.arg(plot)
+                                diagnostics = TRUE) {
 
   if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
   if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
   if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
-  if (!is.list(plot_args)) stop("plot_args must be a named list.")
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
     stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")
   }
@@ -75,10 +69,8 @@ rkn_select_criteria <- function(g,
     },
     seed = seed,
     diagnostics = diagnostics,
-    return_results_by_family = return_results_by_family,
-    verbose = verbose,
-    plot = plot,
-    plot_args = plot_args,
-    caller = "rkn_select_criteria"
+    method = "criteria",
+    criteria = list(primary = criterion_primary, secondary = criterion_secondary),
+    call = match.call()
   )
 }

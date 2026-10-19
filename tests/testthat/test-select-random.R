@@ -44,42 +44,47 @@ test_that("network-level random selection returns a maximum independent set", {
   skip_if_not_installed("lpSolve")
   for (seed in 1:5) {
     g <- make_network(seed)
-    res <- rkn_select_random(g, seed = seed, diagnostics = TRUE, verbose = FALSE)
+    res <- rkn_select_random(g, seed = seed)
     expect_identical(selection_problems(g, res$kept, res$discarded, network_alpha(g)), character(0))
   }
 })
 
 test_that("network-level random selection is reproducible", {
   g <- make_network(11)
-  expect_identical(rkn_select_random(g, seed = 3, verbose = FALSE),
-                   rkn_select_random(g, seed = 3, verbose = FALSE))
+  expect_identical(rkn_select_random(g, seed = 3), rkn_select_random(g, seed = 3))
+})
+
+test_that("the selection is an rkn_selection object recording how it was made", {
+  g <- make_network(13)
+  sel <- rkn_select_random(g, seed = 1)
+  expect_s3_class(sel, "rkn_selection")
+  expect_identical(sel$method, "random")
+  expect_null(sel$criteria)
+  expect_identical(sel$seed, 1)
+  expect_identical(sel$graph, g)
+  expect_identical(sel$call, quote(rkn_select_random(g = g, seed = 1)))
+  expect_identical(sel$family_sizes, as.integer(igraph::components(g)$csize))
+  expect_true(sel$diagnostics)
 })
 
 test_that("diagnostics have the documented structure and agree with the selection", {
   g <- make_network(13)
-  plain <- rkn_select_random(g, seed = 1, verbose = FALSE)
-  expect_type(plain, "character")
+  plain <- rkn_select_random(g, seed = 1, diagnostics = FALSE)
+  expect_type(plain$kept, "character")
+  expect_null(plain$node_diagnostics)
+  expect_null(plain$family_summary)
 
-  res <- rkn_select_random(g, seed = 1, diagnostics = TRUE, return_results_by_family = TRUE, verbose = FALSE)
-  expect_named(res, c("kept", "discarded", "node_diagnostics", "family_summary", "results_by_family"))
-  expect_setequal(res$kept, plain)
+  res <- rkn_select_random(g, seed = 1)
+  expect_identical(res$kept, plain$kept)
+  expect_identical(res$discarded, plain$discarded)
   expect_equal(nrow(res$node_diagnostics), igraph::vcount(g))
   expect_equal(nrow(res$family_summary), igraph::components(g)$no)
-  expect_length(res$results_by_family, igraph::components(g)$no)
   nd <- res$node_diagnostics
   expect_setequal(nd$id[nd$is_selected], res$kept)
   expect_equal(sum(res$family_summary$n_kept), length(res$kept))
 })
 
-test_that("verbose output, plot fallback and input validation behave as documented", {
-  g <- make_network(14)
-  expect_output(rkn_select_random(g, seed = 1), "rkn_select_random\\(\\) summary")
-
-  grDevices::pdf(NULL)
-  expect_warning(rkn_select_random(g, seed = 1, verbose = FALSE, plot = "diagnostics"),
-                 "requires diagnostics=TRUE")
-  grDevices::dev.off()
-
+test_that("invalid inputs are rejected", {
   expect_error(rkn_select_random(list()), "igraph object")
   g_unnamed <- igraph::make_ring(5)
   expect_error(rkn_select_random(g_unnamed), "must be defined")

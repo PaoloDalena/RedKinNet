@@ -8,7 +8,7 @@ test_that("the constructor returns an object of class rkn_selection", {
 test_that("print shows the method, the call and the selection counts, and returns x invisibly", {
   sel <- make_selection()
   expect_output(print(sel), "<rkn_selection> Random selection, seed 1")
-  expect_output(print(sel), "Call: rkn_select_random(g = g, seed = 1)", fixed = TRUE)
+  expect_output(print(sel), "Call: rkn_select_random(g = g, seed = 1, diagnostics = diagnostics)", fixed = TRUE)
   expect_output(print(sel), sprintf("selected: %d", length(sel$kept)))
   expect_output(print(sel), "enumerating maximum independent sets")
   capture.output(out <- withVisible(print(sel)))
@@ -17,10 +17,13 @@ test_that("print shows the method, the call and the selection counts, and return
 })
 
 test_that("print names the criteria of a criteria-based selection", {
-  crit <- list(primary = rkn_criterion_level("sex", "F"),
-               secondary = rkn_criterion_target_mean("age", 50, 10))
-  sel <- make_selection(method = "criteria", criteria = crit)
-  expect_output(print(sel), "Criteria-based selection (level, then target_mean)", fixed = TRUE)
+  g <- make_network(51)
+  set.seed(51)
+  igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
+  igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
+  sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"),
+                             rkn_criterion_target_mean("age", 50, 10), seed = 1)
+  expect_output(print(sel), "Criteria-based selection (level, then target_mean), seed 1", fixed = TRUE)
 })
 
 test_that("print signals when diagnostics were not computed", {
@@ -49,13 +52,7 @@ test_that("summary assigns each family to its structure", {
   g <- igraph::make_empty_graph(0, directed = FALSE)
   for (p in parts) g <- igraph::disjoint_union(g, p)
   igraph::V(g)$name <- paste0("id", seq_len(igraph::vcount(g)))
-  res <- rkn_select_random(g, seed = 1, diagnostics = TRUE, verbose = FALSE)
-  sel <- .new_rkn_selection(kept = res$kept, discarded = res$discarded,
-                            family_sizes = as.integer(igraph::components(g)$csize),
-                            method = "random", criteria = NULL, seed = 1,
-                            node_diagnostics = NULL, family_summary = NULL, graph = g,
-                            call = quote(rkn_select_random(g = g, seed = 1)))
-  s <- summary(sel)
+  s <- summary(rkn_select_random(g, seed = 1, diagnostics = FALSE))
   expect_equal(s$by_structure$family_size, c("1", "2", "3", "3", "4", "5", "7-9"))
   expect_equal(s$by_structure$structure, .rkn_structure_classes)
   expect_equal(s$by_structure$n_families, c(1, 1, 1, 1, 1, 1, 2))

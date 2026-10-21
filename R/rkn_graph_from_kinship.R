@@ -1,0 +1,181 @@
+.rkn_king_cutoffs <- c(duplicate = 0.354, first = 0.177, second = 0.0884, third = 0.0442)
+
+#' Build a relatedness network from kinship estimates
+#'
+#' @description
+#' Builds the relatedness network used by \code{\link{rkn_select_random}} and
+#' \code{\link{rkn_select_criteria}}: one vertex per sample, and an edge between two
+#' samples whose kinship coefficient is at least \code{threshold}. The families of the
+#' selectors are the connected components of this network.
+#'
+#' @param x Kinship estimates, either a square symmetric matrix with the sample
+#'   identifiers as row and column names (the diagonal is ignored), or a data frame with
+#'   one row per pair of samples, such as the \code{.kin0} output of KING or the output of
+#'   \code{plink2 --make-king-table}. In a data frame, the two identifier columns are
+#'   recognised by the names \code{ID1} and \code{ID2} (KING), \code{IID1} and
+#'   \code{IID2} (PLINK 2) or \code{id1} and \code{id2}, and the kinship column by the
+#'   name \code{kinship}, regardless of case.
+#' @param threshold The kinship coefficient from which two samples are considered
+#'   related: a number, or one of \code{"duplicate"}, \code{"first"}, \code{"second"} and
+#'   \code{"third"}, which select the cutoff of KING for relatives of that degree or
+#'   closer (see Details). There is no default: the choice depends on the study.
+#' @param samples Optional character vector with the identifiers of all genotyped
+#'   samples, for instance the IID column of the PLINK \code{.fam} or \code{.psam} file.
+#'   Pair tables usually list only related pairs, so samples without relatives appear in
+#'   no row; \code{samples} adds them to the network as unrelated individuals. Ignored
+#'   for a matrix.
+#' @param exclude Optional character vector of sample identifiers to leave out of the
+#'   network, for instance samples flagged by a quality check.
+#' @param covariates Optional data frame of sample covariates, with the sample
+#'   identifiers in the column named by \code{covariates_id}. Its other columns become
+#'   vertex attributes of the network, which \code{\link{rkn_select_criteria}} reads;
+#'   samples missing from \code{covariates} get \code{NA}.
+#' @param covariates_id Name of the identifier column of \code{covariates}.
+#'
+#' @details
+#' The threshold labels select the boundaries between the degrees of relationship
+#' inferred by KING (Manichaikul et al., 2010):
+#' \tabular{lll}{
+#'   \strong{label} \tab \strong{cutoff} \tab \strong{relatives joined, for instance} \cr
+#'   \code{"duplicate"} \tab 0.354 \tab the same individual genotyped twice, monozygotic twins \cr
+#'   \code{"first"} \tab 0.177 \tab parent and child, full siblings, and the above \cr
+#'   \code{"second"} \tab 0.0884 \tab grandparent and grandchild, aunt or uncle and nephew
+#'     or niece, half-siblings, and the above \cr
+#'   \code{"third"} \tab 0.0442 \tab first cousins, and the above
+#' }
+#' Pairs with a missing kinship estimate are treated as unrelated, with a warning.
+#'
+#' @return An undirected igraph object with one vertex per sample: the vertex attribute
+#'   \code{name} holds the sample identifiers and the other vertex attributes the
+#'   covariates, the edge attribute \code{kinship} holds the kinship coefficient, and
+#'   the graph attribute \code{kinship_threshold} holds the cutoff used.
+#'
+#' @references
+#' Manichaikul A, Mychaleckyj JC, Rich SS, Daly K, Sale M, Chen WM (2010). Robust
+#' relationship inference in genome-wide association studies. \emph{Bioinformatics},
+#' 26(22), 2867--2873. \doi{10.1093/bioinformatics/btq559}
+#'
+#' @seealso \code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}},
+#'   \code{\link{rkn_plot_pre}}.
+#'
+#' @examples
+#' # Kinship estimates for six samples: a parent and child (A, B), first cousins (C, D)
+#' # and two unrelated samples (E, F).
+#' K <- matrix(-0.01, 6, 6, dimnames = list(LETTERS[1:6], LETTERS[1:6]))
+#' K["A", "B"] <- K["B", "A"] <- 0.25
+#' K["C", "D"] <- K["D", "C"] <- 0.06
+#' diag(K) <- 0.5
+#'
+#' # Relatives of the third degree or closer: two families of two, two singletons
+#' g <- rkn_graph_from_kinship(K, threshold = "third")
+#' igraph::components(g)$csize
+#'
+#' # First-degree relatives only: the cousins count as unrelated
+#' igraph::components(rkn_graph_from_kinship(K, threshold = "first"))$csize
+#'
+#' # The same data as a pair table that lists only the related pairs, as KING does;
+#' # samples adds the unrelated E and F
+#' pairs <- data.frame(ID1 = c("A", "C"), ID2 = c("B", "D"), Kinship = c(0.25, 0.06))
+#' g <- rkn_graph_from_kinship(pairs, threshold = "third", samples = LETTERS[1:6])
+#'
+#' # Covariates for a criteria-based selection
+#' covariates <- data.frame(id = LETTERS[1:6], sex = c("M", "F", "F", "M", "M", "F"))
+#' g <- rkn_graph_from_kinship(K, threshold = "third", covariates = covariates)
+#' rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1)$kept
+#'
+#' @export
+rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
+                                   covariates = NULL, covariates_id = "id") {
+  if (is.character(threshold)) {
+    threshold <- .rkn_king_cutoffs[[match.arg(threshold, names(.rkn_king_cutoffs))]]
+  }
+  if (!is.numeric(threshold) || length(threshold) != 1 || !is.finite(threshold)) {
+    stop("threshold must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".")
+  }
+
+  if (is.matrix(x)) {
+    ids <- rownames(x)
+    if (!is.numeric(x) || is.null(ids) || !identical(ids, colnames(x))) {
+      stop("A kinship matrix must be numeric, with the sample identifiers as identical row and column names.")
+    }
+    if (!isSymmetric(unname(x))) stop("A kinship matrix must be symmetric.")
+    hit <- which(x >= threshold, arr.ind = TRUE)
+    hit <- hit[hit[, 1] < hit[, 2], , drop = FALSE]
+    id1 <- ids[hit[, 1]]
+    id2 <- ids[hit[, 2]]
+    kinship <- x[hit]
+    n_missing <- (sum(is.na(x)) - sum(is.na(diag(x)))) / 2
+  } else if (is.data.frame(x)) {
+    nm <- tolower(names(x))
+    cols <- if (all(c("iid1", "iid2") %in% nm)) c("iid1", "iid2") else c("id1", "id2")
+    if (!all(c(cols, "kinship") %in% nm)) {
+      stop("A pair table needs two identifier columns (ID1 and ID2, IID1 and IID2, or id1 and id2) ",
+           "and a kinship column.")
+    }
+    a <- as.character(x[[match(cols[1], nm)]])
+    b <- as.character(x[[match(cols[2], nm)]])
+    k <- x[[match("kinship", nm)]]
+    listed <- unique(c(a, b))
+    if (is.null(samples)) {
+      ids <- listed
+      n_pairs <- nrow(unique(data.frame(lo = pmin(a, b), hi = pmax(a, b))))
+      if (n_pairs < length(ids) * (length(ids) - 1) / 2) {
+        message("The pair table does not list every pair of samples, so samples without relatives ",
+                "may be missing from the network; supply all sample identifiers through `samples`.")
+      }
+    } else {
+      ids <- unique(as.character(samples))
+      absent <- setdiff(listed, ids)
+      if (length(absent) > 0) {
+        stop("The pair table refers to samples missing from `samples`, for instance ",
+             paste(absent[seq_len(min(3, length(absent)))], collapse = ", "), ".")
+      }
+    }
+    keep <- !is.na(k) & k >= threshold
+    id1 <- a[keep]
+    id2 <- b[keep]
+    kinship <- k[keep]
+    n_missing <- sum(is.na(k))
+  } else {
+    stop("x must be a kinship matrix or a data frame of pairs.")
+  }
+  if (n_missing > 0) {
+    warning(sprintf("%d pairs have a missing kinship estimate and are treated as unrelated.", n_missing),
+            call. = FALSE)
+  }
+
+  if (!is.null(exclude)) {
+    unknown <- setdiff(exclude, ids)
+    if (length(unknown) > 0) {
+      stop("exclude contains identifiers absent from the data, for instance ",
+           paste(unknown[seq_len(min(3, length(unknown)))], collapse = ", "), ".")
+    }
+    drop <- id1 %in% exclude | id2 %in% exclude
+    id1 <- id1[!drop]
+    id2 <- id2[!drop]
+    kinship <- kinship[!drop]
+    ids <- setdiff(ids, exclude)
+  }
+
+  vertices <- data.frame(name = ids, stringsAsFactors = FALSE)
+  if (!is.null(covariates)) {
+    if (!is.data.frame(covariates) || !covariates_id %in% names(covariates)) {
+      stop("covariates must be a data frame with an identifier column named ", covariates_id, ".")
+    }
+    cid <- as.character(covariates[[covariates_id]])
+    if (anyDuplicated(cid) > 0) stop("covariates contains duplicated identifiers.")
+    vars <- setdiff(names(covariates), covariates_id)
+    if ("name" %in% vars) stop("A covariate cannot be called name, which holds the sample identifiers.")
+    row <- match(ids, cid)
+    if (anyNA(row)) {
+      message(sprintf("Covariates are missing for %d of %d samples and set to NA.", sum(is.na(row)), length(ids)))
+    }
+    for (v in vars) vertices[[v]] <- covariates[[v]][row]
+  }
+
+  edges <- data.frame(from = id1, to = id2, kinship = kinship, stringsAsFactors = FALSE)
+  g <- igraph::graph_from_data_frame(edges, directed = FALSE, vertices = vertices)
+  g <- igraph::simplify(g, edge.attr.comb = "max")
+  g$kinship_threshold <- threshold
+  g
+}

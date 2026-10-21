@@ -29,7 +29,10 @@
 #' @param covariates Optional data frame of sample covariates, with the sample
 #'   identifiers in the column named by \code{covariates_id}. Its other columns become
 #'   vertex attributes of the network, which \code{\link{rkn_select_criteria}} reads;
-#'   samples missing from \code{covariates} get \code{NA}.
+#'   samples missing from \code{covariates} get \code{NA}. Covariates cannot be named
+#'   \code{name}, which holds the sample identifiers, nor \code{degree},
+#'   \code{max_path_length} or \code{.name}, which are reserved for the structural
+#'   measures computed during the selection.
 #' @param covariates_id Name of the identifier column of \code{covariates}.
 #'
 #' @details
@@ -166,6 +169,8 @@ rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
     if (anyDuplicated(cid) > 0) stop("covariates contains duplicated identifiers.")
     vars <- setdiff(names(covariates), covariates_id)
     if ("name" %in% vars) stop("A covariate cannot be called name, which holds the sample identifiers.")
+    reserved <- intersect(vars, .rkn_reserved_attributes)
+    if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
     row <- match(ids, cid)
     if (anyNA(row)) {
       message(sprintf("Covariates are missing for %d of %d samples and set to NA.", sum(is.na(row)), length(ids)))

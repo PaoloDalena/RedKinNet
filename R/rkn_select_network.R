@@ -1,3 +1,20 @@
+.rkn_reserved_attributes <- c("degree", "max_path_length", ".name")
+
+#' Internal helper: error message for vertex attributes with reserved names
+#'
+#' The structural rules read the degree and the eccentricity of each individual from
+#' columns named \code{degree} and \code{max_path_length} of the family table, next to
+#' the vertex attributes; an attribute with one of these names would be mistaken for
+#' them.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_reserved_message <- function(reserved) {
+  paste0("Vertex attributes cannot be named ", paste0("\"", .rkn_reserved_attributes, "\"", collapse = ", "),
+         ", which are reserved for the structural measures computed during the selection; rename ",
+         paste0("\"", reserved, "\"", collapse = ", "), ".")
+}
+
 #' Internal helper: network-level selection shared by the random and criteria selectors
 #'
 #' Partitions \code{g} into families (connected components), resolves each family with
@@ -27,12 +44,8 @@
   # quantities, since igraph ignores vertices in other components.
   node_cols <- c(list(.name = igraph::V(g)$name), igraph::vertex_attr(g))
   if (is.null(node_cols[["name"]])) node_cols[["name"]] <- node_cols[[".name"]]
-  if (is.null(node_cols[["degree"]])) {
-    node_cols[["degree"]] <- as.integer(igraph::degree(g, mode = "all"))
-  }
-  if (is.null(node_cols[["max_path_length"]])) {
-    node_cols[["max_path_length"]] <- as.integer(igraph::eccentricity(g, mode = "all"))
-  }
+  node_cols[["degree"]] <- as.integer(igraph::degree(g, mode = "all"))
+  node_cols[["max_path_length"]] <- as.integer(igraph::eccentricity(g, mode = "all"))
 
   .fam_df_from_ids <- function(ids) {
     cols <- node_cols

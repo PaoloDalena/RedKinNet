@@ -7,7 +7,9 @@
 rkn_select_random(g, seed = NULL, diagnostics = TRUE)
 }
 \arguments{
-\item{g}{An igraph object. Vertex names must be stored in V(g)$name.}
+\item{g}{An igraph object. Vertex names must be stored in V(g)$name. Vertex
+attributes cannot be named \code{degree}, \code{max_path_length} or \code{.name}:
+these names are reserved for the structural measures computed during the selection.}
 
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
 

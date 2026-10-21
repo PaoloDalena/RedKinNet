@@ -39,7 +39,10 @@ network, for instance samples flagged by a quality check.}
 \item{covariates}{Optional data frame of sample covariates, with the sample
 identifiers in the column named by \code{covariates_id}. Its other columns become
 vertex attributes of the network, which \code{\link{rkn_select_criteria}} reads;
-samples missing from \code{covariates} get \code{NA}.}
+samples missing from \code{covariates} get \code{NA}. Covariates cannot be named
+\code{name}, which holds the sample identifiers, nor \code{degree},
+\code{max_path_length} or \code{.name}, which are reserved for the structural
+measures computed during the selection.}
 
 \item{covariates_id}{Name of the identifier column of \code{covariates}.}
 }

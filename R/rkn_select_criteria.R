@@ -53,6 +53,8 @@ rkn_select_criteria <- function(g,
   if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
   if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
   if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
+  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
+  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
     stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")
   }

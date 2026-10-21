@@ -7,7 +7,9 @@
 #' unrelated individuals. Where several maximum sets of unrelated individuals are
 #' possible, the choice among them is made at random.
 #'
-#' @param g An igraph object. Vertex names must be stored in V(g)$name.
+#' @param g An igraph object. Vertex names must be stored in V(g)$name. Vertex
+#'   attributes cannot be named \code{degree}, \code{max_path_length} or \code{.name}:
+#'   these names are reserved for the structural measures computed during the selection.
 #' @param seed Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.
 #' @param diagnostics Logical. If \code{TRUE} (default), the returned object also records
 #'   how each individual and each family was resolved (\code{node_diagnostics} and
@@ -39,6 +41,8 @@ rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE) {
   if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
   if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
   if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
+  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
+  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
 
   .rkn_select_network(
     g,

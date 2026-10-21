@@ -90,3 +90,23 @@ test_that("invalid inputs are rejected", {
   expect_error(rkn_select_random(g_unnamed), "must be defined")
   expect_error(rkn_select_random(igraph::make_empty_graph(0)), "at least one vertex")
 })
+
+test_that("vertex attributes with reserved names are rejected instead of being mistaken for structural measures", {
+  g <- make_network(7)
+  igraph::V(g)$degree <- 1
+  expect_error(rkn_select_random(g, seed = 1), 'rename "degree"')
+  expect_error(rkn_select_criteria(g, rkn_criterion_level("degree", 1), seed = 1), 'rename "degree"')
+  g <- make_network(7)
+  igraph::V(g)$max_path_length <- 1
+  expect_error(rkn_select_random(g, seed = 1), 'rename "max_path_length"')
+})
+
+test_that("covariates do not change a random selection", {
+  for (s in 7:9) {
+    g <- make_network(s)
+    with_covariate <- g
+    set.seed(s)
+    igraph::V(with_covariate)$education <- sample(1:5, igraph::vcount(g), replace = TRUE)
+    expect_identical(rkn_select_random(with_covariate, seed = 1)$kept, rkn_select_random(g, seed = 1)$kept)
+  }
+})

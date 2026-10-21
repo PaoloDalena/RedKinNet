@@ -110,3 +110,8 @@ test_that("the network can be passed to the selectors", {
   expect_s3_class(sel, "rkn_selection")
   expect_identical(sort(c(sel$kept, sel$discarded)), LETTERS[1:6])
 })
+
+test_that("covariates with reserved names are rejected", {
+  covariates <- data.frame(id = LETTERS[1:6], degree = "university")
+  expect_error(rkn_graph_from_kinship(kinship_example(), "third", covariates = covariates), 'rename "degree"')
+})

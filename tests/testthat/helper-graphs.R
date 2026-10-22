@@ -118,3 +118,25 @@ make_selection <- function(diagnostics = TRUE) {
   g <- make_network(51)
   rkn_select_random(g, seed = 1, diagnostics = diagnostics)
 }
+
+# Synthetic kinship matrix of 200 samples: 30 parent-child pairs, a duplicate (S199,
+# S200), a contaminated sample (S001) and 15 samples of a different ancestry (S181-S195).
+synthetic_cohort <- function() {
+  set.seed(1)
+  ids <- sprintf("S%03d", 1:200)
+  K <- matrix(rnorm(200^2, -0.015, 0.004), 200, 200, dimnames = list(ids, ids))
+  K[upper.tri(K)] <- t(K)[upper.tri(K)]
+  ancestry <- 181:195
+  K[ancestry, -ancestry] <- rnorm(15 * 185, -0.15, 0.03)
+  K[-ancestry, ancestry] <- t(K[ancestry, -ancestry])
+  for (i in seq(2, 60, by = 2)) K[i, i + 1] <- K[i + 1, i] <- 0.25
+  K["S199", "S200"] <- K["S200", "S199"] <- 0.49
+  K["S001", -1] <- K[-1, "S001"] <- rnorm(199, 0.045, 0.01)
+  diag(K) <- 0.5
+  K
+}
+
+pairs_of <- function(K) {
+  ij <- which(upper.tri(K), arr.ind = TRUE)
+  data.frame(ID1 = rownames(K)[ij[, 1]], ID2 = rownames(K)[ij[, 2]], Kinship = K[ij])
+}

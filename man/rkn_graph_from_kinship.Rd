@@ -10,7 +10,8 @@ rkn_graph_from_kinship(
   samples = NULL,
   exclude = NULL,
   covariates = NULL,
-  covariates_id = "id"
+  covariates_id = "id",
+  check = TRUE
 )
 }
 \arguments{
@@ -45,6 +46,13 @@ samples missing from \code{covariates} get \code{NA}. Covariates cannot be named
 measures computed during the selection.}
 
 \item{covariates_id}{Name of the identifier column of \code{covariates}.}
+
+\item{check}{Logical. If \code{TRUE} (default), the samples left after
+\code{exclude} are checked with \code{\link{rkn_check_samples}}, with the same
+threshold and default settings, and a single warning summarises the possible
+duplicates, contamination and different ancestry it finds. Nothing is removed.
+\code{check = FALSE} skips the check, for instance when rebuilding a network whose
+samples were already checked.}
 }
 \value{
 An undirected igraph object with one vertex per sample: the vertex attribute
@@ -70,6 +78,11 @@ or niece, half-siblings, and the above \cr
 \code{"third"} \tab 0.0442 \tab first cousins, and the above
 }
 Pairs with a missing kinship estimate are treated as unrelated, with a warning.
+
+The sample check runs here, rather than in the selectors, because it needs the kinship
+of every pair of samples, including the unrelated ones, which the network no longer
+holds. A network built in another way can be checked by calling
+\code{\link{rkn_check_samples}} on the kinship estimates it was built from.
 }
 \examples{
 # Kinship estimates for six samples: a parent and child (A, B), first cousins (C, D)
@@ -103,6 +116,6 @@ relationship inference in genome-wide association studies. \emph{Bioinformatics}
 26(22), 2867--2873. \doi{10.1093/bioinformatics/btq559}
 }
 \seealso{
-\code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}},
-\code{\link{rkn_plot_pre}}.
+\code{\link{rkn_check_samples}}, \code{\link{rkn_select_random}},
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_plot_pre}}.
 }

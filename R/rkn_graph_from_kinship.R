@@ -66,6 +66,49 @@
   out
 }
 
+#' Internal helper: remove samples from kinship input read by .rkn_read_kinship()
+#'
+#' @keywords internal
+#' @noRd
+.rkn_exclude_samples <- function(input, exclude) {
+  keep <- !input$ids %in% exclude
+  if (!is.null(input$matrix)) {
+    input$matrix <- input$matrix[keep, keep, drop = FALSE]
+  } else {
+    drop <- input$id1 %in% exclude | input$id2 %in% exclude
+    input$id1 <- input$id1[!drop]
+    input$id2 <- input$id2[!drop]
+    input$kinship <- input$kinship[!drop]
+  }
+  input$ids <- input$ids[keep]
+  input
+}
+
+#' Internal helper: one warning summarising the anomalies found by the sample check
+#'
+#' Returns \code{NULL} when the check found nothing.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_check_warning <- function(chk) {
+  count <- function(n, what) sprintf("%d %s%s", n, what, if (n > 1) "s" else "")
+  parts <- character(0)
+  ids <- chk$contamination$id
+  if (length(ids) > 0) {
+    shown <- paste(ids[seq_len(min(5, length(ids)))], collapse = ", ")
+    if (length(ids) > 5) shown <- paste0(shown, ", ...")
+    parts <- c(parts, sprintf("%s flagged as possible contamination (%s)", count(length(ids), "sample"), shown))
+  }
+  if (nrow(chk$duplicates) > 0) {
+    parts <- c(parts, paste(count(nrow(chk$duplicates), "pair"), "of possible duplicates or monozygotic twins"))
+  }
+  n_ancestry <- sum(chk$samples$flag == "possible different ancestry")
+  if (n_ancestry > 0) parts <- c(parts, paste(count(n_ancestry, "sample"), "of possibly different ancestry"))
+  if (length(parts) == 0) return(NULL)
+  paste0("Sample check: ", paste(parts, collapse = ", "), ". See rkn_check_samples() for details ",
+         "and the argument `exclude` to leave samples out; check = FALSE skips this check.")
+}
+
 #' Internal helper: pairs of samples whose kinship is at least the threshold
 #'
 #' @keywords internal
@@ -114,6 +157,12 @@
 #'   \code{max_path_length} or \code{.name}, which are reserved for the structural
 #'   measures computed during the selection.
 #' @param covariates_id Name of the identifier column of \code{covariates}.
+#' @param check Logical. If \code{TRUE} (default), the samples left after
+#'   \code{exclude} are checked with \code{\link{rkn_check_samples}}, with the same
+#'   threshold and default settings, and a single warning summarises the possible
+#'   duplicates, contamination and different ancestry it finds. Nothing is removed.
+#'   \code{check = FALSE} skips the check, for instance when rebuilding a network whose
+#'   samples were already checked.
 #'
 #' @details
 #' The threshold labels select the boundaries between the degrees of relationship
@@ -128,6 +177,11 @@
 #' }
 #' Pairs with a missing kinship estimate are treated as unrelated, with a warning.
 #'
+#' The sample check runs here, rather than in the selectors, because it needs the kinship
+#' of every pair of samples, including the unrelated ones, which the network no longer
+#' holds. A network built in another way can be checked by calling
+#' \code{\link{rkn_check_samples}} on the kinship estimates it was built from.
+#'
 #' @return An undirected igraph object with one vertex per sample: the vertex attribute
 #'   \code{name} holds the sample identifiers and the other vertex attributes the
 #'   covariates, the edge attribute \code{kinship} holds the kinship coefficient, and
@@ -138,8 +192,8 @@
 #' relationship inference in genome-wide association studies. \emph{Bioinformatics},
 #' 26(22), 2867--2873. \doi{10.1093/bioinformatics/btq559}
 #'
-#' @seealso \code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}},
-#'   \code{\link{rkn_plot_pre}}.
+#' @seealso \code{\link{rkn_check_samples}}, \code{\link{rkn_select_random}},
+#'   \code{\link{rkn_select_criteria}}, \code{\link{rkn_plot_pre}}.
 #'
 #' @examples
 #' # Kinship estimates for six samples: a parent and child (A, B), first cousins (C, D)
@@ -168,27 +222,29 @@
 #'
 #' @export
 rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
-                                   covariates = NULL, covariates_id = "id") {
+                                   covariates = NULL, covariates_id = "id", check = TRUE) {
   threshold <- .rkn_resolve_threshold(threshold)
   input <- .rkn_read_kinship(x, samples)
+
+  if (!is.null(exclude)) {
+    unknown <- setdiff(exclude, input$ids)
+    if (length(unknown) > 0) {
+      stop("exclude contains identifiers absent from the data, for instance ",
+           paste(unknown[seq_len(min(3, length(unknown)))], collapse = ", "), ".")
+    }
+    input <- .rkn_exclude_samples(input, exclude)
+  }
+
+  if (isTRUE(check)) {
+    msg <- .rkn_check_warning(.rkn_check_input(input, threshold))
+    if (!is.null(msg)) warning(msg, call. = FALSE)
+  }
+
   edges <- .rkn_kinship_edges(input, threshold)
   ids <- input$ids
   id1 <- edges$id1
   id2 <- edges$id2
   kinship <- edges$kinship
-
-  if (!is.null(exclude)) {
-    unknown <- setdiff(exclude, ids)
-    if (length(unknown) > 0) {
-      stop("exclude contains identifiers absent from the data, for instance ",
-           paste(unknown[seq_len(min(3, length(unknown)))], collapse = ", "), ".")
-    }
-    drop <- id1 %in% exclude | id2 %in% exclude
-    id1 <- id1[!drop]
-    id2 <- id2[!drop]
-    kinship <- kinship[!drop]
-    ids <- setdiff(ids, exclude)
-  }
 
   vertices <- data.frame(name = ids, stringsAsFactors = FALSE)
   if (!is.null(covariates)) {

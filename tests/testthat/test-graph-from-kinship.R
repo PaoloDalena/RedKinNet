@@ -115,3 +115,25 @@ test_that("covariates with reserved names are rejected", {
   covariates <- data.frame(id = LETTERS[1:6], degree = "university")
   expect_error(rkn_graph_from_kinship(kinship_example(), "third", covariates = covariates), 'rename "degree"')
 })
+
+test_that("building the network runs the sample check and summarises it in one warning", {
+  K <- synthetic_cohort()
+  expect_warning(g <- rkn_graph_from_kinship(K, "third"),
+                 "1 sample flagged as possible contamination \\(S001\\), 1 pair of possible duplicates")
+  expect_warning(rkn_graph_from_kinship(K, "third"), "15 samples of possibly different ancestry")
+  g_unchecked <- expect_no_warning(rkn_graph_from_kinship(K, "third", check = FALSE))
+  expect_identical(edge_set(g), edge_set(g_unchecked))
+})
+
+test_that("excluded samples are left out of the sample check", {
+  K <- synthetic_cohort()
+  w <- tryCatch(rkn_graph_from_kinship(K, "third", exclude = "S001"), warning = conditionMessage)
+  expect_false(grepl("contamination", w))
+  expect_true(grepl("1 pair of possible duplicates", w))
+  ancestry <- sprintf("S%03d", 181:195)
+  expect_no_warning(rkn_graph_from_kinship(K, "third", exclude = c("S001", "S200", ancestry)))
+})
+
+test_that("the small examples raise no warning from the sample check", {
+  expect_no_warning(rkn_graph_from_kinship(kinship_example(), "third"))
+})

@@ -84,7 +84,9 @@ different ancestry
 (Manichaikul et al., 2010). These samples do not affect the selection, but matter
 for downstream association analyses.
 }
-Nothing is removed: the decision is left to the user.
+Nothing is removed: the decision is left to the user. \code{\link{rkn_graph_from_kinship}}
+runs this check by default (argument \code{check}) and summarises its findings in a
+warning.
 }
 \details{
 The robust z-score of a value is its distance from the median of the cohort in units
@@ -126,7 +128,8 @@ chk <- rkn_check_samples(K, threshold = "third")
 chk
 head(chk$samples)
 
-# Build the network without the possibly contaminated sample
+# Build the network without the possibly contaminated sample; the warning still
+# reports the duplicates and the samples of different ancestry
 g <- rkn_graph_from_kinship(K, threshold = "third", exclude = chk$contamination$id)
 
 }

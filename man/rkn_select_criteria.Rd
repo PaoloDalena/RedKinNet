@@ -15,7 +15,10 @@ rkn_select_criteria(
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name. Vertex
 attributes cannot be named \code{degree}, \code{max_path_length} or \code{.name}:
-these names are reserved for the structural measures computed during the selection.}
+these names are reserved for the structural measures computed during the selection.
+The network is usually built with \code{\link{rkn_graph_from_kinship}}, which also
+checks the samples; for a network built in another way, see
+\code{\link{rkn_check_samples}}.}
 
 \item{criterion_primary}{An \code{rkn_criterion} object (see
 \code{\link{rkn_criterion_target_mean}} and siblings) used to score candidate

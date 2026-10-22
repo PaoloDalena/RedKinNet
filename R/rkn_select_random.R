@@ -10,6 +10,9 @@
 #' @param g An igraph object. Vertex names must be stored in V(g)$name. Vertex
 #'   attributes cannot be named \code{degree}, \code{max_path_length} or \code{.name}:
 #'   these names are reserved for the structural measures computed during the selection.
+#'   The network is usually built with \code{\link{rkn_graph_from_kinship}}, which also
+#'   checks the samples; for a network built in another way, see
+#'   \code{\link{rkn_check_samples}}.
 #' @param seed Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.
 #' @param diagnostics Logical. If \code{TRUE} (default), the returned object also records
 #'   how each individual and each family was resolved (\code{node_diagnostics} and

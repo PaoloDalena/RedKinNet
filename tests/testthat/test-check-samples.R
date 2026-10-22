@@ -1,23 +1,3 @@
-synthetic_cohort <- function() {
-  set.seed(1)
-  ids <- sprintf("S%03d", 1:200)
-  K <- matrix(rnorm(200^2, -0.015, 0.004), 200, 200, dimnames = list(ids, ids))
-  K[upper.tri(K)] <- t(K)[upper.tri(K)]
-  ancestry <- 181:195
-  K[ancestry, -ancestry] <- rnorm(15 * 185, -0.15, 0.03)
-  K[-ancestry, ancestry] <- t(K[ancestry, -ancestry])
-  for (i in seq(2, 60, by = 2)) K[i, i + 1] <- K[i + 1, i] <- 0.25
-  K["S199", "S200"] <- K["S200", "S199"] <- 0.49
-  K["S001", -1] <- K[-1, "S001"] <- rnorm(199, 0.045, 0.01)
-  diag(K) <- 0.5
-  K
-}
-
-pairs_of <- function(K) {
-  ij <- which(upper.tri(K), arr.ind = TRUE)
-  data.frame(ID1 = rownames(K)[ij[, 1]], ID2 = rownames(K)[ij[, 2]], Kinship = K[ij])
-}
-
 test_that("the check flags duplicates, contamination and different ancestry in a synthetic cohort", {
   chk <- rkn_check_samples(synthetic_cohort(), threshold = "third")
   expect_s3_class(chk, "rkn_sample_check")
@@ -87,7 +67,7 @@ test_that("the print shows each section and the flagged samples can be excluded"
   expect_output(print(chk), "Possible different ancestry .*: 15 sample")
   capture.output(out <- withVisible(print(chk)))
   expect_false(out$visible)
-  g <- rkn_graph_from_kinship(K, "third", exclude = chk$contamination$id)
+  g <- rkn_graph_from_kinship(K, "third", exclude = chk$contamination$id, check = FALSE)
   expect_identical(max(igraph::components(g)$csize), 2)
 })
 

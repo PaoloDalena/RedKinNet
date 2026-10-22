@@ -7,13 +7,15 @@
 #'   \item \strong{possible duplicates or monozygotic twins}: pairs with a kinship of at
 #'     least 0.354. They need no action for the selection, which keeps at most one of
 #'     them, but they are worth a quality check;
-#'   \item \strong{possible contamination}: samples related to unusually many others
-#'     with an unusually high mean kinship with everyone. A sample containing DNA from
-#'     more than one person tends to appear slightly related to everyone, and can merge
-#'     many families into one; excluding it (argument \code{exclude} of
-#'     \code{\link{rkn_graph_from_kinship}}) restores the real families;
-#'   \item \strong{possible different ancestry}: samples with an unusually low mean
-#'     kinship. KING estimates are negative for pairs of different ancestry
+#'   \item \strong{possible contamination}: samples related to unusually many others,
+#'     with an unusually high kinship even with the samples they are not related to. A
+#'     sample containing DNA from more than one person tends to appear slightly related
+#'     to everyone, and can merge many families into one; excluding it (argument
+#'     \code{exclude} of \code{\link{rkn_graph_from_kinship}}) restores the real
+#'     families;
+#'   \item \strong{possible different ancestry}: samples with an unusually low kinship
+#'     with the samples they are not related to. KING estimates are negative for pairs of
+#'     different ancestry
 #'     (Manichaikul et al., 2010). These samples do not affect the selection, but matter
 #'     for downstream association analyses.
 #' }
@@ -37,10 +39,14 @@
 #' instead, rescaled to be comparable with the MAD. The number of relatives enters on the
 #' logarithmic scale, \code{log(1 + relatives)}.
 #'
-#' The mean kinship of a sample is computed over all the other samples, so it requires a
-#' kinship matrix or a pair table that lists every pair. With a table of related pairs
-#' only, it is not available: contamination is then judged on the number of relatives
-#' alone (see \code{z_relatives_only}) and ancestry is not assessed.
+#' The mean kinship of a sample is computed over the samples it is not related to, that
+#' is over the pairs below the third-degree cutoff of KING (0.0442): true relatives raise
+#' the kinship of a few pairs only, whereas contamination raises it with everyone, so
+#' leaving the relatives out keeps a sample with many true relatives, or a member of a
+#' small cohort with one close relative, from looking anomalous. The mean therefore
+#' requires a kinship matrix or a pair table that lists every pair. With a table of
+#' related pairs only, it is not available: contamination is then judged on the number
+#' of relatives alone (see \code{z_relatives_only}) and ancestry is not assessed.
 #'
 #' Relatives are counted by degree with the KING cutoffs listed in
 #' \code{\link{rkn_graph_from_kinship}}.
@@ -51,7 +57,8 @@
 #'   \item{\code{samples}}{a data frame with one row per sample: \code{id};
 #'     \code{n_relatives}, the number of samples with a kinship of at least
 #'     \code{threshold}; \code{n_duplicate}, \code{n_first}, \code{n_second} and
-#'     \code{n_third}, the relatives by degree; \code{mean_kinship}; the robust z-scores
+#'     \code{n_third}, the relatives by degree; \code{mean_kinship}, the mean kinship
+#'     with the samples it is not related to (see Details); the robust z-scores
 #'     \code{z_relatives} and \code{z_kinship}; \code{flag}, \code{"possible
 #'     contamination"}, \code{"possible different ancestry"} or an empty string;}
 #'   \item{\code{duplicates}}{a data frame of the pairs with a kinship of at least 0.354;}
@@ -72,8 +79,8 @@
 #'
 #' @examples
 #' # A synthetic cohort of 200 samples: 30 parent-child pairs, one sample genotyped
-#' # twice (S199 and S200), one contaminated sample (S001) and 15 samples of a
-#' # different ancestry (S181 to S195).
+#' # twice (S199 and S200), one contaminated sample (S001), whose kinship is raised with
+#' # everyone, and 15 samples of a different ancestry (S181 to S195).
 #' set.seed(1)
 #' ids <- sprintf("S%03d", 1:200)
 #' K <- matrix(rnorm(200^2, -0.015, 0.004), 200, 200, dimnames = list(ids, ids))
@@ -83,7 +90,7 @@
 #' K[-ancestry, ancestry] <- t(K[ancestry, -ancestry])
 #' for (i in seq(2, 60, by = 2)) K[i, i + 1] <- K[i + 1, i] <- 0.25
 #' K["S199", "S200"] <- K["S200", "S199"] <- 0.49
-#' K["S001", 62:160] <- K[62:160, "S001"] <- runif(99, 0.045, 0.09)
+#' K["S001", -1] <- K[-1, "S001"] <- rnorm(199, 0.045, 0.01)
 #' diag(K) <- 0.5
 #'
 #' chk <- rkn_check_samples(K, threshold = "third")
@@ -96,8 +103,16 @@
 #' @export
 rkn_check_samples <- function(x, threshold, samples = NULL, z_kinship = 5, z_relatives = 3,
                               z_relatives_only = 5, z_ancestry = -5) {
-  threshold <- .rkn_resolve_threshold(threshold)
-  input <- .rkn_read_kinship(x, samples)
+  .rkn_check_input(.rkn_read_kinship(x, samples), .rkn_resolve_threshold(threshold),
+                   z_kinship, z_relatives, z_relatives_only, z_ancestry)
+}
+
+#' Internal helper: sample check on kinship input already read by .rkn_read_kinship()
+#'
+#' @keywords internal
+#' @noRd
+.rkn_check_input <- function(input, threshold, z_kinship = 5, z_relatives = 3,
+                             z_relatives_only = 5, z_ancestry = -5) {
   ids <- input$ids
   n <- length(ids)
   lower <- c(.rkn_king_cutoffs[c("duplicate", "first", "second", "third")])
@@ -109,6 +124,7 @@ rkn_check_samples <- function(x, threshold, samples = NULL, z_kinship = 5, z_rel
     diag(K) <- NA
     n_relatives <- as.integer(rowSums(K >= threshold, na.rm = TRUE))
     for (j in 1:4) n_class[, j] <- as.integer(rowSums(K >= lower[j] & K < upper[j], na.rm = TRUE))
+    K[K >= .rkn_king_cutoffs[["third"]]] <- NA
     mean_kinship <- unname(rowMeans(K, na.rm = TRUE))
   } else {
     a <- match(input$id1, ids)
@@ -120,8 +136,10 @@ rkn_check_samples <- function(x, threshold, samples = NULL, z_kinship = 5, z_rel
     for (j in 1:4) n_class[, j] <- count_ends(ok & k >= lower[j] & k < upper[j])
     mean_kinship <- rep(NA_real_, n)
     if (input$complete) {
-      sums <- rowsum(c(k[ok], k[ok]), c(a[ok], b[ok]), reorder = TRUE)
-      mean_kinship[as.integer(rownames(sums))] <- sums[, 1] / count_ends(ok)[as.integer(rownames(sums))]
+      unrelated <- ok & k < .rkn_king_cutoffs[["third"]]
+      sums <- rowsum(c(k[unrelated], k[unrelated]), c(a[unrelated], b[unrelated]), reorder = TRUE)
+      rows <- as.integer(rownames(sums))
+      mean_kinship[rows] <- sums[, 1] / count_ends(unrelated)[rows]
     }
   }
   available <- !all(is.na(mean_kinship))
@@ -199,7 +217,7 @@ print.rkn_sample_check <- function(x, ...) {
 
   cat(sprintf("\nPossible contamination: %d sample(s)\n(related to unusually many samples%s)\n",
               nrow(x$contamination),
-              if (x$mean_kinship_available) ", with an unusually high mean kinship" else ""))
+              if (x$mean_kinship_available) ",\nwith an unusually high kinship even with unrelated ones" else ""))
   if (nrow(x$contamination) > 0) {
     print(x$contamination, row.names = FALSE, digits = 3)
     cat(sprintf("Largest family of the network: %d samples.\n", x$largest_component))

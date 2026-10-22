@@ -8,7 +8,7 @@ synthetic_cohort <- function() {
   K[-ancestry, ancestry] <- t(K[ancestry, -ancestry])
   for (i in seq(2, 60, by = 2)) K[i, i + 1] <- K[i + 1, i] <- 0.25
   K["S199", "S200"] <- K["S200", "S199"] <- 0.49
-  K["S001", 62:160] <- K[62:160, "S001"] <- runif(99, 0.045, 0.09)
+  K["S001", -1] <- K[-1, "S001"] <- rnorm(199, 0.045, 0.01)
   diag(K) <- 0.5
   K
 }
@@ -23,8 +23,8 @@ test_that("the check flags duplicates, contamination and different ancestry in a
   expect_s3_class(chk, "rkn_sample_check")
   expect_identical(chk$duplicates[, c("id1", "id2")], data.frame(id1 = "S199", id2 = "S200"))
   expect_identical(chk$contamination$id, "S001")
-  expect_identical(chk$contamination$n_relatives, 99L)
-  expect_identical(chk$largest_component, 100L)
+  expect_identical(chk$contamination$n_relatives, 105L)
+  expect_identical(chk$largest_component, 121L)
   expect_identical(chk$contamination$largest_component_without, 2L)
   ancestry <- chk$samples$id[chk$samples$flag == "possible different ancestry"]
   expect_identical(ancestry, sprintf("S%03d", 181:195))
@@ -45,7 +45,8 @@ test_that("relatives are counted in total and by degree", {
   expect_identical(s$n_first, c(1L, 0L, 1L, 0L, 0L))
   expect_identical(s$n_second, c(1L, 0L, 0L, 1L, 0L))
   expect_identical(s$n_third, c(1L, 0L, 0L, 0L, 1L))
-  expect_equal(s$mean_kinship[5], mean(c(0.0442, -0.01, -0.01, -0.01)))
+  # The pair with A reaches the third-degree cutoff, so it is left out of the mean.
+  expect_equal(s$mean_kinship[5], -0.01)
 })
 
 test_that("a complete pair table gives the same check as the matrix", {
@@ -66,7 +67,9 @@ test_that("with related pairs only, the mean kinship is unavailable and contamin
   expect_true(all(is.na(chk$samples$mean_kinship)))
   expect_identical(chk$contamination$id, "S001")
   expect_false(any(chk$samples$flag == "possible different ancestry"))
-  expect_identical(chk$samples$n_relatives[chk$samples$id == "S170"], 0L)
+  unlisted <- setdiff(rownames(K), c(related$ID1, related$ID2))
+  expect_true(length(unlisted) > 0)
+  expect_true(all(chk$samples$n_relatives[chk$samples$id %in% unlisted] == 0L))
   expect_output(print(chk), "Ancestry not assessed")
 })
 
@@ -86,4 +89,16 @@ test_that("the print shows each section and the flagged samples can be excluded"
   expect_false(out$visible)
   g <- rkn_graph_from_kinship(K, "third", exclude = chk$contamination$id)
   expect_identical(max(igraph::components(g)$csize), 2)
+})
+
+test_that("true relatives do not make the members of a small cohort look contaminated", {
+  set.seed(2)
+  ids <- sprintf("S%02d", 1:40)
+  K <- matrix(rnorm(40^2, -0.015, 0.004), 40, 40, dimnames = list(ids, ids))
+  K[upper.tri(K)] <- t(K)[upper.tri(K)]
+  for (i in c(1, 3, 5)) K[i, i + 1] <- K[i + 1, i] <- 0.25
+  diag(K) <- 0.5
+  chk <- rkn_check_samples(K, "third")
+  expect_identical(nrow(chk$contamination), 0L)
+  expect_true(all(chk$samples$flag == ""))
 })

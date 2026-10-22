@@ -1,5 +1,85 @@
 .rkn_king_cutoffs <- c(duplicate = 0.354, first = 0.177, second = 0.0884, third = 0.0442)
 
+#' Internal helper: numeric kinship threshold from a number or a KING label
+#'
+#' @keywords internal
+#' @noRd
+.rkn_resolve_threshold <- function(threshold) {
+  if (is.character(threshold)) {
+    threshold <- .rkn_king_cutoffs[[match.arg(threshold, names(.rkn_king_cutoffs))]]
+  }
+  if (!is.numeric(threshold) || length(threshold) != 1 || !is.finite(threshold)) {
+    stop("threshold must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".")
+  }
+  threshold
+}
+
+#' Internal helper: validate kinship estimates given as a matrix or a pair table
+#'
+#' Returns the sample identifiers and either the matrix (\code{matrix}) or the listed
+#' pairs (\code{id1}, \code{id2}, \code{kinship}), with \code{complete} telling whether
+#' every pair of samples is listed. Pairs with a missing estimate raise a warning.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_read_kinship <- function(x, samples) {
+  if (is.matrix(x)) {
+    ids <- rownames(x)
+    if (!is.numeric(x) || is.null(ids) || !identical(ids, colnames(x))) {
+      stop("A kinship matrix must be numeric, with the sample identifiers as identical row and column names.")
+    }
+    if (!isSymmetric(unname(x))) stop("A kinship matrix must be symmetric.")
+    out <- list(ids = ids, matrix = x, complete = TRUE)
+    n_missing <- (sum(is.na(x)) - sum(is.na(diag(x)))) / 2
+  } else if (is.data.frame(x)) {
+    nm <- tolower(names(x))
+    cols <- if (all(c("iid1", "iid2") %in% nm)) c("iid1", "iid2") else c("id1", "id2")
+    if (!all(c(cols, "kinship") %in% nm)) {
+      stop("A pair table needs two identifier columns (ID1 and ID2, IID1 and IID2, or id1 and id2) ",
+           "and a kinship column.")
+    }
+    a <- as.character(x[[match(cols[1], nm)]])
+    b <- as.character(x[[match(cols[2], nm)]])
+    k <- x[[match("kinship", nm)]]
+    listed <- unique(c(a, b))
+    ids <- if (is.null(samples)) listed else unique(as.character(samples))
+    absent <- setdiff(listed, ids)
+    if (length(absent) > 0) {
+      stop("The pair table refers to samples missing from `samples`, for instance ",
+           paste(absent[seq_len(min(3, length(absent)))], collapse = ", "), ".")
+    }
+    n_pairs <- nrow(unique(data.frame(lo = pmin(a, b), hi = pmax(a, b))))
+    complete <- n_pairs >= length(ids) * (length(ids) - 1) / 2
+    if (is.null(samples) && !complete) {
+      message("The pair table does not list every pair of samples, so samples without relatives ",
+              "may be missing from the network; supply all sample identifiers through `samples`.")
+    }
+    out <- list(ids = ids, id1 = a, id2 = b, kinship = k, complete = complete)
+    n_missing <- sum(is.na(k))
+  } else {
+    stop("x must be a kinship matrix or a data frame of pairs.")
+  }
+  if (n_missing > 0) {
+    warning(sprintf("%d pairs have a missing kinship estimate and are treated as unrelated.", n_missing),
+            call. = FALSE)
+  }
+  out
+}
+
+#' Internal helper: pairs of samples whose kinship is at least the threshold
+#'
+#' @keywords internal
+#' @noRd
+.rkn_kinship_edges <- function(input, threshold) {
+  if (!is.null(input$matrix)) {
+    hit <- which(input$matrix >= threshold, arr.ind = TRUE)
+    hit <- hit[hit[, 1] < hit[, 2], , drop = FALSE]
+    return(list(id1 = input$ids[hit[, 1]], id2 = input$ids[hit[, 2]], kinship = input$matrix[hit]))
+  }
+  keep <- !is.na(input$kinship) & input$kinship >= threshold
+  list(id1 = input$id1[keep], id2 = input$id2[keep], kinship = input$kinship[keep])
+}
+
 #' Build a relatedness network from kinship estimates
 #'
 #' @description
@@ -89,63 +169,13 @@
 #' @export
 rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
                                    covariates = NULL, covariates_id = "id") {
-  if (is.character(threshold)) {
-    threshold <- .rkn_king_cutoffs[[match.arg(threshold, names(.rkn_king_cutoffs))]]
-  }
-  if (!is.numeric(threshold) || length(threshold) != 1 || !is.finite(threshold)) {
-    stop("threshold must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".")
-  }
-
-  if (is.matrix(x)) {
-    ids <- rownames(x)
-    if (!is.numeric(x) || is.null(ids) || !identical(ids, colnames(x))) {
-      stop("A kinship matrix must be numeric, with the sample identifiers as identical row and column names.")
-    }
-    if (!isSymmetric(unname(x))) stop("A kinship matrix must be symmetric.")
-    hit <- which(x >= threshold, arr.ind = TRUE)
-    hit <- hit[hit[, 1] < hit[, 2], , drop = FALSE]
-    id1 <- ids[hit[, 1]]
-    id2 <- ids[hit[, 2]]
-    kinship <- x[hit]
-    n_missing <- (sum(is.na(x)) - sum(is.na(diag(x)))) / 2
-  } else if (is.data.frame(x)) {
-    nm <- tolower(names(x))
-    cols <- if (all(c("iid1", "iid2") %in% nm)) c("iid1", "iid2") else c("id1", "id2")
-    if (!all(c(cols, "kinship") %in% nm)) {
-      stop("A pair table needs two identifier columns (ID1 and ID2, IID1 and IID2, or id1 and id2) ",
-           "and a kinship column.")
-    }
-    a <- as.character(x[[match(cols[1], nm)]])
-    b <- as.character(x[[match(cols[2], nm)]])
-    k <- x[[match("kinship", nm)]]
-    listed <- unique(c(a, b))
-    if (is.null(samples)) {
-      ids <- listed
-      n_pairs <- nrow(unique(data.frame(lo = pmin(a, b), hi = pmax(a, b))))
-      if (n_pairs < length(ids) * (length(ids) - 1) / 2) {
-        message("The pair table does not list every pair of samples, so samples without relatives ",
-                "may be missing from the network; supply all sample identifiers through `samples`.")
-      }
-    } else {
-      ids <- unique(as.character(samples))
-      absent <- setdiff(listed, ids)
-      if (length(absent) > 0) {
-        stop("The pair table refers to samples missing from `samples`, for instance ",
-             paste(absent[seq_len(min(3, length(absent)))], collapse = ", "), ".")
-      }
-    }
-    keep <- !is.na(k) & k >= threshold
-    id1 <- a[keep]
-    id2 <- b[keep]
-    kinship <- k[keep]
-    n_missing <- sum(is.na(k))
-  } else {
-    stop("x must be a kinship matrix or a data frame of pairs.")
-  }
-  if (n_missing > 0) {
-    warning(sprintf("%d pairs have a missing kinship estimate and are treated as unrelated.", n_missing),
-            call. = FALSE)
-  }
+  threshold <- .rkn_resolve_threshold(threshold)
+  input <- .rkn_read_kinship(x, samples)
+  edges <- .rkn_kinship_edges(input, threshold)
+  ids <- input$ids
+  id1 <- edges$id1
+  id2 <- edges$id2
+  kinship <- edges$kinship
 
   if (!is.null(exclude)) {
     unknown <- setdiff(exclude, ids)

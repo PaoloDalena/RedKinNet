@@ -82,3 +82,20 @@ test_that("true relatives do not make the members of a small cohort look contami
   expect_identical(nrow(chk$contamination), 0L)
   expect_true(all(chk$samples$flag == ""))
 })
+
+test_that("the joint removal of several contaminated samples is reported", {
+  K <- synthetic_cohort()
+  K["S002", -2] <- K[-2, "S002"] <- rnorm(199, 0.045, 0.01)
+  chk <- rkn_check_samples(K, "third")
+  expect_identical(chk$contamination$id, c("S001", "S002"))
+  expect_true(all(chk$contamination$largest_component_without > 50))
+  expect_identical(chk$largest_component_without_flagged, 2L)
+  expect_output(print(chk), "without all the flagged samples together: 2 samples")
+})
+
+test_that("without flagged samples the joint size equals the largest family", {
+  K <- synthetic_cohort()
+  chk <- rkn_check_samples(K, "third", z_kinship = Inf)
+  expect_identical(nrow(chk$contamination), 0L)
+  expect_identical(chk$largest_component_without_flagged, chk$largest_component)
+})

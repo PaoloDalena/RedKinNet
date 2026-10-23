@@ -69,6 +69,11 @@
 #'     family of the network after removing the sample;}
 #'   \item{\code{threshold}, \code{largest_component}}{the threshold used and the size
 #'     of the largest family of the network;}
+#'   \item{\code{largest_component_without_flagged}}{the size of the largest family after
+#'     removing all the samples flagged as possible contamination together. When several
+#'     contaminated samples are related to the same samples, removing one of them leaves
+#'     the others holding the families together, so only the joint removal shows their
+#'     effect. It equals \code{largest_component} when no sample is flagged;}
 #'   \item{\code{mean_kinship_available}}{whether the mean kinship could be computed.}
 #' }
 #'
@@ -176,10 +181,12 @@ rkn_check_samples <- function(x, threshold, samples = NULL, z_kinship = 5, z_rel
   contamination <- samples_df[flagged, c("id", "n_relatives", "mean_kinship", "z_relatives", "z_kinship")]
   contamination$largest_component_without <- without
   rownames(contamination) <- NULL
+  without_flagged <- if (length(flagged) > 0) igraph::delete_vertices(g, flagged) else g
 
   structure(
     list(samples = samples_df, duplicates = duplicates, contamination = contamination,
          threshold = threshold, largest_component = as.integer(max(igraph::components(g)$csize)),
+         largest_component_without_flagged = as.integer(max(igraph::components(without_flagged)$csize)),
          mean_kinship_available = available),
     class = "rkn_sample_check"
   )
@@ -223,7 +230,8 @@ print.rkn_sample_check <- function(x, ...) {
               if (x$mean_kinship_available) ",\nwith an unusually high kinship even with unrelated ones" else ""))
   if (nrow(x$contamination) > 0) {
     print(x$contamination, row.names = FALSE, digits = 3)
-    cat(sprintf("Largest family of the network: %d samples.\n", x$largest_component))
+    cat(sprintf("Largest family of the network: %d samples;\nwithout all the flagged samples together: %d samples.\n",
+                x$largest_component, x$largest_component_without_flagged))
   }
 
   if (x$mean_kinship_available) {

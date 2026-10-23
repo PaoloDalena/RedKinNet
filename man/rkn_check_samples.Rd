@@ -62,6 +62,11 @@ contamination, with \code{largest_component_without}, the size of the largest
 family of the network after removing the sample;}
 \item{\code{threshold}, \code{largest_component}}{the threshold used and the size
 of the largest family of the network;}
+\item{\code{largest_component_without_flagged}}{the size of the largest family after
+removing all the samples flagged as possible contamination together. When several
+contaminated samples are related to the same samples, removing one of them leaves
+the others holding the families together, so only the joint removal shows their
+effect. It equals \code{largest_component} when no sample is flagged;}
 \item{\code{mean_kinship_available}}{whether the mean kinship could be computed.}
 }
 }

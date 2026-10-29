@@ -139,6 +139,29 @@ test_that("mis_method records how each family was resolved", {
   expect_identical(fs$mis_method, c(NA, NA, "exact"))
 })
 
+test_that("individuals the search leaves without alternatives are decided without a choice", {
+  # Family of six: the structural rules keep D3 and discard K3; the search resolves D1,
+  # D2, K1 and K2, whose only maximum set is {D1, D2}. Family of five: two parents and
+  # three children, resolved by enumeration, whose only maximum set is the children.
+  g <- igraph::graph_from_literal(D1 - K1 - D2, D1 - K2 - D2, K1 - K2, D2 - K3 - D3, K1 - K3, K2 - K3,
+                                  P1 - C1 - P2, P1 - C2 - P2, P1 - C3 - P2)
+  igraph::V(g)$sex <- rep(c("M", "F"), length.out = 11)
+  kept <- c("D1", "D2", "D3", "C1", "C2", "C3")
+  discarded <- c("K1", "K2", "K3", "P1", "P2")
+  selectors <- list(function(d) rkn_select_random(g, seed = 1, diagnostics = d),
+                    function(d) rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1, diagnostics = d))
+  for (select in selectors) {
+    sel <- select(TRUE)
+    expect_identical(sel$kept, select(FALSE)$kept)
+    nd <- sel$node_diagnostics
+    expect_true(all(nd$pre_class[nd$id %in% kept] == "kept_apriori"))
+    expect_true(all(nd$pre_class[nd$id %in% discarded] == "discarded_apriori"))
+    expect_setequal(sel$family_summary$mis_method, c("exact", "enumeration"))
+    expect_identical(sel$family_summary$n_candidate_complex, c(0L, 0L))
+    expect_setequal(sel$kept, kept)
+  }
+})
+
 test_that("uniform selections draw every maximum set of a family with the same probability", {
   path6 <- igraph::make_ring(6, circular = FALSE)
   igraph::V(path6)$name <- paste0("p", 1:6)

@@ -193,6 +193,13 @@ rkn_select_criteria_upto5 <- function(fam_df,
     pre_reason_map[candidate_simple] <- "criteria_single_conflict_group"
   }
 
+  if (used_largest_ivs) {
+    split <- .rkn_split_enumerated_candidates(candidate_complex, candidate_sets)
+    kept_apriori <- c(kept_apriori, split$kept)
+    discarded_apriori <- c(discarded_apriori, split$discarded)
+    candidate_complex <- split$complex
+  }
+
   node_diagnostics <- build_node_diag(
     ids = fam_df$.name,
     kept_apriori = unique(kept_apriori),

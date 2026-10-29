@@ -117,11 +117,13 @@ Within each family, every individual is decided in one of four ways, reported by
 \code{\link{summary.rkn_selection}} and shown by the \code{"diagnostics"} plot (see
 \code{\link{plot.rkn_selection}}):
 \describe{
-\item{kept by a structural rule}{a rule based on the structure of the family keeps
-the individual without any choice being made (for instance the leaves of a
-star-shaped family);}
-\item{discarded by a structural rule}{a structural rule discards the individual
-(for instance the centre of a star);}
+\item{kept without a choice}{the individual is kept with no alternative to choose
+from: a rule based on the structure of the family keeps them (for instance the
+leaves of a star-shaped family), or they belong to every maximum set of the
+individuals left undecided by the rules;}
+\item{discarded without a choice}{likewise, the individual is discarded by a
+structural rule (for instance the centre of a star) or belongs to no maximum set
+of the individuals left undecided;}
 \item{decided among single candidates}{the remaining choice is among
 interchangeable candidates of a single group, such as the two members of a
 related pair, and one of them is selected;}
@@ -131,6 +133,12 @@ more than one individual, and one of them is selected.}
 The choices among candidates are made at random by
 \code{\link{rkn_select_random}} and by the criteria in
 \code{\link{rkn_select_criteria}}.
+
+"Without a choice" describes the procedure, not the family: to simplify the search,
+the structural rules fix some individuals that other maximum sets of the family leave
+out (for instance, in a chain of relatives they keep the individual at the end), so an
+individual kept without a choice is not necessarily in every maximum set of the
+family. The exact classes over the whole family are given by uniform selections.
 
 In uniform selections (\code{rkn_select_random(uniform = TRUE)}) no structural rule
 is applied, and the same codes have an exact meaning, computed from the inclusion

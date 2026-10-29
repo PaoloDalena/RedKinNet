@@ -170,3 +170,16 @@ test_that("inclusion probabilities match the share of maximum independent sets c
   path6 <- .rkn_mis_inclusion(.rkn_mis_exact(adjacency(igraph::make_ring(6, circular = FALSE))))
   expect_equal(path6, c(0.75, 0.25, 0.5, 0.5, 0.25, 0.75))
 })
+
+test_that("the inclusion probabilities of the search refer to the graph it draws from", {
+  path6 <- igraph::make_ring(6, circular = FALSE)
+  igraph::V(path6)$name <- paste0("p", 1:6)
+  expect_equal(.rkn_search_inclusion(path6), c(p1 = 0.75, p2 = 0.25, p3 = 0.5, p4 = 0.5, p5 = 0.25, p6 = 0.75))
+
+  fan <- igraph::make_ring(8, circular = FALSE) + igraph::vertex(1)
+  fan <- igraph::add_edges(fan, as.vector(rbind(9, 1:8)))
+  igraph::V(fan)$name <- as.character(1:9)
+  prob <- .rkn_search_inclusion(fan, max_width = 1)
+  expect_true(all(prob[!.rkn_dominance_reduce(adjacency(fan))] == 0))
+  expect_equal(sum(prob), 4)
+})

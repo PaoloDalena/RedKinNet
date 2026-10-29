@@ -53,6 +53,32 @@
   )
 }
 
+#' Internal helper: candidates left without alternatives by the enumeration
+#'
+#' @description
+#' Splits the candidates resolved by enumerating the maximum sets with
+#' \code{igraph::largest_ivs()} into those in every set and those in no set, which were
+#' decided without a choice (see the section Types of decision in
+#' \code{?rkn_selection}), and the others. Shared between the `use_largest_ivs`
+#' resolution branches of \code{rkn_select_random_upto5()} and
+#' \code{rkn_select_criteria_upto5()}.
+#'
+#' @param candidates Character vector of candidate names.
+#' @param sets List of character vectors, the maximum sets enumerated.
+#' @return A list with \code{kept}, \code{discarded} and \code{complex}.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_split_enumerated_candidates <- function(candidates, sets) {
+  in_all <- Reduce(intersect, sets)
+  in_any <- unique(unlist(sets))
+  list(
+    kept = intersect(candidates, in_all),
+    discarded = setdiff(candidates, in_any),
+    complex = intersect(setdiff(candidates, in_all), in_any)
+  )
+}
+
 #' Internal helper: a priori decisions and conflict groups for upto5 selectors
 #'
 #' @description

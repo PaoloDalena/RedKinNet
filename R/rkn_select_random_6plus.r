@@ -676,6 +676,15 @@ rkn_select_random_6plus <- function(fam_df,
     return(list(kept = kept_final, discarded = discarded_final))
   }
 
+  # Individuals in every or in no maximum set of the residual were decided without a
+  # choice, even though the search resolved them.
+  if (length(fallback_nodes) > 0) {
+    prob <- .rkn_search_inclusion(igraph::induced_subgraph(g_sub, vids = fallback_nodes))
+    kept_apriori <- unique(c(kept_apriori, names(prob)[prob == 1]))
+    discarded_apriori <- unique(c(discarded_apriori, names(prob)[prob == 0]))
+    candidate_complex <- setdiff(candidate_complex, names(prob)[prob %in% c(0, 1)])
+  }
+
   node_diag <- .rkn_build_node_diag_6plus(
     all_names = all_names,
     kept_apriori = kept_apriori,

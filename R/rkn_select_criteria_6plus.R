@@ -220,6 +220,15 @@ rkn_select_criteria_6plus <- function(fam_df,
 
     if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
 
+    # Individuals in every or in no maximum set of the residual searched were decided
+    # without a choice, whatever the criteria.
+    if (!is.null(res$inclusion)) {
+      prob <- res$inclusion
+      res$kept_apriori <- unique(c(res$kept_apriori, names(prob)[prob == 1]))
+      res$discarded_apriori <- unique(c(res$discarded_apriori, names(prob)[prob == 0]))
+      res$candidate_complex <- setdiff(res$candidate_complex, names(prob)[prob %in% c(0, 1)])
+    }
+
     pre_reason_map <- stats::setNames(rep(NA_character_, n0), all_names)
     if (!is.null(pre_reason_extra)) pre_reason_map[names(pre_reason_extra)] <- pre_reason_extra
     pre_reason_map[names(res$pre_reason)] <- res$pre_reason
@@ -349,6 +358,7 @@ rkn_select_criteria_6plus <- function(fam_df,
       kept_aftercriteria = picked$kept,
       discarded_aftercriteria = setdiff(igraph::V(g_r)$name, picked$kept),
       candidate_simple = character(0), candidate_complex = igraph::V(g_r)$name,
+      inclusion = if (return_diagnostics) .rkn_search_inclusion(g_r),
       pre_reason = stats::setNames(rep("exact_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
     )
   }
@@ -359,7 +369,7 @@ rkn_select_criteria_6plus <- function(fam_df,
     discarded_apriori = unique(c(discarded_apriori, res_r$discarded_apriori)),
     kept_aftercriteria = res_r$kept_aftercriteria, discarded_aftercriteria = res_r$discarded_aftercriteria,
     candidate_simple = res_r$candidate_simple, candidate_complex = res_r$candidate_complex,
-    pre_reason = res_r$pre_reason
+    pre_reason = res_r$pre_reason, inclusion = res_r$inclusion
   )
   finalize(combined, pre_reason_extra = pre_reason_map)
 }

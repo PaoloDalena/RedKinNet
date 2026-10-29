@@ -283,6 +283,33 @@
   list(kept = ids[keep][.rkn_mis_sample(sol)], method = method)
 }
 
+#' Internal helper: inclusion probabilities of the search over maximum sets
+#'
+#' Exact inclusion probabilities of the vertices of \code{g} over the maximum
+#' independent sets that \code{.rkn_draw_maximum_set()} draws from: those of the whole
+#' graph, or of the graph without its dominated vertices (probability 0) when the graph
+#' is too wide. A probability of 0 or 1 means that the search had no alternative for the
+#' vertex. Called after the search, so the graph is known to be within the width limit.
+#'
+#' @param g An igraph object with vertex names.
+#' @param max_width Largest elimination width accepted, as in \code{.rkn_mis_exact()}.
+#' @return A named numeric vector with one probability per vertex.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_search_inclusion <- function(g, max_width = 20) {
+  A <- .rkn_adjacency(g)
+  prob <- stats::setNames(numeric(nrow(A)), igraph::V(g)$name)
+  keep <- rep(TRUE, nrow(A))
+  sol <- .rkn_mis_exact(A, max_width)
+  if (!sol$feasible) {
+    keep <- .rkn_dominance_reduce(A)
+    sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width)
+  }
+  prob[keep] <- .rkn_mis_inclusion(sol)
+  prob
+}
+
 #' Internal helper: logical adjacency matrix of a graph
 #'
 #' @keywords internal

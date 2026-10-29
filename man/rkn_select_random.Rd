@@ -33,7 +33,10 @@ The network is partitioned into families, defined as the connected components of
 \code{g}, and each family is resolved independently. Since no relationship crosses
 two components, the union of the per-family selections is a set of mutually
 unrelated individuals. Where several maximum sets of unrelated individuals are
-possible, the choice among them is made at random.
+possible, the choice among them is made at random. Structural rules decide most
+individuals; those left undecided in large families are resolved by an exact
+algorithm that also handles the intricate families of genetic isolates (see the
+section Search over maximum sets of \code{\link{rkn_selection}}).
 }
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of

@@ -5,7 +5,10 @@
 #' \code{g}, and each family is resolved independently. Since no relationship crosses
 #' two components, the union of the per-family selections is a set of mutually
 #' unrelated individuals. Where several maximum sets of unrelated individuals are
-#' possible, the choice among them is made at random.
+#' possible, the choice among them is made at random. Structural rules decide most
+#' individuals; those left undecided in large families are resolved by an exact
+#' algorithm that also handles the intricate families of genetic isolates (see the
+#' section Search over maximum sets of \code{\link{rkn_selection}}).
 #'
 #' @param g An igraph object. Vertex names must be stored in V(g)$name. Vertex
 #'   attributes cannot be named \code{degree}, \code{max_path_length} or \code{.name}:

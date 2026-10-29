@@ -56,7 +56,7 @@
   kept_list <- vector("list", n_fam)
   discarded_list <- vector("list", n_fam)
 
-  used_largest_ivs_vec <- rep(NA, n_fam)
+  mis_method_vec <- rep(NA_character_, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
   if (diagnostics) {
     fs_selector <- character(n_fam)
@@ -97,7 +97,7 @@
     discarded_list[[i]] <- out$discarded
 
     if (diagnostics) {
-      used_largest_ivs_vec[i] <- if (!is.null(out$used_largest_ivs)) isTRUE(out$used_largest_ivs) else NA
+      if (!is.null(out$mis_method)) mis_method_vec[i] <- out$mis_method
 
       node_diag_list[[i]] <- out$node_diagnostics
       fs_selector[i] <- selector_used
@@ -132,7 +132,7 @@
       family_size = unname(fam_sizes),
       selector = fs_selector,
       structure_name = fs_structure,
-      used_largest_ivs = used_largest_ivs_vec,
+      mis_method = mis_method_vec,
       n_kept = fs_n_kept,
       n_discarded = fs_n_discarded,
       n_kept_apriori = fs_n_kept_apriori,

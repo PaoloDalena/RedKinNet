@@ -163,12 +163,12 @@ rkn_select_criteria_6plus <- function(fam_df,
       kept_final = kept_final, discarded_final = discarded_final,
       pre_reason_map = stats::setNames(rep("n_lt_6_fallback", n0), all_names)
     )
-    fam_diag <- .rkn_df(n_nodes = n0, used_largest_ivs = FALSE, structure_name = "n_lt_6_fallback")
+    fam_diag <- .rkn_df(n_nodes = n0, mis_method = NA_character_, structure_name = "n_lt_6_fallback")
     return(list(
       structure_name = "n_lt_6_fallback", kept_apriori = character(0), discarded_apriori = all_names,
       candidate_simple = character(0), candidate_complex = character(0),
       kept_aftercriteria = character(0), discarded_aftercriteria = character(0),
-      kept = kept_final, discarded = discarded_final, used_largest_ivs = FALSE,
+      kept = kept_final, discarded = discarded_final, mis_method = NA_character_,
       node_diagnostics = node_diag, family_diagnostics = fam_diag
     ))
   }
@@ -228,7 +228,7 @@ rkn_select_criteria_6plus <- function(fam_df,
       candidate_simple = res$candidate_simple, candidate_complex = res$candidate_complex,
       kept_final = kept_final, discarded_final = discarded_final, pre_reason_map = pre_reason_map
     )
-    fam_diag <- .rkn_df(n_nodes = n0, used_largest_ivs = res$used_largest_ivs,
+    fam_diag <- .rkn_df(n_nodes = n0, mis_method = if (isTRUE(res$used_largest_ivs)) "enumeration" else NA_character_,
                            structure_name = res$structure_name)
 
     list(
@@ -236,7 +236,8 @@ rkn_select_criteria_6plus <- function(fam_df,
       discarded_apriori = unique(res$discarded_apriori),
       candidate_simple = unique(res$candidate_simple), candidate_complex = unique(res$candidate_complex),
       kept_aftercriteria = unique(res$kept_aftercriteria), discarded_aftercriteria = unique(res$discarded_aftercriteria),
-      kept = kept_final, discarded = discarded_final, used_largest_ivs = res$used_largest_ivs,
+      kept = kept_final, discarded = discarded_final,
+      mis_method = if (isTRUE(res$used_largest_ivs)) "enumeration" else NA_character_,
       node_diagnostics = node_diag, family_diagnostics = fam_diag
     )
   }

@@ -33,8 +33,10 @@
 #'     \code{selector}, \code{"upto5"} for families resolved by the structural rules in
 #'     \code{\link{rules_db}} and \code{"6plus"} for larger families;
 #'     \code{structure_name}, an internal label of the recognised structure;
-#'     \code{used_largest_ivs}, whether the family was resolved by enumerating its
-#'     maximum sets of unrelated individuals; the numbers of kept and discarded
+#'     \code{mis_method}, how the individuals left undecided by the structural rules
+#'     were resolved (see the section Search over maximum sets): \code{NA} when the
+#'     rules decided everyone, \code{"enumeration"}, \code{"exact"} or
+#'     \code{"exact_reduced"}; the numbers of kept and discarded
 #'     individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 #'     \code{n_candidate_complex});}
@@ -59,6 +61,28 @@
 #'     larger families by reducing the family step by step with structural rules and
 #'     resolving what remains.}
 #' }
+#'
+#' @section Search over maximum sets:
+#' The structural rules decide many individuals directly. The individuals they leave
+#' undecided are resolved by a search over the maximum sets of unrelated individuals,
+#' reported in the column \code{mis_method} of \code{family_summary}:
+#' \describe{
+#'   \item{\code{"enumeration"}}{in families of up to 5 members, all the maximum sets
+#'     are listed and one of them is chosen;}
+#'   \item{\code{"exact"}}{in families of 6 or more members, an exact algorithm
+#'     (dynamic programming along an elimination ordering of the family) finds the
+#'     maximum size and draws one of the maximum sets uniformly at random. Its cost
+#'     grows with how intricate the relationships are, not with the size of the family,
+#'     so it also handles the large families of genetic isolates;}
+#'   \item{\code{"exact_reduced"}}{the same after removing the individuals who cannot
+#'     enlarge the selection (an individual is removed when one of their relatives has
+#'     no relative outside their own). This is used only for families too intricate for
+#'     the exact algorithm: the set chosen is still of maximum size, but not drawn
+#'     uniformly.}
+#' }
+#' If a family remains too intricate even after this reduction, the selection stops
+#' with an error that suggests excluding the samples flagged by
+#' \code{\link{rkn_check_samples}} or using a stricter threshold.
 #'
 #' @section Types of decision:
 #' Within each family, every individual is decided in one of four ways, reported by
@@ -176,8 +200,8 @@ print.rkn_selection <- function(x, ...) {
               sum(sizes <= 5), sum(sizes >= 6)))
 
   if (x$diagnostics) {
-    n_mis <- sum(x$family_summary$used_largest_ivs %in% TRUE)
-    cat(sprintf("Families resolved by enumerating maximum independent sets: %d\n", n_mis))
+    n_mis <- sum(!is.na(x$family_summary$mis_method))
+    cat(sprintf("Families resolved by a search over maximum independent sets: %d\n", n_mis))
   } else {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); ",
             "rerun with diagnostics = TRUE for a richer output.")

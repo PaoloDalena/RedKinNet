@@ -63,7 +63,7 @@
 #'   \item \code{kept_apriori}, \code{discarded_apriori}.
 #'   \item \code{candidate_simple}, \code{candidate_complex}.
 #'   \item \code{kept_afterrandomization}, \code{discarded_afterrandomization}.
-#'   \item \code{used_largest_ivs}.
+#'   \item \code{mis_method}.
 #'   \item \code{node_diagnostics}: one row per node (pre/post class and reason).
 #'   \item \code{family_diagnostics}: one-row summary data frame.
 #' }
@@ -111,7 +111,7 @@ rkn_select_random_upto5 <- function(fam_df,
 
     family_diagnostics <- .rkn_df(
       n_nodes = nrow(fam_df),
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = "unknown"
     )
 
@@ -125,7 +125,7 @@ rkn_select_random_upto5 <- function(fam_df,
       discarded_afterrandomization = character(0),
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diagnostics,
       family_diagnostics = family_diagnostics
     ))
@@ -227,7 +227,7 @@ rkn_select_random_upto5 <- function(fam_df,
 
   family_diagnostics <- .rkn_df(
     n_nodes = nrow(fam_df),
-    used_largest_ivs = used_largest_ivs,
+    mis_method = if (used_largest_ivs) "enumeration" else NA_character_,
     structure_name = rule$name
   )
 
@@ -241,7 +241,7 @@ rkn_select_random_upto5 <- function(fam_df,
     discarded_afterrandomization = unique(discarded_afterrandomization),
     kept = kept_final,
     discarded = discarded_final,
-    used_largest_ivs = used_largest_ivs,
+    mis_method = if (used_largest_ivs) "enumeration" else NA_character_,
     node_diagnostics = node_diagnostics,
     family_diagnostics = family_diagnostics
   )

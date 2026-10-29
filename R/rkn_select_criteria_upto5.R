@@ -85,7 +85,7 @@ rkn_select_criteria_upto5 <- function(fam_df,
 
     family_diagnostics <- .rkn_df(
       n_nodes = nrow(fam_df),
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = "unknown"
     )
 
@@ -99,7 +99,7 @@ rkn_select_criteria_upto5 <- function(fam_df,
       discarded_aftercriteria = character(0),
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diagnostics,
       family_diagnostics = family_diagnostics
     ))
@@ -206,7 +206,7 @@ rkn_select_criteria_upto5 <- function(fam_df,
 
   family_diagnostics <- .rkn_df(
     n_nodes = nrow(fam_df),
-    used_largest_ivs = used_largest_ivs,
+    mis_method = if (used_largest_ivs) "enumeration" else NA_character_,
     structure_name = rule$name
   )
 
@@ -220,7 +220,7 @@ rkn_select_criteria_upto5 <- function(fam_df,
     discarded_aftercriteria = unique(discarded_aftercriteria),
     kept = kept_final,
     discarded = discarded_final,
-    used_largest_ivs = used_largest_ivs,
+    mis_method = if (used_largest_ivs) "enumeration" else NA_character_,
     node_diagnostics = node_diagnostics,
     family_diagnostics = family_diagnostics
   )

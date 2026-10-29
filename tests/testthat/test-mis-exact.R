@@ -79,3 +79,32 @@ test_that("very large numbers of maximum independent sets are kept on the log sc
   expect_identical(sol$alpha, 2000)
   expect_equal(sol$log_count, 2000 * log(2))
 })
+
+test_that("dominated vertices are removed without reducing the maximum size", {
+  set.seed(8)
+  for (k in 1:20) {
+    g <- igraph::sample_gnp(sample(8:14, 1), runif(1, 0.15, 0.5))
+    A <- adjacency(g)
+    keep <- .rkn_dominance_reduce(A)
+    expect_equal(.rkn_mis_exact(A[keep, keep, drop = FALSE])$alpha, .rkn_mis_exact(A)$alpha)
+  }
+  # A hub related to everyone in a chain is dominated by the end of the chain.
+  fan <- igraph::make_ring(8, circular = FALSE) + igraph::vertex(1)
+  fan <- igraph::add_edges(fan, as.vector(rbind(9, 1:8)))
+  expect_false(.rkn_dominance_reduce(adjacency(fan))[9])
+})
+
+test_that("draws fall back on the dominance reduction and then stop when a graph is too intricate", {
+  fan <- igraph::make_ring(8, circular = FALSE) + igraph::vertex(1)
+  fan <- igraph::add_edges(fan, as.vector(rbind(9, 1:8)))
+  igraph::V(fan)$name <- as.character(1:9)
+  drawn <- .rkn_draw_maximum_set(fan, max_width = 1)
+  expect_identical(drawn$method, "exact_reduced")
+  expect_length(drawn$kept, 4)
+  expect_false(any(adjacency(fan)[drawn$kept, drawn$kept]))
+
+  cycle <- igraph::make_ring(7)
+  igraph::V(cycle)$name <- as.character(1:7)
+  expect_identical(.rkn_draw_maximum_set(cycle)$method, "exact")
+  expect_error(.rkn_draw_maximum_set(cycle, max_width = 1), "too intricate for an exact selection")
+})

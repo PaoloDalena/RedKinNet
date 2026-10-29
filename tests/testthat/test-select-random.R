@@ -110,3 +110,31 @@ test_that("covariates do not change a random selection", {
     expect_identical(rkn_select_random(with_covariate, seed = 1)$kept, rkn_select_random(g, seed = 1)$kept)
   }
 })
+
+test_that("families left undecided by the structural rules are drawn uniformly by the exact engine", {
+  petersen <- igraph::make_graph("Petersen")
+  igraph::V(petersen)$name <- paste0("p", 1:10)
+  ref <- brute_force_mis(petersen)
+  drawn <- character(600)
+  for (s in seq_along(drawn)) drawn[s] <- paste(sort(rkn_select_random(petersen, seed = s, diagnostics = FALSE)$kept), collapse = ",")
+  expect_setequal(unique(drawn), vapply(ref$sets, function(x) paste(sort(x), collapse = ","), ""))
+  expect_gt(stats::chisq.test(table(drawn))$p.value, 0.001)
+  expect_identical(rkn_select_random(petersen, seed = 1)$family_summary$mis_method, "exact")
+})
+
+test_that("large intricate families are resolved quickly with a maximum set", {
+  grid <- igraph::make_lattice(c(6, 30))
+  igraph::V(grid)$name <- paste0("g", seq_len(igraph::vcount(grid)))
+  elapsed <- system.time(sel <- rkn_select_random(grid, seed = 1))[["elapsed"]]
+  expect_lt(elapsed, 10)
+  expect_length(sel$kept, 90)
+  expect_identical(igraph::ecount(igraph::induced_subgraph(grid, sel$kept)), 0)
+})
+
+test_that("mis_method records how each family was resolved", {
+  g <- igraph::disjoint_union(igraph::make_star(5, mode = "undirected"), igraph::make_full_graph(4),
+                              igraph::make_graph("Petersen"))
+  igraph::V(g)$name <- paste0("v", seq_len(igraph::vcount(g)))
+  fs <- rkn_select_random(g, seed = 1)$family_summary
+  expect_identical(fs$mis_method, c(NA, NA, "exact"))
+})

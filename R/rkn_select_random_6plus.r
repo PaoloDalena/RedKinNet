@@ -34,7 +34,7 @@
 #'   \item \code{kept_apriori}, \code{discarded_apriori};
 #'   \item \code{candidate_simple}, \code{candidate_complex};
 #'   \item \code{kept_afterrandomization}, \code{discarded_afterrandomization};
-#'   \item \code{used_largest_ivs};
+#'   \item \code{mis_method};
 #'   \item \code{node_diagnostics}: a data frame with one row per node;
 #'   \item \code{family_diagnostics}: a one-row summary data frame.
 #' }
@@ -83,7 +83,7 @@ rkn_select_random_6plus <- function(fam_df,
     )
     fam_diag <- .rkn_df(
       n_nodes = n0,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = "n_lt_6_fallback"
     )
 
@@ -97,7 +97,7 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_afterrandomization = character(0),
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diag,
       family_diagnostics = fam_diag
     ))
@@ -159,7 +159,7 @@ rkn_select_random_6plus <- function(fam_df,
 
     fam_diag <- .rkn_df(
       n_nodes = n_all,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = structure_name
     )
 
@@ -173,7 +173,7 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_afterrandomization = character(0),
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diag,
       family_diagnostics = fam_diag
     ))
@@ -226,7 +226,7 @@ rkn_select_random_6plus <- function(fam_df,
 
       fam_diag <- .rkn_df(
         n_nodes = n_all,
-        used_largest_ivs = FALSE,
+        mis_method = NA_character_,
         structure_name = structure_name
       )
 
@@ -240,7 +240,7 @@ rkn_select_random_6plus <- function(fam_df,
         discarded_afterrandomization = character(0),
         kept = kept_final,
         discarded = discarded_final,
-        used_largest_ivs = FALSE,
+        mis_method = NA_character_,
         node_diagnostics = node_diag,
         family_diagnostics = fam_diag
       ))
@@ -272,7 +272,7 @@ rkn_select_random_6plus <- function(fam_df,
 
       fam_diag <- .rkn_df(
         n_nodes = n_all,
-        used_largest_ivs = FALSE,
+        mis_method = NA_character_,
         structure_name = structure_name
       )
 
@@ -286,7 +286,7 @@ rkn_select_random_6plus <- function(fam_df,
         discarded_afterrandomization = discarded_final,
         kept = kept_final,
         discarded = discarded_final,
-        used_largest_ivs = FALSE,
+        mis_method = NA_character_,
         node_diagnostics = node_diag,
         family_diagnostics = fam_diag
       ))
@@ -328,7 +328,7 @@ rkn_select_random_6plus <- function(fam_df,
 
     fam_diag <- .rkn_df(
       n_nodes = n_all,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = structure_name
     )
 
@@ -342,7 +342,7 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_afterrandomization = discarded_afterrandomization,
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diag,
       family_diagnostics = fam_diag
     ))
@@ -393,21 +393,15 @@ rkn_select_random_6plus <- function(fam_df,
       kept_afterrandomization <- if (stats::runif(1) < 0.5) A else B
       discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
 
-      used_largest_ivs <- FALSE
+      mis_method <- NA_character_
 
     } else {
-      for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "largest_ivs_fallback"
+      for (x in candidate_complex) if (is.na(pre_reason_map[[x]])) pre_reason_map[[x]] <- "exact_fallback"
 
-      used_largest_ivs <- TRUE
+      drawn <- .rkn_draw_maximum_set(igraph::induced_subgraph(g_sub, vids = all_names))
+      mis_method <- drawn$method
 
-      g_ind <- igraph::induced_subgraph(g_sub, vids = all_names)
-      sets <- igraph::largest_ivs(g_ind)
-      ind_names <- igraph::V(g_ind)$name
-      set_names <- vector("list", length(sets))
-      for (j in seq_along(sets)) set_names[[j]] <- ind_names[sets[[j]]]
-      chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
-
-      kept_afterrandomization <- chosen_names
+      kept_afterrandomization <- drawn$kept
       discarded_afterrandomization <- setdiff(all_names, kept_afterrandomization)
     }
 
@@ -429,7 +423,7 @@ rkn_select_random_6plus <- function(fam_df,
 
     fam_diag <- .rkn_df(
       n_nodes = n_all,
-      used_largest_ivs = used_largest_ivs,
+      mis_method = mis_method,
       structure_name = structure_name
     )
 
@@ -443,7 +437,7 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_afterrandomization = discarded_afterrandomization,
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = used_largest_ivs,
+      mis_method = mis_method,
       node_diagnostics = node_diag,
       family_diagnostics = fam_diag
     ))
@@ -540,7 +534,7 @@ rkn_select_random_6plus <- function(fam_df,
     )
     fam_diag <- .rkn_df(
       n_nodes = n0,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       structure_name = "reduced_to_empty"
     )
 
@@ -554,7 +548,7 @@ rkn_select_random_6plus <- function(fam_df,
       discarded_afterrandomization = character(0),
       kept = kept_final,
       discarded = discarded_final,
-      used_largest_ivs = FALSE,
+      mis_method = NA_character_,
       node_diagnostics = node_diag,
       family_diagnostics = fam_diag
     ))
@@ -566,7 +560,7 @@ rkn_select_random_6plus <- function(fam_df,
   degr <- igraph::degree(g_r)
 
   structure_name <- "unrecognized_6plus"
-  used_largest_ivs <- FALSE
+  mis_method <- NA_character_
 
   candidate_simple <- character(0)
   candidate_complex <- character(0)
@@ -662,17 +656,12 @@ rkn_select_random_6plus <- function(fam_df,
   }
 
   if (length(fallback_nodes) > 0) {
-    used_largest_ivs <- TRUE
-
     candidate_complex <- unique(c(candidate_complex, fallback_nodes))
-    for (x in fallback_nodes) pre_reason_map[[x]] <- "largest_ivs_fallback"
+    for (x in fallback_nodes) pre_reason_map[[x]] <- "exact_fallback"
 
-    g_ind <- igraph::induced_subgraph(g_sub, vids = fallback_nodes)
-    sets <- igraph::largest_ivs(g_ind)
-    ind_names <- igraph::V(g_ind)$name
-    set_names <- vector("list", length(sets))
-    for (j in seq_along(sets)) set_names[[j]] <- ind_names[sets[[j]]]
-    chosen_names <- if (length(set_names) > 0) set_names[[sample(seq_along(set_names), 1)]] else character(0)
+    drawn <- .rkn_draw_maximum_set(igraph::induced_subgraph(g_sub, vids = fallback_nodes))
+    mis_method <- drawn$method
+    chosen_names <- drawn$kept
 
     kept_afterrandomization <- unique(c(kept_afterrandomization, chosen_names))
     discarded_afterrandomization <- unique(c(discarded_afterrandomization,
@@ -700,7 +689,7 @@ rkn_select_random_6plus <- function(fam_df,
 
   fam_diag <- .rkn_df(
     n_nodes = n0,
-    used_largest_ivs = used_largest_ivs,
+    mis_method = mis_method,
     structure_name = structure_name
   )
 
@@ -714,7 +703,7 @@ rkn_select_random_6plus <- function(fam_df,
     discarded_afterrandomization = unique(discarded_afterrandomization),
     kept = kept_final,
     discarded = discarded_final,
-    used_largest_ivs = used_largest_ivs,
+    mis_method = mis_method,
     node_diagnostics = node_diag,
     family_diagnostics = fam_diag
   ))

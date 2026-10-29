@@ -21,24 +21,24 @@
   order <- integer(n)
   later <- vector("list", n)
   use_fill <- n <= fill_limit
+  # Rows and columns of eliminated vertices are cleared, so A always holds the graph of
+  # the vertices still to eliminate; degree and fill are updated only for the vertices
+  # whose neighbourhood changes at each step.
+  fill_of <- function(x) {
+    nb <- which(A[x, ])
+    m <- length(nb)
+    if (m < 2) 0 else m * (m - 1) / 2 - sum(A[nb, nb]) / 2
+  }
+  deg <- rowSums(A)
+  fill <- numeric(n)
+  if (use_fill) for (x in seq_len(n)) fill[x] <- fill_of(x)
   for (step in seq_len(n)) {
-    idx <- which(alive)
-    sub <- A[idx, idx, drop = FALSE]
-    deg <- rowSums(sub)
+    candidates <- which(alive)
     if (use_fill) {
-      fill <- numeric(length(idx))
-      for (k in seq_along(idx)) {
-        nb <- which(sub[k, ])
-        m <- length(nb)
-        if (m > 1) fill[k] <- m * (m - 1) / 2 - sum(sub[nb, nb]) / 2
-      }
-      candidates <- which(fill == min(fill))
-      pick <- candidates[which.min(deg[candidates])]
-    } else {
-      pick <- which.min(deg)
+      candidates <- candidates[fill[candidates] == min(fill[candidates])]
     }
-    v <- idx[pick]
-    nb <- idx[sub[pick, ]]
+    v <- candidates[which.min(deg[candidates])]
+    nb <- unname(which(A[v, ]))
     later[[v]] <- nb
     A[nb, nb] <- TRUE
     A[cbind(nb, nb)] <- FALSE
@@ -46,6 +46,15 @@
     A[, v] <- FALSE
     alive[v] <- FALSE
     order[step] <- v
+    if (length(nb) > 0) {
+      deg[nb] <- rowSums(A[nb, , drop = FALSE])
+      if (use_fill) {
+        # The fill changes only for the neighbours of v and for the vertices adjacent to
+        # two of them, which may have gained an edge among their neighbours.
+        touched <- unique(c(nb, which(colSums(A[nb, , drop = FALSE]) > 0)))
+        for (x in touched) fill[x] <- fill_of(x)
+      }
+    }
   }
   list(order = order, later = later, width = max(c(0L, lengths(later))))
 }
@@ -194,4 +203,77 @@
   sol$feasible <- TRUE
   sol$width <- elim$width
   sol
+}
+
+#' Internal helper: remove dominated vertices
+#'
+#' A vertex v is dominated by a relative u when every relative of u is also a relative of
+#' v, that is when the closed neighbourhood of u (u and its relatives) is contained in
+#' that of v. Some maximum independent set then
+#' avoids v, so removing v leaves the maximum size unchanged; it does change the set of
+#' maximum independent sets, so the rule suits the search for one maximum set but not
+#' counting or uniform sampling. All the dominated vertices are removed at once, keeping
+#' the one with the smallest index among vertices with identical closed neighbourhoods,
+#' so that every removed vertex keeps a dominator; the rule is applied again until no
+#' vertex is dominated.
+#'
+#' @param A Symmetric logical adjacency matrix without self-loops.
+#' @return A logical vector, \code{TRUE} for the vertices kept.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_dominance_reduce <- function(A) {
+  keep <- rep(TRUE, nrow(A))
+  repeat {
+    idx <- which(keep)
+    closed <- A[idx, idx, drop = FALSE]
+    diag(closed) <- TRUE
+    size <- rowSums(closed)
+    drop <- rep(FALSE, length(idx))
+    for (v in seq_along(idx)) {
+      nb <- setdiff(which(closed[v, ]), v)
+      if (length(nb) == 0) next
+      outside <- rowSums(closed[nb, , drop = FALSE] & !rep(closed[v, ], each = length(nb)))
+      inside <- nb[outside == 0]
+      if (any(size[inside] < size[v] | inside < v)) drop[v] <- TRUE
+    }
+    if (!any(drop)) return(keep)
+    keep[idx[drop]] <- FALSE
+  }
+}
+
+#' Internal helper: draw a maximum independent set of a graph
+#'
+#' Draws a maximum independent set uniformly at random with the exact engine. When the
+#' elimination width exceeds \code{max_width}, the dominated vertices are removed first:
+#' the set drawn is still of maximum size but no longer uniform. If the graph is still
+#' too wide, the function stops before allocating the tables, rather than exhausting the
+#' memory.
+#'
+#' @param g An igraph object with vertex names.
+#' @param max_width Largest elimination width accepted, as in \code{.rkn_mis_exact()}.
+#' @return A list with \code{kept}, the names of the selected vertices, and
+#'   \code{method}, \code{"exact"} or \code{"exact_reduced"} (after removing dominated
+#'   vertices).
+#'
+#' @keywords internal
+#' @noRd
+.rkn_draw_maximum_set <- function(g, max_width = 20) {
+  ids <- igraph::V(g)$name
+  A <- as.matrix(igraph::as_adjacency_matrix(g, sparse = FALSE)) > 0
+  keep <- rep(TRUE, length(ids))
+  method <- "exact"
+  sol <- .rkn_mis_exact(A, max_width)
+  if (!sol$feasible) {
+    keep <- .rkn_dominance_reduce(A)
+    sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width)
+    method <- "exact_reduced"
+  }
+  if (!sol$feasible) {
+    stop(sprintf(paste0("A family with %d individuals left after the structural rules is too intricate for ",
+                        "an exact selection (elimination width %d, limit %d). Exclude the samples flagged by ",
+                        "rkn_check_samples(), or use a stricter threshold such as \"second\"."),
+                 length(ids), sol$width, max_width), call. = FALSE)
+  }
+  list(kept = ids[keep][.rkn_mis_sample(sol)], method = method)
 }

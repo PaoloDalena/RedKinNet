@@ -124,3 +124,48 @@ test_that("the criteria selection records its criteria in the rkn_selection obje
   expect_identical(sel$seed, 2)
   expect_false(sel$diagnostics)
 })
+
+best_score <- function(g, criterion, sets) {
+  fam_df <- fam_df_from_graph(g)
+  for (v in igraph::vertex_attr_names(g)) fam_df[[v]] <- igraph::vertex_attr(g, v)
+  scores <- numeric(length(sets))
+  for (j in seq_along(sets)) scores[j] <- criterion$score_fn(fam_df, sets[[j]])
+  max(scores)
+}
+
+test_that("criteria reach the best score among all maximum sets of an irregular family", {
+  petersen <- igraph::make_graph("Petersen")
+  ids <- paste0("p", 1:10)
+  igraph::V(petersen)$name <- ids
+  igraph::V(petersen)$sex <- c("F", "M", "M", "F", "M", "M", "F", "M", "F", "M")
+  igraph::V(petersen)$age <- c(20, 35, 50, 65, 41, 28, 70, 33, 58, 46)
+  sets <- brute_force_mis(petersen)$sets
+  fam_df <- fam_df_from_graph(petersen)
+  fam_df$sex <- igraph::V(petersen)$sex
+  fam_df$age <- igraph::V(petersen)$age
+  for (crit in list(crits$level, crits$target_mean, crits$cutoff)) {
+    best <- best_score(petersen, crit, sets)
+    for (s in 1:5) {
+      sel <- rkn_select_criteria(petersen, crit, seed = s)
+      expect_equal(crit$score_fn(fam_df, sel$kept), best)
+      expect_identical(sel$family_summary$mis_method, "exact")
+    }
+  }
+  # A missing covariate value moves level from the exact optimisation to the enumeration.
+  igraph::V(petersen)$sex[3] <- NA
+  sel <- rkn_select_criteria(petersen, crits$level, seed = 1)
+  fam_df$sex[3] <- NA
+  expect_equal(crits$level$score_fn(fam_df, sel$kept), best_score(petersen, crits$level, sets))
+})
+
+test_that("criteria fall back on a declared sample when there are too many maximum sets", {
+  petersen <- igraph::make_graph("Petersen")
+  igraph::V(petersen)$name <- paste0("p", 1:10)
+  fam_df <- fam_df_from_graph(petersen)
+  fam_df$age <- c(20, 35, 50, 65, 41, 28, 70, 33, 58, 46)
+  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$target_mean, NULL, seed = 1, limit = 3)
+  expect_identical(picked$method, "exact_sample")
+  expect_length(picked$kept, 4)
+  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$target_mean, NULL, seed = 1)
+  expect_identical(picked$method, "exact")
+})

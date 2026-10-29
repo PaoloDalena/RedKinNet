@@ -7,7 +7,9 @@
 #' structural rules in \code{\link{rules_db}}, larger families through structural
 #' reductions followed by the resolution of the remaining ambiguity. Ambiguous
 #' selections are resolved by criterion score rather than at random; the partition into
-#' families and the returned object are as in \code{rkn_select_random()}.
+#' families and the returned object are as in \code{rkn_select_random()}. How the
+#' criteria are evaluated in large families, exactly or on a sample of maximum sets, is
+#' described in the section Search over maximum sets of \code{\link{rkn_selection}}.
 #'
 #' Covariates referenced by the criteria are read from the vertex attributes of
 #' \code{g}.

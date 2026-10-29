@@ -72,17 +72,20 @@
 #' to the first of these vertices to be eliminated. The last vertex of each connected
 #' component sends no message: its result gives the maximum size and the number of
 #' maximum independent sets of the component. Counts are rescaled when they grow very
-#' large, and their total is kept on the log scale.
+#' large, and their total is kept on the log scale. With \code{weight}, the size of a set
+#' is replaced by the sum of the weights of its vertices: integer weights such as
+#' (n + 1) plus a 0/1 indicator rank sets by size first and by the indicator second.
 #'
 #' @param A Symmetric logical adjacency matrix without self-loops.
 #' @param elim The result of \code{.rkn_elimination_order(A)}.
-#' @return A list with \code{alpha}, the maximum size; \code{log_count}, the natural
-#'   logarithm of the number of maximum independent sets; and the messages needed by
-#'   \code{.rkn_mis_sample()}.
+#' @param weight Weight of each vertex, 1 by default.
+#' @return A list with \code{alpha}, the maximum size (or total weight);
+#'   \code{log_count}, the natural logarithm of the number of sets that reach it; and
+#'   the messages needed by \code{.rkn_mis_sample()}.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_mis_eliminate <- function(A, elim) {
+.rkn_mis_eliminate <- function(A, elim, weight = rep(1, nrow(A))) {
   n <- nrow(A)
   order <- elim$order
   later <- elim$later
@@ -99,7 +102,7 @@
     # Bit 0 of an assignment code is v, bit j is scope[j].
     bit <- function(j) (code %/% 2^j) %% 2
     xv <- bit(0)
-    S <- xv
+    S <- xv * weight[v]
     C <- rep(1, length(code))
     relatives <- scope[A[v, scope]]
     if (length(relatives) > 0) {
@@ -138,7 +141,8 @@
       inbox[[target]] <- c(inbox[[target]], v)
     }
   }
-  list(alpha = alpha, log_count = log_count, A = A, order = order, later = later, msg = msg, inbox = inbox)
+  list(alpha = alpha, log_count = log_count, A = A, weight = weight, order = order, later = later, msg = msg,
+       inbox = inbox)
 }
 
 #' Internal helper: draw a maximum independent set uniformly at random
@@ -159,7 +163,7 @@
   x <- integer(nrow(sol$A))
   for (v in rev(sol$order)) {
     scope <- sol$later[[v]]
-    score <- c(0, 1)
+    score <- c(0, sol$weight[v])
     count <- c(1, 1)
     relatives <- scope[sol$A[v, scope]]
     if (length(relatives) > 0 && any(x[relatives] == 1)) {
@@ -191,15 +195,16 @@
 #'   grow as 2 to the power of the width: at width 20 the largest table holds about two
 #'   million values (some 32 MB), which keeps the computation within the memory of an
 #'   ordinary laptop. Above the limit the computation is not attempted.
+#' @param weight Weight of each vertex, as in \code{.rkn_mis_eliminate()}.
 #' @return The result of \code{.rkn_mis_eliminate()} with \code{feasible = TRUE} and
 #'   \code{width}, or \code{list(feasible = FALSE, width = ...)}.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_mis_exact <- function(A, max_width = 20) {
+.rkn_mis_exact <- function(A, max_width = 20, weight = rep(1, nrow(A))) {
   elim <- .rkn_elimination_order(A)
   if (elim$width > max_width) return(list(feasible = FALSE, width = elim$width))
-  sol <- .rkn_mis_eliminate(A, elim)
+  sol <- .rkn_mis_eliminate(A, elim, weight)
   sol$feasible <- TRUE
   sol$width <- elim$width
   sol
@@ -260,7 +265,7 @@
 #' @noRd
 .rkn_draw_maximum_set <- function(g, max_width = 20) {
   ids <- igraph::V(g)$name
-  A <- as.matrix(igraph::as_adjacency_matrix(g, sparse = FALSE)) > 0
+  A <- .rkn_adjacency(g)
   keep <- rep(TRUE, length(ids))
   method <- "exact"
   sol <- .rkn_mis_exact(A, max_width)
@@ -276,4 +281,98 @@
                  length(ids), sol$width, max_width), call. = FALSE)
   }
   list(kept = ids[keep][.rkn_mis_sample(sol)], method = method)
+}
+
+#' Internal helper: logical adjacency matrix of a graph
+#'
+#' @keywords internal
+#' @noRd
+.rkn_adjacency <- function(g) as.matrix(igraph::as_adjacency_matrix(g, sparse = FALSE)) > 0
+
+#' Internal helper: scores of the two choices of a vertex in many partial assignments
+#'
+#' For each column of \code{x}, whose vertices later than \code{v} in the elimination
+#' order are already decided, the best total weight reachable by the vertices eliminated
+#' up to \code{v} and the number of ways to reach it, when \code{v} is left out
+#' (\code{s0}, \code{c0}) or selected (\code{s1}, \code{c1}).
+#'
+#' @keywords internal
+#' @noRd
+.rkn_mis_choices <- function(sol, v, x) {
+  n_col <- ncol(x)
+  scope <- sol$later[[v]]
+  s0 <- numeric(n_col)
+  s1 <- rep(sol$weight[v], n_col)
+  c0 <- rep(1, n_col)
+  c1 <- rep(1, n_col)
+  relatives <- scope[sol$A[v, scope]]
+  if (length(relatives) > 0) {
+    clash <- colSums(x[relatives, , drop = FALSE]) > 0
+    s1[clash] <- -Inf
+    c1[clash] <- 0
+  }
+  for (w in sol$inbox[[v]]) {
+    m <- sol$msg[[w]]
+    powers <- 2^(seq_along(m$vars) - 1)
+    is_v <- m$vars == v
+    others <- m$vars[!is_v]
+    base <- if (length(others) > 0) colSums(x[others, , drop = FALSE] * powers[!is_v]) else numeric(n_col)
+    i0 <- base + 1
+    i1 <- base + powers[is_v] + 1
+    s0 <- s0 + m$s[i0]
+    c0 <- c0 * m$c[i0]
+    s1 <- s1 + m$s[i1]
+    c1 <- c1 * m$c[i1]
+  }
+  list(s0 = s0, s1 = s1, c0 = c0, c1 = c1)
+}
+
+#' Internal helper: draw many maximum independent sets at once
+#'
+#' Vectorised counterpart of \code{.rkn_mis_sample()}: the draws are independent and
+#' each is uniform over the sets of maximum size (or total weight).
+#'
+#' @param sol The result of \code{.rkn_mis_eliminate()}.
+#' @param n_draws Number of draws.
+#' @return A logical matrix with one row per vertex and one column per draw.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_mis_sample_many <- function(sol, n_draws) {
+  x <- matrix(0L, nrow(sol$A), n_draws)
+  for (v in rev(sol$order)) {
+    ch <- .rkn_mis_choices(sol, v, x)
+    best <- pmax(ch$s0, ch$s1)
+    p0 <- (ch$s0 == best) * ch$c0
+    p1 <- (ch$s1 == best) * ch$c1
+    x[v, ] <- as.integer(p1 > 0 & (p0 == 0 | stats::runif(n_draws) < p1 / (p0 + p1)))
+  }
+  x == 1
+}
+
+#' Internal helper: list all the maximum independent sets
+#'
+#' Goes through the vertices in reverse elimination order, keeping every choice that
+#' reaches the maximum size (or total weight), so that each set is listed once.
+#'
+#' @param sol The result of \code{.rkn_mis_eliminate()}.
+#' @param limit Largest number of sets listed.
+#' @return A logical matrix with one row per vertex and one column per set, or
+#'   \code{NULL} when there are more than \code{limit} sets.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_mis_enumerate <- function(sol, limit) {
+  if (sol$log_count > log(limit) + 1e-9) return(NULL)
+  x <- matrix(0L, nrow(sol$A), 1)
+  for (v in rev(sol$order)) {
+    ch <- .rkn_mis_choices(sol, v, x)
+    best <- pmax(ch$s0, ch$s1)
+    keep0 <- which(ch$s0 == best & ch$c0 > 0)
+    keep1 <- which(ch$s1 == best & ch$c1 > 0)
+    x1 <- x[, keep1, drop = FALSE]
+    x1[v, ] <- 1L
+    x <- cbind(x[, keep0, drop = FALSE], x1)
+  }
+  x == 1
 }

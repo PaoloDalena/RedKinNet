@@ -8,8 +8,8 @@
 #' ambiguous structures (clique, even path, cycle), returns \code{candidate_sets}: for a
 #' clique, one candidate per single node; for a bipartite path/cycle, its two sides
 #' (found via \code{igraph::bipartite_mapping()}, which works uniformly for both since
-#' both are bipartite); for an odd cycle, the maximum independent sets from
-#' \code{igraph::largest_ivs()}.
+#' both are bipartite); for an odd cycle, its maximum independent sets, listed by the
+#' exact engine.
 #'
 #' @keywords internal
 #' @noRd
@@ -77,13 +77,13 @@
         pre_reason = stats::setNames(rep("cycle_even_bipartite", n), all_names)
       ))
     }
-    sets <- igraph::largest_ivs(g)
-    candidate_sets <- vector("list", length(sets))
-    for (j in seq_along(sets)) candidate_sets[[j]] <- all_names[sets[[j]]]
+    sets <- .rkn_mis_enumerate(.rkn_mis_exact(.rkn_adjacency(g)), limit = Inf)
+    candidate_sets <- vector("list", ncol(sets))
+    for (j in seq_len(ncol(sets))) candidate_sets[[j]] <- all_names[sets[, j]]
     return(list(
       kind = "cycle_odd", label = "cycle", n = n, candidate_sets = candidate_sets,
       kept = character(0), discarded = character(0),
-      pre_reason = stats::setNames(rep("largest_ivs_cycle_odd", n), all_names)
+      pre_reason = stats::setNames(rep("exact_cycle_odd", n), all_names)
     ))
   }
 
@@ -175,7 +175,7 @@ rkn_select_criteria_6plus <- function(fam_df,
 
   # Resolve a graph (whole component, or post-peeling residual) against a recognized
   # structure. Returns NULL if the graph is irregular (caller handles the generic
-  # largest_ivs fallback, since only the residual case needs it). `fixed_kept` holds the
+  # exact-engine fallback, since only the residual case needs it). `fixed_kept` holds the
   # nodes already kept by the peeling loop, so that candidates are scored on the
   # family-level kept set, as in rkn_select_criteria_upto5().
   resolve_component <- function(g, seed_offset, fixed_kept = character(0)) {
@@ -184,7 +184,7 @@ rkn_select_criteria_6plus <- function(fam_df,
 
     if (is.null(shape$candidate_sets)) {
       return(list(
-        structure_name = paste0(shape$label, shape$n), used_largest_ivs = FALSE,
+        structure_name = paste0(shape$label, shape$n), mis_method = NA_character_,
         kept_apriori = shape$kept, discarded_apriori = shape$discarded,
         kept_aftercriteria = character(0), discarded_aftercriteria = character(0),
         candidate_simple = character(0), candidate_complex = character(0),
@@ -203,7 +203,8 @@ rkn_select_criteria_6plus <- function(fam_df,
     is_complex <- shape$kind != "clique"
 
     list(
-      structure_name = paste0(shape$label, shape$n), used_largest_ivs = shape$kind == "cycle_odd",
+      structure_name = paste0(shape$label, shape$n),
+      mis_method = if (identical(shape$kind, "cycle_odd")) "exact" else NA_character_,
       kept_apriori = character(0), discarded_apriori = character(0),
       kept_aftercriteria = kept, discarded_aftercriteria = discarded,
       candidate_simple = if (!is_complex) all_in_shape else character(0),
@@ -228,16 +229,14 @@ rkn_select_criteria_6plus <- function(fam_df,
       candidate_simple = res$candidate_simple, candidate_complex = res$candidate_complex,
       kept_final = kept_final, discarded_final = discarded_final, pre_reason_map = pre_reason_map
     )
-    fam_diag <- .rkn_df(n_nodes = n0, mis_method = if (isTRUE(res$used_largest_ivs)) "enumeration" else NA_character_,
-                           structure_name = res$structure_name)
+    fam_diag <- .rkn_df(n_nodes = n0, mis_method = res$mis_method, structure_name = res$structure_name)
 
     list(
       structure_name = res$structure_name, kept_apriori = unique(res$kept_apriori),
       discarded_apriori = unique(res$discarded_apriori),
       candidate_simple = unique(res$candidate_simple), candidate_complex = unique(res$candidate_complex),
       kept_aftercriteria = unique(res$kept_aftercriteria), discarded_aftercriteria = unique(res$discarded_aftercriteria),
-      kept = kept_final, discarded = discarded_final,
-      mis_method = if (isTRUE(res$used_largest_ivs)) "enumeration" else NA_character_,
+      kept = kept_final, discarded = discarded_final, mis_method = res$mis_method,
       node_diagnostics = node_diag, family_diagnostics = fam_diag
     )
   }
@@ -328,7 +327,7 @@ rkn_select_criteria_6plus <- function(fam_df,
 
   if (length(undecided) == 0) {
     return(finalize(list(
-      structure_name = "reduced_to_empty", used_largest_ivs = FALSE,
+      structure_name = "reduced_to_empty", mis_method = NA_character_,
       kept_apriori = kept_apriori, discarded_apriori = discarded_apriori,
       kept_aftercriteria = character(0), discarded_aftercriteria = character(0),
       candidate_simple = character(0), candidate_complex = character(0), pre_reason = character(0)
@@ -339,27 +338,23 @@ rkn_select_criteria_6plus <- function(fam_df,
   res_r <- resolve_component(g_r, seed_offset = 1L, fixed_kept = kept_apriori)
 
   if (is.null(res_r)) {
-    sets <- igraph::largest_ivs(g_r)
-    r_names <- igraph::V(g_r)$name
-    candidate_sets <- vector("list", length(sets))
-    for (j in seq_along(sets)) candidate_sets[[j]] <- r_names[sets[[j]]]
-    picked <- .rkn_select_among_candidates(
-      candidate_sets = candidate_sets, fam_df = fam_df, fixed_kept_ids = kept_apriori,
+    picked <- .rkn_criteria_maximum_set(
+      g_r, fam_df = fam_df, fixed_kept = kept_apriori,
       criterion_primary = criterion_primary, criterion_secondary = criterion_secondary,
       seed = if (!is.null(seed)) seed + 2L else NULL
     )
     res_r <- list(
-      structure_name = "unrecognized_6plus", used_largest_ivs = TRUE,
+      structure_name = "unrecognized_6plus", mis_method = picked$method,
       kept_apriori = character(0), discarded_apriori = character(0),
-      kept_aftercriteria = picked$chosen_set,
-      discarded_aftercriteria = setdiff(igraph::V(g_r)$name, picked$chosen_set),
+      kept_aftercriteria = picked$kept,
+      discarded_aftercriteria = setdiff(igraph::V(g_r)$name, picked$kept),
       candidate_simple = character(0), candidate_complex = igraph::V(g_r)$name,
-      pre_reason = stats::setNames(rep("largest_ivs_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
+      pre_reason = stats::setNames(rep("exact_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
     )
   }
 
   combined <- list(
-    structure_name = res_r$structure_name, used_largest_ivs = res_r$used_largest_ivs,
+    structure_name = res_r$structure_name, mis_method = res_r$mis_method,
     kept_apriori = unique(c(kept_apriori, res_r$kept_apriori)),
     discarded_apriori = unique(c(discarded_apriori, res_r$discarded_apriori)),
     kept_aftercriteria = res_r$kept_aftercriteria, discarded_aftercriteria = res_r$discarded_aftercriteria,

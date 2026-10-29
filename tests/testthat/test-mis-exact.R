@@ -108,3 +108,43 @@ test_that("draws fall back on the dominance reduction and then stop when a graph
   expect_identical(.rkn_draw_maximum_set(cycle)$method, "exact")
   expect_error(.rkn_draw_maximum_set(cycle, max_width = 1), "too intricate for an exact selection")
 })
+
+test_that("all maximum independent sets are listed once", {
+  set.seed(9)
+  for (k in 1:20) {
+    g <- igraph::sample_gnp(sample(6:13, 1), runif(1, 0.1, 0.5))
+    ids <- as.character(seq_len(igraph::vcount(g)))
+    igraph::V(g)$name <- ids
+    ref <- brute_force_mis(g)
+    sets <- .rkn_mis_enumerate(.rkn_mis_exact(adjacency(g)), limit = 1e4)
+    listed <- character(ncol(sets))
+    for (j in seq_len(ncol(sets))) listed[j] <- paste(sort(ids[sets[, j]]), collapse = ",")
+    expect_false(anyDuplicated(listed) > 0)
+    expect_setequal(listed, vapply(ref$sets, function(s) paste(sort(s), collapse = ","), ""))
+  }
+  pairs <- igraph::make_graph(seq_len(2 * 20), directed = FALSE)
+  expect_null(.rkn_mis_enumerate(.rkn_mis_exact(adjacency(pairs)), limit = 1e4))
+})
+
+test_that("many draws at once are uniform maximum independent sets", {
+  set.seed(10)
+  path6 <- igraph::make_ring(6, circular = FALSE)
+  x <- .rkn_mis_sample_many(.rkn_mis_exact(adjacency(path6)), 4000)
+  drawn <- character(ncol(x))
+  for (j in seq_len(ncol(x))) drawn[j] <- paste(which(x[, j]), collapse = ",")
+  expect_setequal(unique(drawn), c("1,3,5", "1,3,6", "1,4,6", "2,4,6"))
+  expect_gt(stats::chisq.test(table(drawn))$p.value, 0.001)
+})
+
+test_that("weights rank the maximum sets by an indicator after their size", {
+  path6 <- igraph::make_ring(6, circular = FALSE)
+  # Preferring vertices 2 and 5 among the maximum sets of size 3 leaves {2,4,6} and {1,3,5}
+  # with one preferred vertex each, and {1,3,6}, {1,4,6} with none.
+  hit <- c(0, 1, 0, 0, 1, 0)
+  sol <- .rkn_mis_exact(adjacency(path6), weight = 7 + hit)
+  expect_equal(sol$alpha, 3 * 7 + 1)
+  sets <- .rkn_mis_enumerate(sol, limit = 100)
+  listed <- character(ncol(sets))
+  for (j in seq_len(ncol(sets))) listed[j] <- paste(which(sets[, j]), collapse = ",")
+  expect_setequal(listed, c("1,3,5", "2,4,6"))
+})

@@ -39,8 +39,8 @@ without diagnostics. Columns: \code{family_id} and \code{family_size};
 \code{structure_name}, an internal label of the recognised structure;
 \code{mis_method}, how the individuals left undecided by the structural rules
 were resolved (see the section Search over maximum sets): \code{NA} when the
-rules decided everyone, \code{"enumeration"}, \code{"exact"} or
-\code{"exact_reduced"}; the numbers of kept and discarded
+rules decided everyone, \code{"enumeration"}, \code{"exact"},
+\code{"exact_reduced"} or \code{"exact_sample"}; the numbers of kept and discarded
 individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 \code{n_candidate_complex});}
@@ -87,7 +87,18 @@ enlarge the selection (an individual is removed when one of their relatives has
 no relative outside their own). This is used only for families too intricate for
 the exact algorithm: the set chosen is still of maximum size, but not drawn
 uniformly.}
+\item{\code{"exact_sample"}}{criteria-based selections only: see below.}
 }
+In criteria-based selections (\code{\link{rkn_select_criteria}}), the criteria
+\code{level} and \code{cutoff} are optimised exactly by the same algorithm when no
+undecided member of the family lacks the covariate, because among sets of the same size
+they rank sets by the number of members meeting the condition. The criteria
+\code{target_mean} and \code{category_balance}, and \code{level} or \code{cutoff}
+with missing covariate values, are evaluated on all the maximum sets when there are
+at most 10,000; above that number, as in some large families of genetic isolates,
+they are evaluated on a uniform random sample of 10,000 maximum sets, and the best of
+the sample is kept (\code{"exact_sample"}). The number of such families is reported
+by \code{print()}.
 If a family remains too intricate even after this reduction, the selection stops
 with an error that suggests excluding the samples flagged by
 \code{\link{rkn_check_samples}} or using a stricter threshold.

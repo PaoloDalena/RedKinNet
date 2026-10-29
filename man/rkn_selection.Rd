@@ -19,6 +19,8 @@ each family was resolved. The object has \code{\link[=print.rkn_selection]{print
 \item{\code{family_sizes}}{integer vector, the size of each family (connected
 component of the network);}
 \item{\code{method}}{\code{"random"} or \code{"criteria"};}
+\item{\code{uniform}}{logical, whether the selection was drawn uniformly among the
+maximum sets (\code{rkn_select_random(uniform = TRUE)});}
 \item{\code{criteria}}{for criteria-based selections, a list with the
 \code{primary} and, if given, the \code{secondary} criterion; \code{NULL}
 otherwise;}
@@ -31,16 +33,21 @@ individual was decided (\code{"kept_apriori"}, \code{"discarded_apriori"},
 Types of decision below); \code{post_class}, \code{"kept"} or
 \code{"discarded"}; \code{is_selected}, the outcome as a logical;
 \code{pre_reason}, an internal label of the rule or procedure that decided the
-individual; \code{family_id} and \code{family_size};}
+individual; \code{family_id} and \code{family_size}; in uniform selections,
+\code{inclusion_probability}, the exact probability that the individual is
+selected, i.e. the proportion of the maximum sets of its family that contain it
+(\code{NA} in the families too intricate for uniform sampling);}
 \item{\code{family_summary}}{a data frame with one row per family, or \code{NULL}
 without diagnostics. Columns: \code{family_id} and \code{family_size};
 \code{selector}, \code{"upto5"} for families resolved by the structural rules in
-\code{\link{rules_db}} and \code{"6plus"} for larger families;
+\code{\link{rules_db}}, \code{"6plus"} for larger families and \code{"uniform"}
+for families drawn uniformly;
 \code{structure_name}, an internal label of the recognised structure;
 \code{mis_method}, how the individuals left undecided by the structural rules
 were resolved (see the section Search over maximum sets): \code{NA} when the
 rules decided everyone, \code{"enumeration"}, \code{"exact"},
-\code{"exact_reduced"} or \code{"exact_sample"}; the numbers of kept and discarded
+\code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
+family was drawn uniformly among its maximum sets; the numbers of kept and discarded
 individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 \code{n_candidate_complex});}
@@ -124,6 +131,14 @@ more than one individual, and one of them is selected.}
 The choices among candidates are made at random by
 \code{\link{rkn_select_random}} and by the criteria in
 \code{\link{rkn_select_criteria}}.
+
+In uniform selections (\code{rkn_select_random(uniform = TRUE)}) no structural rule
+is applied, and the same codes have an exact meaning, computed from the inclusion
+probabilities: \code{"kept_apriori"}, in every maximum set (probability 1);
+\code{"discarded_apriori"}, in no maximum set (probability 0);
+\code{"candidate_complex"}, chosen at random among the maximum sets (probability
+strictly between 0 and 1). \code{summary()} and \code{plot()} label them
+accordingly.
 }
 
 \examples{

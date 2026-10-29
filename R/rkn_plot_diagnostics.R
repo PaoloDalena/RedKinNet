@@ -37,8 +37,9 @@
                     if (min_family_size > 1) sprintf(" in families of %d+", min_family_size) else "",
                     format(sum(is_kept), big.mark = ","), format(n, big.mark = ","))
   }
-  present <- names(.rkn_decision_labels)[names(.rkn_decision_labels) %in% decision]
-  legend <- list(labels = unname(.rkn_decision_labels[present]), fill = unname(pal[present]),
+  labels <- .rkn_labels_of(res)
+  present <- names(labels)[names(labels) %in% decision]
+  legend <- list(labels = unname(labels[present]), fill = unname(pal[present]),
                  ncol = 2,
                  title = if (isTRUE(show_outcome)) "Filled: selected. Hollow: discarded.")
 

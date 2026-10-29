@@ -45,3 +45,8 @@ test_that("the plot layout leaves the caller's random number stream untouched", 
   expect_identical(runif_after(function() .rkn_layout(g, "components", seed = 1)), reference())
   expect_identical(runif_after(function() .rkn_layout(g, "grid", seed = 1)), reference())
 })
+
+test_that("seeded uniform selections leave the caller's random number stream untouched", {
+  g <- make_network(43)
+  expect_identical(runif_after(function() rkn_select_random(g, seed = 1, uniform = TRUE)), reference())
+})

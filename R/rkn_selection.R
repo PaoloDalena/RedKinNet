@@ -15,6 +15,8 @@
 #'   \item{\code{family_sizes}}{integer vector, the size of each family (connected
 #'     component of the network);}
 #'   \item{\code{method}}{\code{"random"} or \code{"criteria"};}
+#'   \item{\code{uniform}}{logical, whether the selection was drawn uniformly among the
+#'     maximum sets (\code{rkn_select_random(uniform = TRUE)});}
 #'   \item{\code{criteria}}{for criteria-based selections, a list with the
 #'     \code{primary} and, if given, the \code{secondary} criterion; \code{NULL}
 #'     otherwise;}
@@ -27,16 +29,21 @@
 #'     Types of decision below); \code{post_class}, \code{"kept"} or
 #'     \code{"discarded"}; \code{is_selected}, the outcome as a logical;
 #'     \code{pre_reason}, an internal label of the rule or procedure that decided the
-#'     individual; \code{family_id} and \code{family_size};}
+#'     individual; \code{family_id} and \code{family_size}; in uniform selections,
+#'     \code{inclusion_probability}, the exact probability that the individual is
+#'     selected, i.e. the proportion of the maximum sets of its family that contain it
+#'     (\code{NA} in the families too intricate for uniform sampling);}
 #'   \item{\code{family_summary}}{a data frame with one row per family, or \code{NULL}
 #'     without diagnostics. Columns: \code{family_id} and \code{family_size};
 #'     \code{selector}, \code{"upto5"} for families resolved by the structural rules in
-#'     \code{\link{rules_db}} and \code{"6plus"} for larger families;
+#'     \code{\link{rules_db}}, \code{"6plus"} for larger families and \code{"uniform"}
+#'     for families drawn uniformly;
 #'     \code{structure_name}, an internal label of the recognised structure;
 #'     \code{mis_method}, how the individuals left undecided by the structural rules
 #'     were resolved (see the section Search over maximum sets): \code{NA} when the
 #'     rules decided everyone, \code{"enumeration"}, \code{"exact"},
-#'     \code{"exact_reduced"} or \code{"exact_sample"}; the numbers of kept and discarded
+#'     \code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
+#'     family was drawn uniformly among its maximum sets; the numbers of kept and discarded
 #'     individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 #'     \code{n_candidate_complex});}
@@ -115,6 +122,14 @@
 #' \code{\link{rkn_select_random}} and by the criteria in
 #' \code{\link{rkn_select_criteria}}.
 #'
+#' In uniform selections (\code{rkn_select_random(uniform = TRUE)}) no structural rule
+#' is applied, and the same codes have an exact meaning, computed from the inclusion
+#' probabilities: \code{"kept_apriori"}, in every maximum set (probability 1);
+#' \code{"discarded_apriori"}, in no maximum set (probability 0);
+#' \code{"candidate_complex"}, chosen at random among the maximum sets (probability
+#' strictly between 0 and 1). \code{summary()} and \code{plot()} label them
+#' accordingly.
+#'
 #' @example man-roxygen/example-network.R
 #' @examples
 #' sel <- rkn_select_random(g, seed = 1)
@@ -136,18 +151,33 @@ NULL
                           candidate_simple = "decided among single candidates",
                           candidate_complex = "decided among alternative sets")
 
+# In uniform selections the same codes have an exact meaning (see ?rkn_selection).
+.rkn_decision_labels_uniform <- c(kept_apriori = "in every maximum set",
+                                  discarded_apriori = "in no maximum set",
+                                  candidate_simple = "decided among single candidates",
+                                  candidate_complex = "chosen at random among maximum sets")
+
+#' Internal helper: decision labels of a selection
+#'
+#' @keywords internal
+#' @noRd
+.rkn_labels_of <- function(x) {
+  if (isTRUE(x$uniform)) .rkn_decision_labels_uniform else .rkn_decision_labels
+}
+
 #' Internal constructor for rkn_selection objects
 #'
 #' @keywords internal
 #' @noRd
 .new_rkn_selection <- function(kept, discarded, family_sizes, method, criteria, seed,
-                               node_diagnostics, family_summary, graph, call) {
+                               node_diagnostics, family_summary, graph, call, uniform = FALSE) {
   structure(
     list(
       kept = kept,
       discarded = discarded,
       family_sizes = family_sizes,
       method = method,
+      uniform = uniform,
       criteria = criteria,
       seed = seed,
       diagnostics = !is.null(node_diagnostics),
@@ -165,7 +195,7 @@ NULL
 #' @keywords internal
 #' @noRd
 .rkn_selection_header <- function(x) {
-  header <- "Random selection"
+  header <- if (isTRUE(x$uniform)) "Uniform random selection" else "Random selection"
   if (identical(x$method, "criteria")) {
     crit <- x$criteria$primary$type
     if (!is.null(x$criteria$secondary)) crit <- paste0(crit, ", then ", x$criteria$secondary$type)
@@ -211,8 +241,18 @@ print.rkn_selection <- function(x, ...) {
               sum(sizes <= 5), sum(sizes >= 6)))
 
   if (x$diagnostics) {
-    n_mis <- sum(!is.na(x$family_summary$mis_method))
-    cat(sprintf("Families resolved by a search over maximum independent sets: %d\n", n_mis))
+    if (isTRUE(x$uniform)) {
+      n_uniform <- sum(x$family_summary$uniform)
+      cat(sprintf("Families sampled uniformly among their maximum sets: %d of %d\n", n_uniform, length(sizes)))
+      if (n_uniform < length(sizes)) {
+        cat(sprintf("Families too intricate for uniform sampling, selected by the structural rules: %d\n",
+                    length(sizes) - n_uniform))
+      }
+    }
+    if (!isTRUE(x$uniform)) {
+      n_mis <- sum(!is.na(x$family_summary$mis_method))
+      cat(sprintf("Families resolved by a search over maximum independent sets: %d\n", n_mis))
+    }
     n_sample <- sum(x$family_summary$mis_method %in% "exact_sample")
     if (n_sample > 0) {
       cat(sprintf("Families where the criteria were evaluated on a sample of maximum sets: %d\n", n_sample))
@@ -306,8 +346,12 @@ summary.rkn_selection <- function(object, ...) {
   decisions <- NULL
   if (object$diagnostics) {
     nd <- object$node_diagnostics
+    labels <- .rkn_labels_of(object)
+    if (isTRUE(object$uniform) && !any(nd$pre_class == "candidate_simple")) {
+      labels <- labels[names(labels) != "candidate_simple"]
+    }
     decisions <- table(
-      decision = factor(.rkn_decision_labels[nd$pre_class], levels = .rkn_decision_labels),
+      decision = factor(labels[nd$pre_class], levels = labels),
       outcome = factor(ifelse(nd$post_class == "kept", "selected", "discarded"),
                        levels = c("selected", "discarded"))
     )

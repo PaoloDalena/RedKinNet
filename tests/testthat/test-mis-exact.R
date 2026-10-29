@@ -148,3 +148,25 @@ test_that("weights rank the maximum sets by an indicator after their size", {
   for (j in seq_len(ncol(sets))) listed[j] <- paste(which(sets[, j]), collapse = ",")
   expect_setequal(listed, c("1,3,5", "2,4,6"))
 })
+
+test_that("inclusion probabilities match the share of maximum independent sets containing each vertex", {
+  check <- function(g) {
+    ids <- as.character(seq_len(igraph::vcount(g)))
+    igraph::V(g)$name <- ids
+    sets <- brute_force_mis(g)$sets
+    expected <- numeric(length(ids))
+    for (s in sets) expected <- expected + (ids %in% s)
+    all.equal(.rkn_mis_inclusion(.rkn_mis_exact(adjacency(g))), expected / length(sets))
+  }
+  pool <- thin_on_cran(atlas_connected(1, 7))
+  problems <- character(0)
+  for (nm in names(pool)) if (!isTRUE(check(pool[[nm]]))) problems <- c(problems, nm)
+  expect_identical(problems, character(0))
+  set.seed(12)
+  for (k in 1:30) {
+    g <- igraph::sample_gnp(sample(8:14, 1), runif(1, 0.1, 0.5))
+    expect_true(isTRUE(check(g)))
+  }
+  path6 <- .rkn_mis_inclusion(.rkn_mis_exact(adjacency(igraph::make_ring(6, circular = FALSE))))
+  expect_equal(path6, c(0.75, 0.25, 0.5, 0.5, 0.25, 0.75))
+})

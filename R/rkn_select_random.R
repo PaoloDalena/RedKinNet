@@ -23,6 +23,15 @@
 #'   \code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
 #'   of the returned object; on very large networks, \code{diagnostics = FALSE} returns
 #'   the selection alone.
+#' @param uniform Logical. If \code{FALSE} (default), structural rules decide most
+#'   individuals and the remaining choices are made at random; the result is a maximum
+#'   set of unrelated individuals, but not every maximum set has the same probability of
+#'   being chosen. If \code{TRUE}, each family is drawn uniformly at random among all
+#'   its maximum sets, which makes the selection probabilities exact: with diagnostics,
+#'   \code{node_diagnostics$inclusion_probability} gives the probability that each
+#'   individual is selected. Families too intricate for this exact computation are
+#'   selected as with \code{uniform = FALSE} and reported in the column \code{uniform}
+#'   of \code{family_summary} (see \code{\link{rkn_selection}}).
 #'
 #' @return An object of class \code{\link{rkn_selection}}, with \code{print},
 #'   \code{summary} and \code{plot} methods; \code{$kept} holds the identifiers of the
@@ -42,7 +51,7 @@
 #' rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
 #'
 #' @export
-rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE) {
+rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE, uniform = FALSE) {
 
   if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
   if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
@@ -50,14 +59,24 @@ rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE) {
   reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
   if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
 
+  select_upto5 <- rkn_select_random_upto5
+  select_6plus <- rkn_select_random_6plus
+  if (isTRUE(uniform)) {
+    select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
+      .rkn_select_uniform_family(fam_df, g_sub, seed, return_diagnostics)
+    }
+    select_6plus <- select_upto5
+  }
+
   .rkn_select_network(
     g,
-    select_upto5 = rkn_select_random_upto5,
-    select_6plus = rkn_select_random_6plus,
+    select_upto5 = select_upto5,
+    select_6plus = select_6plus,
     seed = seed,
     diagnostics = diagnostics,
     method = "random",
     criteria = NULL,
-    call = match.call()
+    call = match.call(),
+    uniform = isTRUE(uniform)
   )
 }

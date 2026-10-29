@@ -138,3 +138,53 @@ test_that("mis_method records how each family was resolved", {
   fs <- rkn_select_random(g, seed = 1)$family_summary
   expect_identical(fs$mis_method, c(NA, NA, "exact"))
 })
+
+test_that("uniform selections draw every maximum set of a family with the same probability", {
+  path6 <- igraph::make_ring(6, circular = FALSE)
+  igraph::V(path6)$name <- paste0("p", 1:6)
+  drawn <- character(800)
+  for (s in seq_along(drawn)) {
+    drawn[s] <- paste(sort(rkn_select_random(path6, seed = s, diagnostics = FALSE, uniform = TRUE)$kept), collapse = ",")
+  }
+  expect_setequal(unique(drawn), c("p1,p3,p5", "p1,p3,p6", "p1,p4,p6", "p2,p4,p6"))
+  expect_gt(stats::chisq.test(table(drawn))$p.value, 0.001)
+})
+
+test_that("uniform diagnostics give exact inclusion probabilities and decision types", {
+  g <- igraph::disjoint_union(igraph::make_ring(6, circular = FALSE), igraph::make_graph("Petersen"),
+                              igraph::make_star(5, mode = "undirected"))
+  ids <- paste0("v", seq_len(igraph::vcount(g)))
+  igraph::V(g)$name <- ids
+  sel <- rkn_select_random(g, seed = 1, uniform = TRUE)
+  expect_true(sel$uniform)
+  expect_true(all(sel$family_summary$uniform))
+  expect_identical(sel$family_summary$selector, rep("uniform", 3))
+  nd <- sel$node_diagnostics
+  comp <- igraph::components(g)$membership
+  for (f in 1:3) {
+    sub <- igraph::induced_subgraph(g, which(comp == f))
+    sets <- brute_force_mis(sub)$sets
+    members <- igraph::V(sub)$name
+    expected <- numeric(length(members))
+    for (s in sets) expected <- expected + (members %in% s)
+    expected <- expected / length(sets)
+    rows <- match(members, nd$id)
+    expect_equal(nd$inclusion_probability[rows], expected)
+    expect_identical(nd$pre_class[rows],
+                     ifelse(expected == 1, "kept_apriori", ifelse(expected == 0, "discarded_apriori", "candidate_complex")))
+  }
+  expect_output(print(sel), "Uniform random selection")
+  expect_output(print(sel), "Families sampled uniformly among their maximum sets: 3 of 3")
+  expect_output(print(summary(sel)), "in every maximum set")
+})
+
+test_that("families too intricate for uniform sampling are selected by the rules and reported", {
+  petersen <- igraph::make_graph("Petersen")
+  igraph::V(petersen)$name <- paste0("p", 1:10)
+  fam_df <- fam_df_from_graph(petersen)
+  out <- .rkn_select_uniform_family(fam_df, petersen, seed = 1, return_diagnostics = TRUE, max_width = 1)
+  expect_false(out$uniform)
+  expect_length(out$kept, 4)
+  expect_true(all(is.na(out$node_diagnostics$inclusion_probability)))
+  expect_false(rkn_select_random(petersen, seed = 1)$family_summary$uniform)
+})

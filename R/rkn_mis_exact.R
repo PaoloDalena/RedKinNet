@@ -376,3 +376,86 @@
   }
   x == 1
 }
+
+#' Internal helper: exact inclusion probabilities
+#'
+#' For each vertex, the proportion of the maximum independent sets (or the sets of
+#' maximum total weight) that contain it, i.e. its probability of being selected by a
+#' uniform draw. The elimination of \code{.rkn_mis_eliminate()} passes information from
+#' the first vertices eliminated to the last; this function passes it back. Going
+#' through the vertices in reverse order, the table of a vertex combines its own
+#' constraint, the messages it received and the message from the vertices eliminated
+#' after it, so it accounts for the whole graph: its largest value is the maximum size,
+#' and the counts that reach it, split by the choice of the vertex, give the
+#' probability. The message passed back to each vertex that sent a message removes that
+#' message from the table (messages are always finite, since leaving every vertex out is
+#' always possible) and keeps the maximum over the vertices outside the scope of the
+#' receiver.
+#'
+#' @param sol The result of \code{.rkn_mis_eliminate()}.
+#' @return A numeric vector with one probability per vertex.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_mis_inclusion <- function(sol) {
+  n <- nrow(sol$A)
+  prob <- numeric(n)
+  down <- vector("list", n)
+  for (p in rev(sol$order)) {
+    vars <- c(p, sol$later[[p]])
+    code <- 0:(2^length(vars) - 1)
+    bit <- function(j) (code %/% 2^j) %% 2
+    index_of <- function(m) {
+      index <- 0
+      for (k in seq_along(m$vars)) index <- index + bit(match(m$vars[k], vars) - 1) * 2^(k - 1)
+      index + 1
+    }
+    xp <- bit(0)
+    S <- xp * sol$weight[p]
+    C <- rep(1, length(code))
+    relatives <- sol$later[[p]][sol$A[p, sol$later[[p]]]]
+    if (length(relatives) > 0) {
+      clash <- rep(FALSE, length(code))
+      for (u in relatives) clash <- clash | bit(match(u, vars) - 1) == 1
+      clash <- clash & xp == 1
+      S[clash] <- -Inf
+      C[clash] <- 0
+    }
+    received <- vector("list", length(sol$inbox[[p]]))
+    for (k in seq_along(sol$inbox[[p]])) {
+      m <- sol$msg[[sol$inbox[[p]][k]]]
+      received[[k]] <- index_of(m)
+      S <- S + m$s[received[[k]]]
+      C <- C * m$c[received[[k]]]
+    }
+    if (!is.null(down[[p]])) {
+      i <- index_of(down[[p]])
+      S <- S + down[[p]]$s[i]
+      C <- C * down[[p]]$c[i]
+    }
+    top <- S == max(S)
+    prob[p] <- sum(C[top & xp == 1]) / sum(C[top])
+
+    for (k in seq_along(sol$inbox[[p]])) {
+      w <- sol$inbox[[p]][k]
+      s <- S - sol$msg[[w]]$s[received[[k]]]
+      cnt <- C / sol$msg[[w]]$c[received[[k]]]
+      kept_vars <- vars
+      # Drop the variables outside the scope of w, from the highest bit down, so that the
+      # positions of the remaining lower bits do not change.
+      for (j in rev(seq_along(vars))) {
+        if (vars[j] %in% sol$later[[w]]) next
+        step <- 2^(j - 1)
+        i0 <- which(((seq_along(s) - 1) %/% step) %% 2 == 0)
+        i1 <- i0 + step
+        best <- pmax(s[i0], s[i1])
+        cnt <- (s[i0] == best) * cnt[i0] + (s[i1] == best) * cnt[i1]
+        s <- best
+        kept_vars <- kept_vars[-j]
+      }
+      if (max(cnt) > 1e100) cnt <- cnt / max(cnt)
+      down[[w]] <- list(vars = kept_vars, s = s, c = cnt)
+    }
+  }
+  prob
+}

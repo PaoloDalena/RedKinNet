@@ -28,7 +28,7 @@
 #' @keywords internal
 #' @noRd
 .rkn_select_network <- function(g, select_upto5, select_6plus, seed, diagnostics,
-                                method, criteria, call) {
+                                method, criteria, call, uniform = FALSE) {
   n_nodes <- igraph::vcount(g)
 
   # Families are extracted by integer vertex id: extraction by name scans the
@@ -57,6 +57,7 @@
   discarded_list <- vector("list", n_fam)
 
   mis_method_vec <- rep(NA_character_, n_fam)
+  uniform_vec <- rep(FALSE, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
   if (diagnostics) {
     fs_selector <- character(n_fam)
@@ -98,9 +99,10 @@
 
     if (diagnostics) {
       if (!is.null(out$mis_method)) mis_method_vec[i] <- out$mis_method
+      uniform_vec[i] <- isTRUE(out$uniform)
 
       node_diag_list[[i]] <- out$node_diagnostics
-      fs_selector[i] <- selector_used
+      fs_selector[i] <- if (is.null(out$selector)) selector_used else out$selector
       if (!is.null(out$structure_name)) fs_structure[i] <- out$structure_name
       fs_n_kept[i] <- length(out$kept)
       fs_n_discarded[i] <- length(out$discarded)
@@ -133,6 +135,7 @@
       selector = fs_selector,
       structure_name = fs_structure,
       mis_method = mis_method_vec,
+      uniform = uniform_vec,
       n_kept = fs_n_kept,
       n_discarded = fs_n_discarded,
       n_kept_apriori = fs_n_kept_apriori,
@@ -152,6 +155,7 @@
     node_diagnostics = node_diagnostics,
     family_summary = family_summary,
     graph = g,
-    call = call
+    call = call,
+    uniform = uniform
   )
 }

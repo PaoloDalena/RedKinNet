@@ -195,10 +195,18 @@ test_that("uniform diagnostics give exact inclusion probabilities and decision t
     expect_equal(nd$inclusion_probability[rows], expected)
     expect_identical(nd$pre_class[rows],
                      ifelse(expected == 1, "kept_apriori", ifelse(expected == 0, "discarded_apriori", "candidate_complex")))
+    expect_equal(sel$family_summary$n_max_sets[nd$family_id[rows[1]]], length(sets))
   }
   expect_output(print(sel), "Uniform random selection")
   expect_output(print(sel), "Families sampled uniformly among their maximum sets: 3 of 3")
+  expect_output(print(sel), "Maximum sets: 20 in total; families with more than one: 2 of 3", fixed = TRUE)
   expect_output(print(summary(sel)), "in every maximum set")
+  expect_true(all(is.na(rkn_select_random(g, seed = 1)$family_summary$n_max_sets)))
+
+  pairs <- igraph::make_graph(seq_len(2 * 30), directed = FALSE)
+  igraph::V(pairs)$name <- paste0("q", seq_len(60))
+  expect_output(print(rkn_select_random(pairs, seed = 1, uniform = TRUE)),
+                "Maximum sets: 1.1e+09 in total; families with more than one: 30 of 30", fixed = TRUE)
 })
 
 test_that("families too intricate for uniform sampling are selected by the rules and reported", {

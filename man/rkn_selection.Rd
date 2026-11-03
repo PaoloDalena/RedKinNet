@@ -47,7 +47,10 @@ for families drawn uniformly;
 were resolved (see the section Search over maximum sets): \code{NA} when the
 rules decided everyone, \code{"enumeration"}, \code{"exact"},
 \code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
-family was drawn uniformly among its maximum sets; the numbers of kept and discarded
+family was drawn uniformly among its maximum sets; \code{n_max_sets}, in the
+families drawn uniformly, the number of maximum sets of the family (\code{NA}
+otherwise), whose product over the families \code{print()} reports as the number of
+maximum sets of the network; the numbers of kept and discarded
 individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 \code{n_candidate_complex});}

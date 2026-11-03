@@ -11,7 +11,8 @@
 #' selection, and reported with \code{uniform = FALSE}.
 #'
 #' @return The per-family result read by \code{.rkn_select_network()}, with
-#'   \code{uniform} and, with diagnostics, the column \code{inclusion_probability}.
+#'   \code{uniform} and, with diagnostics, \code{n_max_sets} and the column
+#'   \code{inclusion_probability}.
 #'
 #' @keywords internal
 #' @noRd
@@ -58,6 +59,6 @@
     structure_name = NA_character_, mis_method = "exact",
     kept_apriori = every, discarded_apriori = none,
     candidate_simple = character(0), candidate_complex = chosen,
-    node_diagnostics = node_diag
+    n_max_sets = round(exp(sol$log_count)), node_diagnostics = node_diag
   )
 }

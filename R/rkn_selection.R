@@ -43,7 +43,10 @@
 #'     were resolved (see the section Search over maximum sets): \code{NA} when the
 #'     rules decided everyone, \code{"enumeration"}, \code{"exact"},
 #'     \code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
-#'     family was drawn uniformly among its maximum sets; the numbers of kept and discarded
+#'     family was drawn uniformly among its maximum sets; \code{n_max_sets}, in the
+#'     families drawn uniformly, the number of maximum sets of the family (\code{NA}
+#'     otherwise), whose product over the families \code{print()} reports as the number of
+#'     maximum sets of the network; the numbers of kept and discarded
 #'     individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 #'     \code{n_candidate_complex});}
@@ -255,6 +258,22 @@ print.rkn_selection <- function(x, ...) {
       if (n_uniform < length(sizes)) {
         cat(sprintf("Families too intricate for uniform sampling, selected by the structural rules: %d\n",
                     length(sizes) - n_uniform))
+      }
+      if (n_uniform > 0) {
+        # The total is formatted from its logarithm, since it easily exceeds the largest double.
+        n_sets <- x$family_summary$n_max_sets[x$family_summary$uniform]
+        total <- sum(log10(n_sets))
+        exponent <- floor(total)
+        mantissa <- round(10^(total - exponent), 1)
+        if (mantissa >= 10) {
+          mantissa <- 1
+          exponent <- exponent + 1
+        }
+        total_txt <- if (total < 6) formatC(round(10^total), format = "f", digits = 0, big.mark = ",") else
+          sprintf("%.1fe+%02d", mantissa, exponent)
+        cat(sprintf("Maximum sets: %s in total%s; families with more than one: %d of %d\n",
+                    total_txt, if (n_uniform < length(sizes)) " over the families sampled uniformly" else "",
+                    sum(n_sets > 1), n_uniform))
       }
     }
     if (!isTRUE(x$uniform)) {

@@ -217,30 +217,33 @@
 #' that of v. Some maximum independent set then
 #' avoids v, so removing v leaves the maximum size unchanged; it does change the set of
 #' maximum independent sets, so the rule suits the search for one maximum set but not
-#' counting or uniform sampling. All the dominated vertices are removed at once, keeping
-#' the one with the smallest index among vertices with identical closed neighbourhoods,
-#' so that every removed vertex keeps a dominator; the rule is applied again until no
-#' vertex is dominated.
+#' counting or uniform sampling. With \code{weight}, v is dominated only by a relative of
+#' at least the same weight, so that the largest total weight is also unchanged. All the
+#' dominated vertices are removed at once, keeping the one with the smallest index among
+#' vertices with identical closed neighbourhoods and weights, so that every removed
+#' vertex keeps a dominator; the rule is applied again until no vertex is dominated.
 #'
 #' @param A Symmetric logical adjacency matrix without self-loops.
+#' @param weight Weight of each vertex, as in \code{.rkn_mis_eliminate()}.
 #' @return A logical vector, \code{TRUE} for the vertices kept.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_dominance_reduce <- function(A) {
+.rkn_dominance_reduce <- function(A, weight = rep(1, nrow(A))) {
   keep <- rep(TRUE, nrow(A))
   repeat {
     idx <- which(keep)
     closed <- A[idx, idx, drop = FALSE]
     diag(closed) <- TRUE
     size <- rowSums(closed)
+    w <- weight[idx]
     drop <- rep(FALSE, length(idx))
     for (v in seq_along(idx)) {
       nb <- setdiff(which(closed[v, ]), v)
       if (length(nb) == 0) next
       outside <- rowSums(closed[nb, , drop = FALSE] & !rep(closed[v, ], each = length(nb)))
       inside <- nb[outside == 0]
-      if (any(size[inside] < size[v] | inside < v)) drop[v] <- TRUE
+      if (any(w[inside] >= w[v] & (size[inside] < size[v] | w[inside] > w[v] | inside < v))) drop[v] <- TRUE
     }
     if (!any(drop)) return(keep)
     keep[idx[drop]] <- FALSE
@@ -257,9 +260,9 @@
 #'
 #' @param g An igraph object with vertex names.
 #' @param max_width Largest elimination width accepted, as in \code{.rkn_mis_exact()}.
-#' @return A list with \code{kept}, the names of the selected vertices, and
+#' @return A list with \code{kept}, the names of the selected vertices;
 #'   \code{method}, \code{"exact"} or \code{"exact_reduced"} (after removing dominated
-#'   vertices).
+#'   vertices); and \code{searched}, the names of the vertices of the graph drawn from.
 #'
 #' @keywords internal
 #' @noRd
@@ -280,34 +283,31 @@
                         "rkn_check_samples(), or use a stricter threshold such as \"second\"."),
                  length(ids), sol$width, max_width), call. = FALSE)
   }
-  list(kept = ids[keep][.rkn_mis_sample(sol)], method = method)
+  list(kept = ids[keep][.rkn_mis_sample(sol)], method = method, searched = ids[keep])
 }
 
 #' Internal helper: inclusion probabilities of the search over maximum sets
 #'
 #' Exact inclusion probabilities of the vertices of \code{g} over the maximum
-#' independent sets that \code{.rkn_draw_maximum_set()} draws from: those of the whole
-#' graph, or of the graph without its dominated vertices (probability 0) when the graph
-#' is too wide. A probability of 0 or 1 means that the search had no alternative for the
-#' vertex. Called after the search, so the graph is known to be within the width limit.
+#' independent sets of the graph a search chose from: the whole graph, or the graph
+#' without its dominated vertices (probability 0) when it was too wide. A probability of
+#' 0 or 1 means that the search had no alternative for the vertex. Called after the
+#' search, so the graph searched is known to be within the width limit.
 #'
 #' @param g An igraph object with vertex names.
-#' @param max_width Largest elimination width accepted, as in \code{.rkn_mis_exact()}.
-#' @return A named numeric vector with one probability per vertex.
+#' @param searched Names of the vertices of the graph searched, as returned by
+#'   \code{.rkn_draw_maximum_set()} and \code{.rkn_criteria_maximum_set()}.
+#' @return A list with \code{inclusion}, a named numeric vector with one probability per
+#'   vertex, and \code{n_max_sets}, the number of maximum sets of the graph searched.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_search_inclusion <- function(g, max_width = 20) {
-  A <- .rkn_adjacency(g)
-  prob <- stats::setNames(numeric(nrow(A)), igraph::V(g)$name)
-  keep <- rep(TRUE, nrow(A))
-  sol <- .rkn_mis_exact(A, max_width)
-  if (!sol$feasible) {
-    keep <- .rkn_dominance_reduce(A)
-    sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width)
-  }
-  prob[keep] <- .rkn_mis_inclusion(sol)
-  prob
+.rkn_search_inclusion <- function(g, searched = igraph::V(g)$name) {
+  prob <- stats::setNames(numeric(igraph::vcount(g)), igraph::V(g)$name)
+  sub <- igraph::induced_subgraph(g, searched)
+  sol <- .rkn_mis_exact(.rkn_adjacency(sub), max_width = Inf)
+  prob[igraph::V(sub)$name] <- .rkn_mis_inclusion(sol)
+  list(inclusion = prob, n_max_sets = round(exp(sol$log_count)))
 }
 
 #' Internal helper: logical adjacency matrix of a graph

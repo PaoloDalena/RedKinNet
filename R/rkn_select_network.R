@@ -28,7 +28,7 @@
 #' @keywords internal
 #' @noRd
 .rkn_select_network <- function(g, select_upto5, select_6plus, seed, diagnostics,
-                                method, criteria, call, uniform = FALSE) {
+                                method, criteria, call, uniform = FALSE, optimal = FALSE) {
   n_nodes <- igraph::vcount(g)
 
   # Families are extracted by integer vertex id: extraction by name scans the
@@ -58,6 +58,7 @@
 
   mis_method_vec <- rep(NA_character_, n_fam)
   uniform_vec <- rep(FALSE, n_fam)
+  optimal_vec <- rep(FALSE, n_fam)
   n_max_sets_vec <- rep(NA_real_, n_fam)
   node_diag_list <- if (diagnostics) vector("list", n_fam) else NULL
   if (diagnostics) {
@@ -101,6 +102,7 @@
     if (diagnostics) {
       if (!is.null(out$mis_method)) mis_method_vec[i] <- out$mis_method
       uniform_vec[i] <- isTRUE(out$uniform)
+      optimal_vec[i] <- isTRUE(out$optimal)
       if (!is.null(out$n_max_sets)) n_max_sets_vec[i] <- out$n_max_sets
 
       node_diag_list[[i]] <- out$node_diagnostics
@@ -138,6 +140,7 @@
       structure_name = fs_structure,
       mis_method = mis_method_vec,
       uniform = uniform_vec,
+      optimal = optimal_vec,
       n_max_sets = n_max_sets_vec,
       n_kept = fs_n_kept,
       n_discarded = fs_n_discarded,
@@ -159,6 +162,7 @@
     family_summary = family_summary,
     graph = g,
     call = call,
-    uniform = uniform
+    uniform = uniform,
+    optimal = optimal
   )
 }

@@ -9,7 +9,8 @@ rkn_select_criteria(
   criterion_primary,
   criterion_secondary = NULL,
   seed = NULL,
-  diagnostics = TRUE
+  diagnostics = TRUE,
+  optimal = FALSE
 )
 }
 \arguments{
@@ -36,6 +37,17 @@ how each individual and each family was resolved (\code{node_diagnostics} and
 \code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
 of the returned object; on very large networks, \code{diagnostics = FALSE} returns
 the selection alone.}
+
+\item{optimal}{Logical. If \code{FALSE} (default), structural rules decide part of
+each family before the criteria are applied, and some of them fix individuals
+regardless of the criteria (for instance, they keep the individual at the end of a
+chain of relatives); the result is the best maximum set among those compatible with
+the rules. If \code{TRUE}, the criteria are evaluated over all the maximum sets of
+each family: exactly for \code{level} and \code{cutoff}, and for
+\code{target_mean} and \code{category_balance} as described in the section Search
+over maximum sets of \code{\link{rkn_selection}}. Families too intricate for this
+computation are selected as with \code{optimal = FALSE} and reported in the column
+\code{optimal} of \code{family_summary}.}
 }
 \value{
 An object of class \code{\link{rkn_selection}}, as for
@@ -51,6 +63,8 @@ selections are resolved by criterion score rather than at random; the partition 
 families and the returned object are as in \code{rkn_select_random()}. How the
 criteria are evaluated in large families, exactly or on a sample of maximum sets, is
 described in the section Search over maximum sets of \code{\link{rkn_selection}}.
+With \code{optimal = TRUE}, the structural rules are skipped and the criteria choose
+among all the maximum sets of each family.
 
 Covariates referenced by the criteria are read from the vertex attributes of
 \code{g}.
@@ -71,6 +85,9 @@ igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
 igraph::V(g)$age <- unname(age[igraph::V(g)$name])
 # Where the structure of a family leaves a choice, prefer women ...
 rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1)$kept
+
+# ... evaluating the criterion over all the maximum sets of each family ...
+rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1, optimal = TRUE)$kept
 
 # ... or a mean age close to 40
 rkn_select_criteria(g, rkn_criterion_target_mean("age", target = 40, tolerance = 20),

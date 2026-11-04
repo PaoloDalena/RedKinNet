@@ -169,3 +169,65 @@ test_that("criteria fall back on a declared sample when there are too many maxim
   picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$target_mean, NULL, seed = 1)
   expect_identical(picked$method, "exact")
 })
+
+test_that("criteria over all maximum sets reach the best score of every family", {
+  pool <- thin_on_cran(atlas_connected(3, 7))
+  for (k in seq_along(pool)) igraph::V(pool[[k]])$name <- paste0("a", k, "_", seq_len(igraph::vcount(pool[[k]])))
+  g <- do.call(igraph::disjoint_union, unname(pool))
+  set.seed(14)
+  igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
+  igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
+  for (crit in list(crits$level, crits$target_mean)) {
+    sel <- rkn_select_criteria(g, crit, seed = 1, optimal = TRUE)
+    expect_true(all(sel$family_summary$optimal))
+    problems <- character(0)
+    for (k in seq_along(pool)) {
+      sub <- igraph::induced_subgraph(g, startsWith(igraph::V(g)$name, paste0("a", k, "_")))
+      fam_df <- fam_df_from_graph(sub)
+      fam_df$sex <- igraph::V(sub)$sex
+      fam_df$age <- igraph::V(sub)$age
+      kept <- intersect(sel$kept, igraph::V(sub)$name)
+      best <- best_score(sub, crit, brute_force_mis(sub)$sets)
+      if (!isTRUE(all.equal(crit$score_fn(fam_df, kept), best))) problems <- c(problems, names(pool)[k])
+    }
+    expect_identical(problems, character(0))
+  }
+})
+
+test_that("criteria over all maximum sets are not bound by the structural rules", {
+  # The rules keep the leaves 1, 5 and 6, with one woman; the best maximum sets have two.
+  tree <- igraph::graph_from_literal(1 - 2, 2 - 3, 3 - 5, 2 - 4, 4 - 6)
+  igraph::V(tree)$sex <- ifelse(igraph::V(tree)$name %in% c("3", "4", "6"), "F", "M")
+  women <- c("3", "4", "6")
+  default <- rkn_select_criteria(tree, crits$level, seed = 1)
+  expect_setequal(default$kept, c("1", "5", "6"))
+  for (s in 1:5) {
+    sel <- rkn_select_criteria(tree, crits$level, seed = s, optimal = TRUE)
+    expect_identical(sum(sel$kept %in% women), 2L)
+    expect_identical(sel$kept, rkn_select_criteria(tree, crits$level, seed = s, optimal = TRUE, diagnostics = FALSE)$kept)
+  }
+  # The five maximum sets of the tree leave every individual with an alternative.
+  expect_identical(sel$node_diagnostics$pre_class, rep("candidate_complex", 6))
+  fs <- sel$family_summary
+  expect_identical(c(fs$selector, fs$mis_method), c("optimal", "exact"))
+  expect_true(fs$optimal)
+  expect_identical(fs$n_max_sets, 5)
+  expect_true(sel$optimal)
+  expect_output(print(sel), "Criteria-based selection over all maximum sets (level)", fixed = TRUE)
+  expect_output(print(sel), "Families where the criteria were evaluated over all maximum sets: 1 of 1")
+  expect_output(print(sel), "Maximum sets: 5 in total; families with more than one: 1 of 1")
+  expect_false(default$optimal)
+  expect_false(default$family_summary$optimal)
+})
+
+test_that("families too intricate for the evaluation over all maximum sets are selected by the rules", {
+  petersen <- igraph::make_graph("Petersen")
+  igraph::V(petersen)$name <- paste0("p", 1:10)
+  fam_df <- fam_df_from_graph(petersen)
+  fam_df$sex <- rep(c("F", "M"), 5)
+  out <- .rkn_select_optimal_family(fam_df, petersen, crits$level, NULL, seed = 1, return_diagnostics = TRUE,
+                                    max_width = 1)
+  expect_false(out$optimal)
+  expect_length(out$kept, 4)
+  expect_null(out$n_max_sets)
+})

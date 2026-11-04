@@ -174,12 +174,32 @@ test_that("inclusion probabilities match the share of maximum independent sets c
 test_that("the inclusion probabilities of the search refer to the graph it draws from", {
   path6 <- igraph::make_ring(6, circular = FALSE)
   igraph::V(path6)$name <- paste0("p", 1:6)
-  expect_equal(.rkn_search_inclusion(path6), c(p1 = 0.75, p2 = 0.25, p3 = 0.5, p4 = 0.5, p5 = 0.25, p6 = 0.75))
+  searched <- .rkn_search_inclusion(path6)
+  expect_equal(searched$inclusion, c(p1 = 0.75, p2 = 0.25, p3 = 0.5, p4 = 0.5, p5 = 0.25, p6 = 0.75))
+  expect_identical(searched$n_max_sets, 4)
 
   fan <- igraph::make_ring(8, circular = FALSE) + igraph::vertex(1)
   fan <- igraph::add_edges(fan, as.vector(rbind(9, 1:8)))
   igraph::V(fan)$name <- as.character(1:9)
-  prob <- .rkn_search_inclusion(fan, max_width = 1)
-  expect_true(all(prob[!.rkn_dominance_reduce(adjacency(fan))] == 0))
+  drawn <- .rkn_draw_maximum_set(fan, max_width = 1)
+  prob <- .rkn_search_inclusion(fan, drawn$searched)$inclusion
+  expect_identical(drawn$searched, as.character(1:9)[.rkn_dominance_reduce(adjacency(fan))])
+  expect_true(all(prob[setdiff(names(prob), drawn$searched)] == 0))
   expect_equal(sum(prob), 4)
+})
+
+test_that("weighted dominance keeps the largest total weight", {
+  # In a chain of four, the ends dominate their neighbours, unless the neighbours weigh more.
+  p4 <- adjacency(igraph::make_ring(4, circular = FALSE))
+  expect_identical(.rkn_dominance_reduce(p4), c(TRUE, FALSE, FALSE, TRUE))
+  expect_identical(.rkn_dominance_reduce(p4, 5 + c(0, 1, 1, 0)), rep(TRUE, 4))
+
+  set.seed(13)
+  for (k in 1:30) {
+    g <- igraph::sample_gnp(sample(8:14, 1), runif(1, 0.15, 0.5))
+    A <- adjacency(g)
+    w <- igraph::vcount(g) + 1 + sample(0:1, igraph::vcount(g), replace = TRUE)
+    keep <- .rkn_dominance_reduce(A, w)
+    expect_equal(.rkn_mis_exact(A[keep, keep, drop = FALSE], weight = w[keep])$alpha, .rkn_mis_exact(A, weight = w)$alpha)
+  }
 })

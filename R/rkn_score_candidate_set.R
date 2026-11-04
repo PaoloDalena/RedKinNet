@@ -145,17 +145,21 @@ rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criteri
 #' maximum sets (optimal for the preceding additive criterion, if any) when there are at
 #' most \code{limit}, otherwise a uniform sample of \code{limit} of them, which is
 #' reported as \code{"exact_sample"}. A graph too wide for the engine is first reduced by
-#' dominance (\code{"exact_reduced"}), as in \code{.rkn_draw_maximum_set()}.
+#' dominance (\code{"exact_reduced"}), as in \code{.rkn_draw_maximum_set()}; the
+#' reduction uses the weights, so the additive criteria remain optimised exactly, while
+#' the others are evaluated on the maximum sets of the reduced graph.
 #'
 #' @param g An igraph object with vertex names: the individuals to resolve.
 #' @param fixed_kept Individuals of the family already kept, included in the scores.
-#' @return A list with \code{kept}, the names of the selected vertices, and
-#'   \code{method}.
+#' @param error_if_wide If \code{FALSE}, a graph still too wide after the reduction
+#'   returns \code{NULL} instead of an error.
+#' @return A list with \code{kept}, the names of the selected vertices; \code{method};
+#'   and \code{searched}, the names of the vertices of the graph searched.
 #'
 #' @keywords internal
 #' @noRd
 .rkn_criteria_maximum_set <- function(g, fam_df, fixed_kept, criterion_primary, criterion_secondary,
-                                      seed = NULL, max_width = 20, limit = 10000) {
+                                      seed = NULL, max_width = 20, limit = 10000, error_if_wide = TRUE) {
   if (!is.null(seed)) {
     withr::local_preserve_seed()
     set.seed(seed)
@@ -180,18 +184,19 @@ rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criteri
   method <- "exact"
   sol <- .rkn_mis_exact(A, max_width, weight)
   if (!sol$feasible) {
-    keep <- .rkn_dominance_reduce(A)
+    keep <- .rkn_dominance_reduce(A, weight)
     sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width, weight[keep])
     method <- "exact_reduced"
   }
   if (!sol$feasible) {
+    if (!error_if_wide) return(NULL)
     stop(sprintf(paste0("A family with %d individuals left after the structural rules is too intricate for ",
                         "an exact selection (elimination width %d, limit %d). Exclude the samples flagged by ",
                         "rkn_check_samples(), or use a stricter threshold such as \"second\"."),
                  length(ids), sol$width, max_width), call. = FALSE)
   }
   ids <- ids[keep]
-  if (fully_additive) return(list(kept = ids[.rkn_mis_sample(sol)], method = method))
+  if (fully_additive) return(list(kept = ids[.rkn_mis_sample(sol)], method = method, searched = ids))
 
   sets <- .rkn_mis_enumerate(sol, limit)
   if (is.null(sets)) {
@@ -205,5 +210,5 @@ rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criteri
     candidate_sets = candidate_sets, fam_df = fam_df, fixed_kept_ids = fixed_kept,
     criterion_primary = criterion_primary, criterion_secondary = criterion_secondary, seed = seed
   )
-  list(kept = picked$chosen_set, method = method)
+  list(kept = picked$chosen_set, method = method, searched = ids)
 }

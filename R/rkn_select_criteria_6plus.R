@@ -358,7 +358,7 @@ rkn_select_criteria_6plus <- function(fam_df,
       kept_aftercriteria = picked$kept,
       discarded_aftercriteria = setdiff(igraph::V(g_r)$name, picked$kept),
       candidate_simple = character(0), candidate_complex = igraph::V(g_r)$name,
-      inclusion = if (return_diagnostics) .rkn_search_inclusion(g_r),
+      inclusion = if (return_diagnostics) .rkn_search_inclusion(g_r, picked$searched)$inclusion,
       pre_reason = stats::setNames(rep("exact_fallback", igraph::vcount(g_r)), igraph::V(g_r)$name)
     )
   }

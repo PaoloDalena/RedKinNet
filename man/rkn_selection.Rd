@@ -21,6 +21,8 @@ component of the network);}
 \item{\code{method}}{\code{"random"} or \code{"criteria"};}
 \item{\code{uniform}}{logical, whether the selection was drawn uniformly among the
 maximum sets (\code{rkn_select_random(uniform = TRUE)});}
+\item{\code{optimal}}{logical, whether the criteria were evaluated over all the
+maximum sets of each family (\code{rkn_select_criteria(optimal = TRUE)});}
 \item{\code{criteria}}{for criteria-based selections, a list with the
 \code{primary} and, if given, the \code{secondary} criterion; \code{NULL}
 otherwise;}
@@ -40,18 +42,20 @@ selected, i.e. the proportion of the maximum sets of its family that contain it
 \item{\code{family_summary}}{a data frame with one row per family, or \code{NULL}
 without diagnostics. Columns: \code{family_id} and \code{family_size};
 \code{selector}, \code{"upto5"} for families resolved by the structural rules in
-\code{\link{rules_db}}, \code{"6plus"} for larger families and \code{"uniform"}
-for families drawn uniformly;
+\code{\link{rules_db}}, \code{"6plus"} for larger families, \code{"uniform"}
+for families drawn uniformly and \code{"optimal"} for families where the criteria
+were evaluated over all maximum sets;
 \code{structure_name}, an internal label of the recognised structure;
 \code{mis_method}, how the individuals left undecided by the structural rules
 were resolved (see the section Search over maximum sets): \code{NA} when the
 rules decided everyone, \code{"enumeration"}, \code{"exact"},
 \code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
-family was drawn uniformly among its maximum sets; \code{n_max_sets}, in the
-families drawn uniformly, the number of maximum sets of the family (\code{NA}
-otherwise), whose product over the families \code{print()} reports as the number of
-maximum sets of the network; the numbers of kept and discarded
-individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
+family was drawn uniformly among its maximum sets; \code{optimal}, whether the
+criteria were evaluated over all its maximum sets; \code{n_max_sets}, in the
+families drawn uniformly or evaluated over all maximum sets, the number of maximum
+sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"}),
+whose product over the families \code{print()} reports as the number of maximum
+sets of the network; the numbers of kept and discarded individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
 (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 \code{n_candidate_complex});}
 \item{\code{graph}}{the igraph network the selection was made on;}
@@ -96,7 +100,10 @@ so it also handles the large families of genetic isolates;}
 enlarge the selection (an individual is removed when one of their relatives has
 no relative outside their own). This is used only for families too intricate for
 the exact algorithm: the set chosen is still of maximum size, but not drawn
-uniformly.}
+uniformly. In criteria-based selections an individual is removed only if that
+relative meets the criteria \code{level} or \code{cutoff} at least as well, so
+these criteria are still optimised exactly; \code{target_mean} and
+\code{category_balance} are evaluated on the maximum sets that remain.}
 \item{\code{"exact_sample"}}{criteria-based selections only: see below.}
 }
 In criteria-based selections (\code{\link{rkn_select_criteria}}), the criteria
@@ -150,6 +157,12 @@ probabilities: \code{"kept_apriori"}, in every maximum set (probability 1);
 \code{"candidate_complex"}, chosen at random among the maximum sets (probability
 strictly between 0 and 1). \code{summary()} and \code{plot()} label them
 accordingly.
+
+In criteria-based selections over all maximum sets
+(\code{rkn_select_criteria(optimal = TRUE)}) no structural rule is applied either, so
+"kept without a choice" and "discarded without a choice" mean in every and in no
+maximum set of the family, and "decided among alternative sets" means chosen by the
+criteria among maximum sets that differ.
 }
 
 \examples{

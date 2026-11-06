@@ -102,8 +102,6 @@
   if (nrow(chk$duplicates) > 0) {
     parts <- c(parts, paste(count(nrow(chk$duplicates), "pair"), "of possible duplicates or monozygotic twins"))
   }
-  n_ancestry <- sum(chk$samples$flag == "possible different ancestry")
-  if (n_ancestry > 0) parts <- c(parts, paste(count(n_ancestry, "sample"), "of possibly different ancestry"))
   if (length(parts) == 0) return(NULL)
   paste0("Sample check: ", paste(parts, collapse = ", "), ". See rkn_check_samples() for details ",
          "and the argument `exclude` to leave samples out; check = FALSE skips this check.")
@@ -160,7 +158,9 @@
 #' @param check Logical. If \code{TRUE} (default), the samples left after
 #'   \code{exclude} are checked with \code{\link{rkn_check_samples}}, with the same
 #'   threshold and default settings, and a single warning summarises the possible
-#'   duplicates, contamination and different ancestry it finds. Nothing is removed.
+#'   duplicates and contamination it finds. Nothing is removed. Samples of possibly
+#'   different ancestry, which do not affect the selection, are reported only by
+#'   \code{rkn_check_samples()}.
 #'   \code{check = FALSE} skips the check, for instance when rebuilding a network whose
 #'   samples were already checked.
 #'

@@ -120,7 +120,7 @@ test_that("building the network runs the sample check and summarises it in one w
   K <- synthetic_cohort()
   expect_warning(g <- rkn_graph_from_kinship(K, "third"),
                  "1 sample flagged as possible contamination \\(S001\\), 1 pair of possible duplicates")
-  expect_warning(rkn_graph_from_kinship(K, "third"), "15 samples of possibly different ancestry")
+  expect_false(grepl("ancestry", tryCatch(rkn_graph_from_kinship(K, "third"), warning = conditionMessage)))
   g_unchecked <- expect_no_warning(rkn_graph_from_kinship(K, "third", check = FALSE))
   expect_identical(edge_set(g), edge_set(g_unchecked))
 })
@@ -130,8 +130,8 @@ test_that("excluded samples are left out of the sample check", {
   w <- tryCatch(rkn_graph_from_kinship(K, "third", exclude = "S001"), warning = conditionMessage)
   expect_false(grepl("contamination", w))
   expect_true(grepl("1 pair of possible duplicates", w))
-  ancestry <- sprintf("S%03d", 181:195)
-  expect_no_warning(rkn_graph_from_kinship(K, "third", exclude = c("S001", "S200", ancestry)))
+  # The samples of different ancestry, still in the network, raise no warning.
+  expect_no_warning(rkn_graph_from_kinship(K, "third", exclude = c("S001", "S200")))
 })
 
 test_that("the small examples raise no warning from the sample check", {

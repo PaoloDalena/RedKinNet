@@ -207,6 +207,10 @@ test_that("uniform diagnostics give exact inclusion probabilities and decision t
   igraph::V(pairs)$name <- paste0("q", seq_len(60))
   expect_output(print(rkn_select_random(pairs, seed = 1, uniform = TRUE)),
                 "Maximum sets: 1.1e+09 in total; families with more than one: 30 of 30", fixed = TRUE)
+  # Each member of a pair is selected with probability 1/2: 60 x 1/4 = 15 differences.
+  expect_output(print(rkn_select_random(pairs, seed = 1, uniform = TRUE)),
+                "Two uniform draws differ on average in 15.0 of the 30 selected individuals (50.0%)", fixed = TRUE)
+  expect_false(any(grepl("Two uniform draws", capture.output(print(rkn_select_random(pairs, seed = 1))))))
 })
 
 test_that("families too intricate for uniform sampling are selected by the rules and reported", {

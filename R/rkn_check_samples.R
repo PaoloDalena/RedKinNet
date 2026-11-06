@@ -14,14 +14,20 @@
 #'     \code{exclude} of \code{\link{rkn_graph_from_kinship}}) restores the real
 #'     families;
 #'   \item \strong{possible different ancestry}: samples with an unusually low kinship
-#'     with the samples they are not related to. KING estimates are negative for pairs of
-#'     different ancestry
-#'     (Manichaikul et al., 2010). These samples do not affect the selection, but matter
-#'     for downstream association analyses.
+#'     with the samples they are not related to. The ancestry of an individual is the
+#'     population their forebears come from; populations separated for many generations
+#'     differ in the frequencies of genetic variants, and KING estimates are negative for
+#'     pairs of individuals from different populations (Manichaikul et al., 2010). This
+#'     flag is informative only: these samples are related to no one, so they change
+#'     neither the network nor the selection, and they need not be excluded for it. It is
+#'     reported because ancestry matters for some downstream analyses, such as association
+#'     studies, where it is usually accounted for with the principal components of the
+#'     genotypes (Price et al., 2006). A low mean kinship is only a hint: assessing
+#'     ancestry requires the genotypes.
 #' }
 #' Nothing is removed: the decision is left to the user. \code{\link{rkn_graph_from_kinship}}
-#' runs this check by default (argument \code{check}) and summarises its findings in a
-#' warning.
+#' runs this check by default (argument \code{check}) and summarises the duplicates and
+#' the contamination it finds in a warning.
 #'
 #' @inheritParams rkn_graph_from_kinship
 #' @param z_kinship,z_relatives A sample is flagged as possible contamination when the
@@ -81,6 +87,10 @@
 #' Manichaikul A, Mychaleckyj JC, Rich SS, Daly K, Sale M, Chen WM (2010). Robust
 #' relationship inference in genome-wide association studies. \emph{Bioinformatics},
 #' 26(22), 2867--2873. \doi{10.1093/bioinformatics/btq559}
+#'
+#' Price AL, Patterson NJ, Plenge RM, Weinblatt ME, Shadick NA, Reich D (2006).
+#' Principal components analysis corrects for stratification in genome-wide association
+#' studies. \emph{Nature Genetics}, 38(8), 904--909. \doi{10.1038/ng1847}
 #'
 #' @seealso \code{\link{rkn_graph_from_kinship}}
 #'

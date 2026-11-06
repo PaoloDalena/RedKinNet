@@ -34,7 +34,10 @@
 #'     individual; \code{family_id} and \code{family_size}; in uniform selections,
 #'     \code{inclusion_probability}, the exact probability that the individual is
 #'     selected, i.e. the proportion of the maximum sets of its family that contain it
-#'     (\code{NA} in the families too intricate for uniform sampling);}
+#'     (\code{NA} in the families too intricate for uniform sampling). From these
+#'     probabilities \code{print()} reports the expected number of selected individuals
+#'     that differ between two independent uniform draws, the sum of \eqn{p(1 - p)} over
+#'     the individuals: the part of the selection left to chance;}
 #'   \item{\code{family_summary}}{a data frame with one row per family, or \code{NULL}
 #'     without diagnostics. Columns: \code{family_id} and \code{family_size};
 #'     \code{selector}, \code{"upto5"} for families resolved by the structural rules in
@@ -49,9 +52,14 @@
 #'     family was drawn uniformly among its maximum sets; \code{optimal}, whether the
 #'     criteria were evaluated over all its maximum sets; \code{n_max_sets}, in the
 #'     families drawn uniformly or evaluated over all maximum sets, the number of maximum
-#'     sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"}),
-#'     whose product over the families \code{print()} reports as the number of maximum
-#'     sets of the network; the numbers of kept and discarded individuals, overall (\code{n_kept}, \code{n_discarded}) and by type of decision
+#'     sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"}).
+#'     Since the choices in different families are independent, the maximum sets of the
+#'     network are all the combinations of one maximum set per family; their number,
+#'     reported by \code{print()}, is the product of \code{n_max_sets} over the families
+#'     and grows exponentially with the number of families that have a choice (each
+#'     related pair doubles it), so \code{print()} also reports how many families have
+#'     more than one maximum set; the numbers of kept and discarded individuals, overall
+#'     (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
 #'     \code{n_candidate_complex});}
 #'   \item{\code{graph}}{the igraph network the selection was made on;}
@@ -293,6 +301,18 @@ print.rkn_selection <- function(x, ...) {
         cat(sprintf("Maximum sets: %s in total%s; families with more than one: %d of %d\n",
                     total_txt, if (all(counted)) "" else " over the families where they were counted",
                     sum(n_sets > 1), sum(counted)))
+      }
+      if (isTRUE(x$uniform) && any(whole)) {
+        # An individual is in exactly one of two independent draws with probability
+        # 2p(1 - p); the draws have the same size, so half of these differ on each side.
+        nd <- x$node_diagnostics
+        p <- nd$inclusion_probability
+        sampled <- !is.na(p)
+        n_selected <- sum(nd$post_class[sampled] == "kept")
+        expected <- sum(p[sampled] * (1 - p[sampled]))
+        cat(sprintf("Two uniform draws differ on average in %.1f of the %d selected individuals%s (%.1f%%)\n",
+                    expected, n_selected, if (all(sampled)) "" else " of the families sampled uniformly",
+                    100 * expected / n_selected))
       }
     } else {
       n_mis <- sum(!is.na(fs$mis_method))

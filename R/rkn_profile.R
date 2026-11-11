@@ -87,6 +87,8 @@
 #' @param k Largest number of individuals below the maximum size.
 #' @param elim The result of \code{.rkn_elimination_order(A)}.
 #' @param max_cells,max_work Budget of the computation.
+#' @param keep If \code{TRUE}, the messages are returned as well, for
+#'   \code{.rkn_profile_sample()}.
 #' @return A list with \code{alpha}, the maximum size; \code{counts}, a matrix with one
 #'   row per \code{j} and one column per value sum from 0, proportional to the numbers
 #'   of sets; and \code{log_scale}, the logarithm of the factor that restores them. Or
@@ -94,7 +96,8 @@
 #'
 #' @keywords internal
 #' @noRd
-.rkn_family_profile <- function(A, x, k, elim = .rkn_elimination_order(A), max_cells = 4e6, max_work = 4e9) {
+.rkn_family_profile <- function(A, x, k, elim = .rkn_elimination_order(A), max_cells = 4e6, max_work = 4e9,
+                                keep = FALSE) {
   budget <- .rkn_profile_budget(elim, x, k)
   if (budget[["cells"]] > max_cells || budget[["work"]] > max_work) return(NULL)
   n <- nrow(A)
@@ -158,12 +161,111 @@
     out <- rescale(out)
     if (is.null(out)) return(NULL)
     if (length(scope) == 0) {
-      return(list(alpha = best, counts = matrix(out, k + 1, dim(out)[3]), log_scale = log_scale))
+      prof <- list(alpha = best, counts = matrix(out, k + 1, dim(out)[3]), log_scale = log_scale)
+      if (keep) prof <- c(prof, list(A = A, x = x, k = k, elim = elim, msg = msg, inbox = inbox))
+      return(prof)
     }
     msg[[v]] <- list(vars = scope, mx = best, tab = out)
     target <- scope[which.min(pos[scope])]
     inbox[[target]] <- c(inbox[[target]], v)
   }
+}
+
+#' Internal helper: draw an independent set of given size and value from a profile
+#'
+#' Draws uniformly at random one of the independent sets of size \code{alpha - j} and
+#' value sum \code{r} counted by \code{.rkn_family_profile(keep = TRUE)}. Goes through
+#' the vertices in reverse elimination order, as \code{.rkn_mis_sample()}: each vertex
+#' is reached with its neighbours at elimination already decided and with the size and
+#' value that it and the vertices eliminated before it must reach. Recomputing its
+#' table for the two choices of the vertex gives the number of ways to reach the target
+#' with each choice; the chosen one is then split among the messages the vertex
+#' received, in proportion to the number of ways to reach each split, which sets the
+#' targets of the vertices that sent them.
+#'
+#' @param prof The result of \code{.rkn_family_profile(keep = TRUE)}.
+#' @param j Number of individuals below the maximum size.
+#' @param r Value sum.
+#' @return A logical vector, \code{TRUE} for the selected vertices.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_profile_sample <- function(prof, j, r) {
+  A <- prof$A
+  x <- prof$x
+  k <- prof$k
+  later <- prof$elim$later
+  n <- nrow(A)
+  sel <- integer(n)
+  tgt_j <- numeric(n)
+  tgt_r <- numeric(n)
+  root <- prof$elim$order[n]
+  tgt_j[root] <- j
+  tgt_r[root] <- r
+  pick <- function(w) {
+    w <- w / sum(w)
+    sample.int(length(w), 1, prob = w)
+  }
+
+  for (v in rev(prof$elim$order)) {
+    scope <- later[[v]]
+    # Rows 1 and 2 of every table are the choices 0 and 1 of v.
+    tab <- array(0, c(2, k + 1, x[v] + 1))
+    tab[1, 1, 1] <- 1
+    mx <- c(0, 1)
+    relatives <- scope[A[v, scope]]
+    if (length(relatives) > 0 && any(sel[relatives] == 1)) mx[2] <- -Inf else tab[2, 1, x[v] + 1] <- 1
+    chain <- list(tab)
+    rows <- list()
+    for (w in prof$inbox[[v]]) {
+      m <- prof$msg[[w]]
+      idx <- integer(2)
+      for (xv in 0:1) {
+        bits <- sel[m$vars]
+        bits[m$vars == v] <- xv
+        idx[xv + 1] <- sum(bits * 2^(seq_along(bits) - 1)) + 1
+      }
+      tab <- .rkn_profile_product(tab, m$tab[idx, , , drop = FALSE], k)
+      tab <- tab / max(tab)
+      mx <- mx + m$mx[idx]
+      chain[[length(chain) + 1]] <- tab
+      rows[[length(rows) + 1]] <- list(w = w, idx = idx)
+    }
+
+    best <- max(mx)
+    weight <- numeric(2)
+    for (xv in 0:1) {
+      jd <- tgt_j[v] - (best - mx[xv + 1])
+      if (is.finite(jd) && jd >= 0 && jd <= k && tgt_r[v] < dim(tab)[3]) {
+        weight[xv + 1] <- tab[xv + 1, jd + 1, tgt_r[v] + 1]
+      }
+    }
+    xs <- pick(weight) - 1
+    jc <- tgt_j[v] - (best - mx[xs + 1])
+    rc <- tgt_r[v]
+
+    # Split the target between the table before each message and the message.
+    for (t in rev(seq_along(rows))) {
+      prev <- matrix(chain[[t]][xs + 1, , ], k + 1)
+      m_row <- matrix(prof$msg[[rows[[t]]$w]]$tab[rows[[t]]$idx[xs + 1], , ], k + 1)
+      split <- matrix(0, jc + 1, ncol(m_row))
+      for (j2 in 0:jc) {
+        r2 <- 0:min(rc, ncol(m_row) - 1)
+        ok <- rc - r2 < ncol(prev)
+        r2 <- r2[ok]
+        split[j2 + 1, r2 + 1] <- prev[jc - j2 + 1, rc - r2 + 1] * m_row[j2 + 1, r2 + 1]
+      }
+      cell <- pick(as.vector(split)) - 1
+      j2 <- cell %% (jc + 1)
+      r2 <- cell %/% (jc + 1)
+      tgt_j[rows[[t]]$w] <- j2
+      tgt_r[rows[[t]]$w] <- r2
+      jc <- jc - j2
+      rc <- rc - r2
+    }
+    sel[v] <- xs
+  }
+  sel == 1
 }
 
 #' Internal helper: partial profile of a family at its maximum size

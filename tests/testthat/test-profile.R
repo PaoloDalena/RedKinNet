@@ -114,3 +114,34 @@ test_that("partial profiles find the smallest and largest value sums among the m
   expect_equal(range(.rkn_partial_profile(A, x, n_draws = 5, max_width = 1)$values), range(reachable))
   expect_null(.rkn_partial_profile(adjacency(igraph::make_ring(7)), rep(1, 7), max_width = 1))
 })
+
+test_that("draws from a profile are uniform among the sets of the given size and value", {
+  set.seed(18)
+  for (i in 1:6) {
+    repeat {
+      g <- igraph::sample_gnp(sample(6:9, 1), runif(1, 0.2, 0.45))
+      if (igraph::is_connected(g)) break
+    }
+    A <- adjacency(g)
+    n <- nrow(A)
+    x <- sample(0:2, n, replace = TRUE)
+    prof <- .rkn_family_profile(A, x, 2, keep = TRUE)
+    # The most frequent combination of size and value, and its sets.
+    labels <- character(0)
+    keys <- character(0)
+    for (s in 0:(2^n - 1)) {
+      sel <- bitwAnd(s, 2^(seq_len(n) - 1)) > 0
+      if (sum(sel) > 1 && any(A[sel, sel])) next
+      if (prof$alpha - sum(sel) > 2) next
+      keys <- c(keys, paste(prof$alpha - sum(sel), sum(x[sel])))
+      labels <- c(labels, paste(which(sel), collapse = ","))
+    }
+    key <- names(which.max(table(keys)))
+    target <- labels[keys == key]
+    jr <- as.numeric(strsplit(key, " ")[[1]])
+    drawn <- character(150 * length(target))
+    for (d in seq_along(drawn)) drawn[d] <- paste(which(.rkn_profile_sample(prof, jr[1], jr[2])), collapse = ",")
+    expect_setequal(unique(drawn), target)
+    if (length(target) > 1) expect_gt(stats::chisq.test(table(drawn))$p.value, 0.001)
+  }
+})

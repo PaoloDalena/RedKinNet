@@ -1,10 +1,10 @@
 #' Selections of unrelated individuals
 #'
 #' @description
-#' \code{\link{rkn_select_random}} and \code{\link{rkn_select_criteria}} return an object
-#' of class \code{rkn_selection}: a list holding the selected individuals, the network
-#' they were selected from and, when computed, diagnostics on how each individual and
-#' each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
+#' \code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}} and
+#' \code{\link{rkn_select_global}} return an object of class \code{rkn_selection}: a
+#' list holding the selected individuals, the network they were selected from and,
+#' when computed, diagnostics on how each individual and each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
 #' \code{\link[=summary.rkn_selection]{summary}} and
 #' \code{\link[=plot.rkn_selection]{plot}} methods.
 #'
@@ -14,7 +14,7 @@
 #'   \item{\code{discarded}}{character vector, the identifiers of the other individuals;}
 #'   \item{\code{family_sizes}}{integer vector, the size of each family (connected
 #'     component of the network);}
-#'   \item{\code{method}}{\code{"random"} or \code{"criteria"};}
+#'   \item{\code{method}}{\code{"random"}, \code{"criteria"} or \code{"global"};}
 #'   \item{\code{uniform}}{logical, whether the selection was drawn uniformly among the
 #'     maximum sets (\code{rkn_select_random(uniform = TRUE)});}
 #'   \item{\code{optimal}}{logical, whether the criteria were evaluated over all the
@@ -61,9 +61,25 @@
 #'     more than one maximum set; the numbers of kept and discarded individuals, overall
 #'     (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
-#'     \code{n_candidate_complex});}
+#'     \code{n_candidate_complex}). In global selections the columns are
+#'     \code{family_id}, \code{family_size}, \code{selector} (\code{"global"}),
+#'     \code{exact} (\code{FALSE} for the families beyond the computational budget,
+#'     see \code{\link{rkn_select_global}}), \code{n_kept}, \code{n_discarded},
+#'     \code{n_category} (selected members in the category) and \code{n_missing}
+#'     (selected members with a missing value), and the types of decision of
+#'     \code{node_diagnostics} are not available;}
 #'   \item{\code{graph}}{the igraph network the selection was made on;}
-#'   \item{\code{call}}{the call that produced the selection.}
+#'   \item{\code{call}}{the call that produced the selection;}
+#'   \item{\code{global}}{for global selections, a list describing the composition
+#'     reached: \code{covariate}, \code{category} and \code{target}; \code{cohort},
+#'     whether the target is the proportion of the network; \code{proportion}, the
+#'     proportion reached among the selected individuals with a known value,
+#'     \code{n_category} of \code{n_known}; \code{n_missing}; \code{size},
+#'     \code{max_size} and \code{max_loss}; \code{log_count}, the natural logarithm of
+#'     the number of selections reaching the same proportion and size (\code{NA} when
+#'     \code{exact} is \code{FALSE}); \code{exact}, whether every family was computed
+#'     exactly; \code{n_inexact}, the number of families that were not. \code{NULL}
+#'     otherwise.}
 #' }
 #'
 #' @section Family structures:
@@ -203,7 +219,7 @@ NULL
 #' @noRd
 .new_rkn_selection <- function(kept, discarded, family_sizes, method, criteria, seed,
                                node_diagnostics, family_summary, graph, call, uniform = FALSE,
-                               optimal = FALSE) {
+                               optimal = FALSE, global = NULL) {
   structure(
     list(
       kept = kept,
@@ -218,7 +234,8 @@ NULL
       node_diagnostics = node_diagnostics,
       family_summary = family_summary,
       graph = graph,
-      call = call
+      call = call,
+      global = global
     ),
     class = "rkn_selection"
   )
@@ -235,6 +252,9 @@ NULL
     if (!is.null(x$criteria$secondary)) crit <- paste0(crit, ", then ", x$criteria$secondary$type)
     header <- sprintf(if (isTRUE(x$optimal)) "Criteria-based selection over all maximum sets (%s)" else
       "Criteria-based selection (%s)", crit)
+  }
+  if (identical(x$method, "global")) {
+    header <- sprintf("Global selection (proportion of %s = %s)", x$global$covariate, x$global$category)
   }
   if (!is.null(x$seed)) header <- paste0(header, ", seed ", x$seed)
   header
@@ -275,7 +295,26 @@ print.rkn_selection <- function(x, ...) {
   cat(sprintf("Families with up to 5 members: %d | with 6 or more: %d\n",
               sum(sizes <= 5), sum(sizes >= 6)))
 
-  if (x$diagnostics) {
+  if (identical(x$method, "global")) {
+    gl <- x$global
+    cat(sprintf("Proportion of %s = %s among the selected: %.4f (%d of %d%s; target %.4g%s)\n",
+                gl$covariate, gl$category, gl$proportion, gl$n_category, gl$n_known,
+                if (gl$n_missing > 0) " with a known value" else "", gl$target,
+                if (gl$cohort) ", the proportion of the network" else ""))
+    if (gl$n_missing > 0) cat(sprintf("Selected with a missing value of %s: %d\n", gl$covariate, gl$n_missing))
+    if (gl$max_loss > 0) {
+      cat(sprintf("Selected: %d of a largest possible %d (max_loss = %d)\n", gl$size, gl$max_size, gl$max_loss))
+    }
+    if (gl$exact) {
+      cat(sprintf("Selections reaching this proportion%s: %s, one drawn uniformly\n",
+                  if (gl$max_loss > 0) " and size" else "", .rkn_format_log10(gl$log_count / log(10))))
+    } else {
+      cat(sprintf(paste0("Families beyond the computational budget: %d; the proportion may not be the best ",
+                         "possible, and the choice within them is not uniform\n"), gl$n_inexact))
+    }
+  }
+
+  if (x$diagnostics && !identical(x$method, "global")) {
     fs <- x$family_summary
     if (isTRUE(x$uniform) || isTRUE(x$optimal)) {
       whole <- if (isTRUE(x$uniform)) fs$uniform else fs$optimal
@@ -287,19 +326,10 @@ print.rkn_selection <- function(x, ...) {
       }
       counted <- !is.na(fs$n_max_sets)
       if (any(counted)) {
-        # The total is formatted from its logarithm, since it easily exceeds the largest double.
         n_sets <- fs$n_max_sets[counted]
-        total <- sum(log10(n_sets))
-        exponent <- floor(total)
-        mantissa <- round(10^(total - exponent), 1)
-        if (mantissa >= 10) {
-          mantissa <- 1
-          exponent <- exponent + 1
-        }
-        total_txt <- if (total < 6) formatC(round(10^total), format = "f", digits = 0, big.mark = ",") else
-          sprintf("%.1fe+%02d", mantissa, exponent)
         cat(sprintf("Maximum sets: %s in total%s; families with more than one: %d of %d\n",
-                    total_txt, if (all(counted)) "" else " over the families where they were counted",
+                    .rkn_format_log10(sum(log10(n_sets))),
+                    if (all(counted)) "" else " over the families where they were counted",
                     sum(n_sets > 1), sum(counted)))
       }
       if (isTRUE(x$uniform) && any(whole)) {
@@ -322,11 +352,30 @@ print.rkn_selection <- function(x, ...) {
     if (n_sample > 0) {
       cat(sprintf("Families where the criteria were evaluated on a sample of maximum sets: %d\n", n_sample))
     }
-  } else {
+  } else if (!x$diagnostics) {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); ",
             "rerun with diagnostics = TRUE for a richer output.")
   }
   invisible(x)
+}
+
+#' Internal helper: a number given by its base-10 logarithm, as text
+#'
+#' Formats a count known only through its logarithm, since counts of sets of
+#' individuals easily exceed the largest double: in full below a million, in
+#' scientific notation above.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_format_log10 <- function(total) {
+  if (total < 6) return(formatC(round(10^total), format = "f", digits = 0, big.mark = ","))
+  exponent <- floor(total)
+  mantissa <- round(10^(total - exponent), 1)
+  if (mantissa >= 10) {
+    mantissa <- 1
+    exponent <- exponent + 1
+  }
+  sprintf("%.1fe+%02d", mantissa, exponent)
 }
 
 #' Summarise an rkn_selection object
@@ -409,7 +458,7 @@ summary.rkn_selection <- function(object, ...) {
   )
 
   decisions <- NULL
-  if (object$diagnostics) {
+  if (object$diagnostics && !identical(object$method, "global")) {
     nd <- object$node_diagnostics
     labels <- .rkn_labels_of(object)
     if ((isTRUE(object$uniform) || isTRUE(object$optimal)) && !any(nd$pre_class == "candidate_simple")) {
@@ -424,7 +473,7 @@ summary.rkn_selection <- function(object, ...) {
 
   structure(
     list(header = .rkn_selection_header(object), overall = overall,
-         by_structure = by_structure, decisions = decisions),
+         by_structure = by_structure, decisions = decisions, method = object$method),
     class = "summary.rkn_selection"
   )
 }
@@ -451,6 +500,7 @@ print.summary.rkn_selection <- function(x, ...) {
   cat("Selection by family structure:\n")
   print(by_structure, row.names = FALSE)
 
+  if (identical(x$method, "global")) return(invisible(x))
   if (is.null(x$decisions)) {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); ",
             "rerun with diagnostics = TRUE for a richer output.")
@@ -477,6 +527,11 @@ plot.rkn_selection <- function(x, type = c("post", "diagnostics", "pre"),
   layout <- match.arg(layout)
   palette <- match.arg(palette)
   colour_by <- match.arg(colour_by)
+  if (identical(type, "diagnostics") && identical(x$method, "global")) {
+    message("The diagnostics plot is not available for global selections; plotting selected vs ",
+            "discarded instead.")
+    type <- "post"
+  }
   if (identical(type, "diagnostics") && !x$diagnostics) {
     message("Node-level diagnostics were not computed (diagnostics = FALSE); plotting ",
             "selected vs discarded instead. Rerun with diagnostics = TRUE for the diagnostics plot.")

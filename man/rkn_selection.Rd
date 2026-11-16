@@ -4,10 +4,10 @@
 \alias{rkn_selection}
 \title{Selections of unrelated individuals}
 \description{
-\code{\link{rkn_select_random}} and \code{\link{rkn_select_criteria}} return an object
-of class \code{rkn_selection}: a list holding the selected individuals, the network
-they were selected from and, when computed, diagnostics on how each individual and
-each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
+\code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}} and
+\code{\link{rkn_select_global}} return an object of class \code{rkn_selection}: a
+list holding the selected individuals, the network they were selected from and,
+when computed, diagnostics on how each individual and each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
 \code{\link[=summary.rkn_selection]{summary}} and
 \code{\link[=plot.rkn_selection]{plot}} methods.
 }
@@ -18,7 +18,7 @@ each family was resolved. The object has \code{\link[=print.rkn_selection]{print
 \item{\code{discarded}}{character vector, the identifiers of the other individuals;}
 \item{\code{family_sizes}}{integer vector, the size of each family (connected
 component of the network);}
-\item{\code{method}}{\code{"random"} or \code{"criteria"};}
+\item{\code{method}}{\code{"random"}, \code{"criteria"} or \code{"global"};}
 \item{\code{uniform}}{logical, whether the selection was drawn uniformly among the
 maximum sets (\code{rkn_select_random(uniform = TRUE)});}
 \item{\code{optimal}}{logical, whether the criteria were evaluated over all the
@@ -65,9 +65,25 @@ related pair doubles it), so \code{print()} also reports how many families have
 more than one maximum set; the numbers of kept and discarded individuals, overall
 (\code{n_kept}, \code{n_discarded}) and by type of decision
 (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
-\code{n_candidate_complex});}
+\code{n_candidate_complex}). In global selections the columns are
+\code{family_id}, \code{family_size}, \code{selector} (\code{"global"}),
+\code{exact} (\code{FALSE} for the families beyond the computational budget,
+see \code{\link{rkn_select_global}}), \code{n_kept}, \code{n_discarded},
+\code{n_category} (selected members in the category) and \code{n_missing}
+(selected members with a missing value), and the types of decision of
+\code{node_diagnostics} are not available;}
 \item{\code{graph}}{the igraph network the selection was made on;}
-\item{\code{call}}{the call that produced the selection.}
+\item{\code{call}}{the call that produced the selection;}
+\item{\code{global}}{for global selections, a list describing the composition
+reached: \code{covariate}, \code{category} and \code{target}; \code{cohort},
+whether the target is the proportion of the network; \code{proportion}, the
+proportion reached among the selected individuals with a known value,
+\code{n_category} of \code{n_known}; \code{n_missing}; \code{size},
+\code{max_size} and \code{max_loss}; \code{log_count}, the natural logarithm of
+the number of selections reaching the same proportion and size (\code{NA} when
+\code{exact} is \code{FALSE}); \code{exact}, whether every family was computed
+exactly; \code{n_inexact}, the number of families that were not. \code{NULL}
+otherwise.}
 }
 }
 

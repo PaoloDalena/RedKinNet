@@ -1,14 +1,5 @@
 adjacency <- function(g) as.matrix(igraph::as_adjacency_matrix(g, sparse = FALSE)) > 0
 
-proportion_distance <- function(p) {
-  function(C, M, S) {
-    D <- S - M
-    d <- abs(C - p * D) / D
-    d[D <= 0] <- Inf
-    d
-  }
-}
-
 # Global selection of a network by proportion of the category, with the single
 # individuals grouped as in the package.
 global_selection <- function(g, cat, miss, k, p, ...) {
@@ -30,29 +21,6 @@ global_selection <- function(g, cat, miss, k, p, ...) {
   sel <- rep(FALSE, igraph::vcount(g))
   for (f in seq_along(sets)) sel[idx[[f]][sets[[f]]]] <- TRUE
   list(res = res, sel = sel)
-}
-
-# All the selections with the best proportion and, among them, the largest size.
-best_selections <- function(g, cat, miss, k, p) {
-  A <- adjacency(g)
-  n <- nrow(A)
-  labels <- character(0)
-  d <- numeric(0)
-  size <- integer(0)
-  for (s in 0:(2^n - 1)) {
-    sel <- bitwAnd(s, 2^(seq_len(n) - 1)) > 0
-    if (sum(sel) > 1 && any(A[sel, sel])) next
-    labels <- c(labels, paste(which(sel), collapse = ","))
-    size <- c(size, sum(sel))
-    D <- sum(sel) - sum(miss[sel])
-    d <- c(d, if (D > 0) abs(sum(cat[sel]) - p * D) / D else Inf)
-  }
-  keep <- size >= max(size) - k
-  labels <- labels[keep]
-  d <- d[keep]
-  size <- size[keep]
-  best <- d <= min(d) + 1e-12
-  labels[best & size == max(size[best])]
 }
 
 random_network <- function(n_families) {

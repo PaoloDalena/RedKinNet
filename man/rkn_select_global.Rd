@@ -33,7 +33,9 @@ composition of the cohort; this requires a covariate with two categories.}
 
 \item{max_loss}{Non-negative integer. Largest number of individuals that may be
 selected below the maximum, to bring the proportion closer to the target. With
-\code{0} (default) the selection keeps the maximum size.}
+\code{0} (default) the selection keeps the maximum size. \code{\link{rkn_tradeoff}}
+shows, before selecting, the proportion that each number of individuals given up
+allows.}
 
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
 
@@ -114,6 +116,7 @@ rkn_select_global(g, "sex", c(F = 0.7), max_loss = 2, seed = 1)
 
 }
 \seealso{
-\code{\link{rkn_selection}}, \code{\link{rkn_select_criteria}},
+\code{\link{rkn_tradeoff}} for the proportions reachable by each number of
+individuals given up; \code{\link{rkn_selection}}, \code{\link{rkn_select_criteria}},
 \code{\link{rkn_select_random}}.
 }

@@ -21,7 +21,9 @@
 #'   composition of the cohort; this requires a covariate with two categories.
 #' @param max_loss Non-negative integer. Largest number of individuals that may be
 #'   selected below the maximum, to bring the proportion closer to the target. With
-#'   \code{0} (default) the selection keeps the maximum size.
+#'   \code{0} (default) the selection keeps the maximum size. \code{\link{rkn_tradeoff}}
+#'   shows, before selecting, the proportion that each number of individuals given up
+#'   allows.
 #'
 #' @details
 #' The selection is chosen in three steps: first the proportion closest to the target;
@@ -55,7 +57,8 @@
 #'   its element \code{global} describes the composition reached (see
 #'   \code{\link{rkn_selection}}).
 #'
-#' @seealso \code{\link{rkn_selection}}, \code{\link{rkn_select_criteria}},
+#' @seealso \code{\link{rkn_tradeoff}} for the proportions reachable by each number of
+#'   individuals given up; \code{\link{rkn_selection}}, \code{\link{rkn_select_criteria}},
 #'   \code{\link{rkn_select_random}}.
 #'
 #' @example man-roxygen/example-network.R
@@ -74,17 +77,8 @@
 #' @export
 rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, seed = NULL, diagnostics = TRUE) {
 
-  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
-  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
-  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
-  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
-  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
-  if (missing(covariate) || !is.character(covariate) || length(covariate) != 1) {
-    stop("`covariate` must be the name of a vertex attribute, as \"sex\".")
-  }
-  if (!(covariate %in% igraph::vertex_attr_names(g))) {
-    stop(sprintf("The network has no vertex attribute \"%s\".", covariate))
-  }
+  if (missing(covariate)) covariate <- NULL
+  .rkn_global_check_input(g, covariate)
   if (!is.numeric(max_loss) || length(max_loss) != 1 || is.na(max_loss) || max_loss < 0 ||
       max_loss != round(max_loss)) {
     stop("`max_loss` must be a single non-negative integer.")
@@ -97,24 +91,8 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, seed = 
   }
 
   ids <- igraph::V(g)$name
-  comp <- igraph::components(g)
-  single <- which(comp$csize[comp$membership] == 1)
-  fams <- list()
-  members <- list()
-  for (grp in .rkn_global_singletons(tgt$cat[single], tgt$miss[single], max_loss)) {
-    fams[[length(fams) + 1]] <- grp
-    members[[length(members) + 1]] <- single[grp$members]
-  }
-  family_exact <- rep(TRUE, comp$no)
-  for (f in which(comp$csize > 1)) {
-    v <- which(comp$membership == f)
-    g_sub <- igraph::induced_subgraph(g, v)
-    fallback <- function() igraph::V(g_sub)$name %in% rkn_select_random(g_sub, diagnostics = FALSE)$kept
-    fams[[length(fams) + 1]] <- .rkn_global_options(.rkn_adjacency(g_sub), tgt$cat[v], tgt$miss[v],
-                                                    max_loss, fallback = fallback)
-    members[[length(members) + 1]] <- v
-    family_exact[f] <- fams[[length(fams)]]$exact
-  }
+  fam <- .rkn_global_families(g, tgt, max_loss)
+  comp <- fam$comp
 
   p <- tgt$p
   distance <- function(C, M, S) {
@@ -123,16 +101,17 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, seed = 
     d[known <= 0] <- Inf
     d
   }
-  res <- .rkn_global_select(fams, max_loss, distance)
-  sets <- .rkn_global_realise(fams, res$choice)
+  # The network cannot give up more individuals than its maximum size.
+  res <- .rkn_global_select(fam$fams, min(max_loss, fam$max_size), distance)
+  sets <- .rkn_global_realise(fam$fams, res$choice)
   selected <- rep(FALSE, length(ids))
-  for (i in seq_along(sets)) selected[members[[i]][sets[[i]]]] <- TRUE
+  for (i in seq_along(sets)) selected[fam$members[[i]][sets[[i]]]] <- TRUE
 
   global <- list(
     covariate = covariate, category = tgt$category, target = p, cohort = tgt$cohort,
     proportion = res$c / (res$size - res$m), n_category = res$c, n_known = res$size - res$m, n_missing = res$m,
     size = res$size, max_size = res$size + res$j, max_loss = max_loss, log_count = res$log_count,
-    exact = res$exact, n_inexact = sum(!family_exact)
+    exact = res$exact, n_inexact = sum(!fam$exact)
   )
 
   node_diagnostics <- NULL
@@ -147,7 +126,7 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, seed = 
     )
     family_summary <- .rkn_df(
       family_id = seq_len(comp$no), family_size = comp$csize,
-      selector = rep("global", comp$no), exact = family_exact,
+      selector = rep("global", comp$no), exact = fam$exact,
       n_kept = tabulate(family_id[selected], nbins = comp$no),
       n_discarded = tabulate(family_id[!selected], nbins = comp$no),
       n_category = tabulate(family_id[selected & tgt$cat == 1], nbins = comp$no),
@@ -161,6 +140,81 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, seed = 
     node_diagnostics = node_diagnostics, family_summary = family_summary, graph = g,
     call = match.call(), global = global
   )
+}
+
+#' Internal helper: checks of the network and covariate of a global selection
+#'
+#' @param g The network.
+#' @param covariate The name of the covariate, or \code{NULL} if not given.
+#' @return \code{NULL}, invisibly; stops with an error on an invalid input.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_global_check_input <- function(g, covariate) {
+  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
+  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
+  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
+  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
+  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  if (!is.character(covariate) || length(covariate) != 1) {
+    stop("`covariate` must be the name of a vertex attribute, as \"sex\".")
+  }
+  if (!(covariate %in% igraph::vertex_attr_names(g))) {
+    stop(sprintf("The network has no vertex attribute \"%s\".", covariate))
+  }
+  invisible(NULL)
+}
+
+#' Internal helper: the options of the families of a global selection
+#'
+#' Groups the individuals without relatives by kind and computes the options of every
+#' family (\code{.rkn_global_options()}). A family cannot give up more members than it
+#' has, so that its options are computed for at most that many: a larger \code{k} would
+#' only enlarge its table.
+#'
+#' @param g The network.
+#' @param tgt The result of \code{.rkn_global_target()}.
+#' @param k Largest number of individuals below the maximum size of the network.
+#' @param previous A result of this function for another \code{k}: the options of the
+#'   families for which the limit is unchanged are reused.
+#' @return A list with \code{fams} (the options, for the groups of individuals without
+#'   relatives first and then for the families), \code{members} (their vertices),
+#'   \code{comp} (the components of the network), \code{options} and \code{cap} (the
+#'   options of each component and the limit they were computed for), \code{exact}
+#'   (per component) and \code{max_size}, the size of the largest selection.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_global_families <- function(g, tgt, k, previous = NULL) {
+  comp <- if (is.null(previous)) igraph::components(g) else previous$comp
+  single <- which(comp$csize[comp$membership] == 1)
+  fams <- list()
+  members <- list()
+  for (grp in .rkn_global_singletons(tgt$cat[single], tgt$miss[single], k)) {
+    fams[[length(fams) + 1]] <- grp
+    members[[length(members) + 1]] <- single[grp$members]
+  }
+  cap <- pmin(k, comp$csize)
+  options <- vector("list", comp$no)
+  exact <- rep(TRUE, comp$no)
+  for (f in which(comp$csize > 1)) {
+    v <- which(comp$membership == f)
+    if (!is.null(previous) && previous$cap[f] == cap[f]) {
+      options[[f]] <- previous$options[[f]]
+    } else {
+      g_sub <- igraph::induced_subgraph(g, v)
+      fallback <- function() igraph::V(g_sub)$name %in% rkn_select_random(g_sub, diagnostics = FALSE)$kept
+      options[[f]] <- .rkn_global_options(.rkn_adjacency(g_sub), tgt$cat[v], tgt$miss[v], cap[f],
+                                          fallback = fallback)
+    }
+    fams[[length(fams) + 1]] <- options[[f]]
+    members[[length(members) + 1]] <- v
+    exact[f] <- options[[f]]$exact
+  }
+  max_size <- 0
+  for (fa in fams) max_size <- max_size + fa$alpha
+  list(fams = fams, members = members, comp = comp, options = options, cap = cap, exact = exact,
+       max_size = max_size)
 }
 
 #' Internal helper: target category and proportion of a global selection

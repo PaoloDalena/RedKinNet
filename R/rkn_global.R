@@ -144,16 +144,21 @@
 #' @param distance A function of the totals \code{C}, \code{M} and of the size \code{S},
 #'   arrays of the same shape, giving the distance from the target (\code{Inf} where it
 #'   is not defined).
-#' @param max_cells Largest number of cells of the tables kept at once.
+#' @param max_cells Largest number of cells of the tables kept at once. Beyond it,
+#'   the function stops with an error of class \code{rkn_table_limit}.
+#' @param draw If \code{FALSE}, only the table of the totals is computed, without
+#'   keeping the tables needed to go back, and \code{distance} is not used.
 #' @return A list with \code{choice}, the option chosen in each family; the totals
 #'   \code{size}, \code{j}, \code{c} and \code{m} of the selection; \code{distance};
 #'   \code{log_count}, the logarithm of the number of selections reaching the best
 #'   totals (\code{NA} when some family is not \code{exact}); \code{exact}; and
-#'   \code{table}, the table of the totals.
+#'   \code{table}, the table of the totals. With \code{draw = FALSE}, a list with
+#'   \code{table}, \code{alpha} (the maximum size), \code{c_base} and \code{m_base}
+#'   (the totals of the first cell of the table) and \code{exact}.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_global_select <- function(fams, k, distance, max_cells = 1e7) {
+.rkn_global_select <- function(fams, k, distance, max_cells = 1e7, draw = TRUE) {
   n_fam <- length(fams)
   n_opt <- integer(n_fam)
   alpha <- 0
@@ -186,10 +191,12 @@
   kept <- box[c(starts, n_free + 1)]
   peak <- 0
   for (first in starts) peak <- max(peak, sum(box[first:min(first + block - 1, n_free)]))
-  if (sum(kept) + peak > max_cells) {
-    stop(sprintf(paste0("The global selection would keep %.1e table cells (limit %.1e). Reduce max_loss, or ",
-                        "the number of individuals with a missing value of the covariate."),
-                 sum(kept) + peak, max_cells), call. = FALSE)
+  # Without going back, only two consecutive tables are held at once.
+  need <- if (draw) sum(kept) + peak else max(box[-1] + box[-length(box)], box[1])
+  if (need > max_cells) {
+    msg <- sprintf(paste0("The global selection would keep %.1e table cells (limit %.1e). Reduce max_loss, or ",
+                          "the number of individuals with a missing value of the covariate."), need, max_cells)
+    stop(structure(class = c("rkn_table_limit", "error", "condition"), list(message = msg, call = NULL)))
   }
 
   combine <- function(tab, o) {
@@ -218,8 +225,9 @@
   checkpoints <- list(tab)
   for (i in seq_len(n_free)) {
     tab <- combine(tab, fams[[free[i]]]$options)
-    if (i %% block == 0 && i < n_free) checkpoints[[length(checkpoints) + 1]] <- tab
+    if (draw && i %% block == 0 && i < n_free) checkpoints[[length(checkpoints) + 1]] <- tab
   }
+  if (!draw) return(list(table = tab, alpha = alpha, c_base = c_base, m_base = m_base, exact = exact))
 
   size <- alpha - (slice.index(tab, 1) - 1)
   d <- distance(c_base + slice.index(tab, 2) - 1, m_base + slice.index(tab, 3) - 1, size)

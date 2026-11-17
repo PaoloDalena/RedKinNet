@@ -141,6 +141,17 @@ pairs_of <- function(K) {
   data.frame(ID1 = rownames(K)[ij[, 1]], ID2 = rownames(K)[ij[, 2]], Kinship = K[ij])
 }
 
+# The network of the examples of the help pages, with the sex of each individual.
+example_network <- function() {
+  g <- igraph::graph_from_literal(P1 - C1 - P2, S1 - S2, T1 - T2 - T3 - T1,
+                                  D1 - K1 - D2, D1 - K2 - D2, K1 - K2,
+                                  D2 - K3 - D3, K1 - K3, K2 - K3, U1)
+  sex <- c(P1 = "F", C1 = "M", P2 = "M", S1 = "M", S2 = "F", T1 = "M", T2 = "F", T3 = "M",
+           D1 = "M", K1 = "F", D2 = "F", K2 = "M", K3 = "F", D3 = "M", U1 = "F")
+  igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
+  g
+}
+
 # Distance of a global selection from a target proportion p of the category, as in
 # rkn_select_global().
 proportion_distance <- function(p) {

@@ -1,13 +1,3 @@
-example_network <- function() {
-  g <- igraph::graph_from_literal(P1 - C1 - P2, S1 - S2, T1 - T2 - T3 - T1,
-                                  D1 - K1 - D2, D1 - K2 - D2, K1 - K2,
-                                  D2 - K3 - D3, K1 - K3, K2 - K3, U1)
-  sex <- c(P1 = "F", C1 = "M", P2 = "M", S1 = "M", S2 = "F", T1 = "M", T2 = "F", T3 = "M",
-           D1 = "M", K1 = "F", D2 = "F", K2 = "M", K3 = "F", D3 = "M", U1 = "F")
-  igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
-  g
-}
-
 best_global <- function(g, k, p) {
   sex <- igraph::V(g)$sex
   miss <- as.numeric(is.na(sex))
@@ -96,6 +86,14 @@ test_that("max_loss gives up individuals to bring the proportion closer to the t
   expect_output(print(lossy), "Selected: 7 of a largest possible 8 (max_loss = 2)", fixed = TRUE)
   # No loss when the target is already reached at the maximum size.
   expect_identical(rkn_select_global(g, "sex", c(F = 0.5), max_loss = 2, seed = 1)$global$size, 8)
+  # A max_loss beyond the size of the network changes nothing and keeps every family exact.
+  huge <- rkn_select_global(g, "sex", c(F = 0.7), max_loss = 1e6, seed = 1)
+  whole <- rkn_select_global(g, "sex", c(F = 0.7), max_loss = 15, seed = 1)
+  expect_true(huge$global$exact)
+  expect_identical(huge$global$n_inexact, 0L)
+  expect_identical(huge$kept, whole$kept)
+  expect_equal(huge$global$log_count, whole$global$log_count)
+  expect_identical(huge$global$max_loss, 1e6)
 })
 
 test_that("the inputs of a global selection are validated", {

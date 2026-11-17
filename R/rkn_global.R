@@ -134,10 +134,12 @@
 #' one of the selections reaching them is drawn uniformly at random, by going back
 #' through the families and choosing the option of each in proportion to the number of
 #' selections of the families before it that complete it. Each table covers only the
-#' totals reachable by the families combined so far, and only the tables at regular
-#' intervals are kept, the others being recomputed when going back, so that the memory
-#' grows with the square root of the number of families. The memory needed is computed
-#' before anything is allocated.
+#' totals reachable by the families combined so far with at most \code{k} individuals
+#' given up in total, which a first pass over the smallest and largest totals for each
+#' number given up computes, and only the tables at regular intervals are kept, the
+#' others being recomputed when going back, so that the memory grows with the square
+#' root of the number of families. The memory needed is computed before anything is
+#' allocated.
 #'
 #' @param fams A list of results of \code{.rkn_global_options()}.
 #' @param k Largest number of individuals below the maximum size.
@@ -186,7 +188,42 @@
   free <- free[order(m_width[free] > 0, c_width[free], m_width[free])]
   n_free <- length(free)
   block <- max(1, ceiling(sqrt(n_free)))
-  box <- (k + 1) * (cumsum(c(0, c_width[free])) + 1) * (cumsum(c(0, m_width[free])) + 1)
+
+  # Families with a single option shift the starting point.
+  start <- 0
+  log_start <- 0
+  for (f in which(n_opt == 1)) {
+    start <- start + fams[[f]]$options$j
+    log_start <- log_start + fams[[f]]$options$lc
+  }
+
+  # Row i + 1 of bounds holds the smallest and largest totals C and M reachable by the
+  # first i families with at most k individuals given up in total; the table after
+  # these families covers exactly these ranges, with its first cell at their minima.
+  c_lo <- m_lo <- rep(Inf, k + 1)
+  c_hi <- m_hi <- rep(-Inf, k + 1)
+  c_lo[start + 1] <- c_hi[start + 1] <- m_lo[start + 1] <- m_hi[start + 1] <- 0
+  bounds <- matrix(0, n_free + 1, 4)
+  for (i in seq_len(n_free)) {
+    o <- fams[[free[i]]]$options
+    n_c_lo <- n_m_lo <- rep(Inf, k + 1)
+    n_c_hi <- n_m_hi <- rep(-Inf, k + 1)
+    for (q in which(o$j <= k)) {
+      s <- seq_len(k + 1 - o$j[q])
+      t <- s + o$j[q]
+      n_c_lo[t] <- pmin(n_c_lo[t], c_lo[s] + o$c[q])
+      n_c_hi[t] <- pmax(n_c_hi[t], c_hi[s] + o$c[q])
+      n_m_lo[t] <- pmin(n_m_lo[t], m_lo[s] + o$m[q])
+      n_m_hi[t] <- pmax(n_m_hi[t], m_hi[s] + o$m[q])
+    }
+    c_lo <- n_c_lo
+    c_hi <- n_c_hi
+    m_lo <- n_m_lo
+    m_hi <- n_m_hi
+    ok <- is.finite(c_lo)
+    bounds[i + 1, ] <- c(min(c_lo[ok]), max(c_hi[ok]), min(m_lo[ok]), max(m_hi[ok]))
+  }
+  box <- (k + 1) * (bounds[, 2] - bounds[, 1] + 1) * (bounds[, 4] - bounds[, 3] + 1)
   starts <- if (n_free > 0) seq(1, n_free, by = block) else integer(0)
   kept <- box[c(starts, n_free + 1)]
   peak <- 0
@@ -199,38 +236,44 @@
     stop(structure(class = c("rkn_table_limit", "error", "condition"), list(message = msg, call = NULL)))
   }
 
-  combine <- function(tab, o) {
+  # Adds the i-th family to the table of the families before it. The totals that fall
+  # outside the new ranges cannot be reached with at most k individuals given up, and
+  # their cells are empty.
+  combine <- function(tab, i) {
+    o <- fams[[free[i]]]$options
+    from <- bounds[i, ]
+    to <- bounds[i + 1, ]
     d <- dim(tab)
-    out <- array(-Inf, c(k + 1, d[2] + max(o$c), d[3] + max(o$m)))
-    for (i in seq_along(o$j)) {
-      if (o$j[i] > k) next
-      sj <- seq_len(k + 1 - o$j[i])
-      tj <- o$j[i] + sj
-      tc <- o$c[i] + seq_len(d[2])
-      tm <- o$m[i] + seq_len(d[3])
-      out[tj, tc, tm] <- .rkn_log_add(out[tj, tc, tm, drop = FALSE], tab[sj, , , drop = FALSE] + o$lc[i])
+    out <- array(-Inf, c(k + 1, to[2] - to[1] + 1, to[4] - to[3] + 1))
+    for (q in seq_along(o$j)) {
+      if (o$j[q] > k) next
+      tc <- from[1] + o$c[q] - to[1] + seq_len(d[2])
+      tm <- from[3] + o$m[q] - to[3] + seq_len(d[3])
+      sc <- which(tc >= 1 & tc <= dim(out)[2])
+      sm <- which(tm >= 1 & tm <= dim(out)[3])
+      if (length(sc) == 0 || length(sm) == 0) next
+      sj <- seq_len(k + 1 - o$j[q])
+      tj <- o$j[q] + sj
+      out[tj, tc[sc], tm[sm]] <- .rkn_log_add(out[tj, tc[sc], tm[sm], drop = FALSE],
+                                              tab[sj, sc, sm, drop = FALSE] + o$lc[q])
     }
     out
   }
 
-  # Families with a single option shift the starting point.
-  start <- 0
-  log_start <- 0
-  for (f in which(n_opt == 1)) {
-    start <- start + fams[[f]]$options$j
-    log_start <- log_start + fams[[f]]$options$lc
-  }
   tab <- array(-Inf, c(k + 1, 1, 1))
   tab[start + 1, 1, 1] <- log_start
   checkpoints <- list(tab)
   for (i in seq_len(n_free)) {
-    tab <- combine(tab, fams[[free[i]]]$options)
+    tab <- combine(tab, i)
     if (draw && i %% block == 0 && i < n_free) checkpoints[[length(checkpoints) + 1]] <- tab
   }
-  if (!draw) return(list(table = tab, alpha = alpha, c_base = c_base, m_base = m_base, exact = exact))
+  off <- bounds[n_free + 1, ]
+  if (!draw) {
+    return(list(table = tab, alpha = alpha, c_base = c_base + off[1], m_base = m_base + off[3], exact = exact))
+  }
 
   size <- alpha - (slice.index(tab, 1) - 1)
-  d <- distance(c_base + slice.index(tab, 2) - 1, m_base + slice.index(tab, 3) - 1, size)
+  d <- distance(c_base + off[1] + slice.index(tab, 2) - 1, m_base + off[3] + slice.index(tab, 3) - 1, size)
   d[tab == -Inf] <- Inf
   d_min <- min(d)
   if (!is.finite(d_min)) stop("No selection has a defined value of the criterion.", call. = FALSE)
@@ -239,7 +282,8 @@
   lw <- tab[best]
   log_count <- max(lw) + log(sum(exp(lw - max(lw))))
   pick <- which(best)[sample.int(length(lw), 1, prob = exp(lw - max(lw)))]
-  target <- as.vector(arrayInd(pick, dim(tab))) - 1
+  # The totals are followed above the sums of the smallest counts of the families.
+  target <- as.vector(arrayInd(pick, dim(tab))) - 1 + c(0, off[1], off[3])
   totals <- target
 
   choice <- rep(1L, n_fam)
@@ -251,7 +295,7 @@
     before[[1]] <- checkpoints[[b]]
     if (last > first) {
       for (i in first:(last - 1)) {
-        before[[i - first + 2]] <- combine(before[[i - first + 1]], fams[[free[i]]]$options)
+        before[[i - first + 2]] <- combine(before[[i - first + 1]], i)
       }
     }
     for (i in last:first) {
@@ -259,7 +303,7 @@
       prev <- before[[i - first + 1]]
       w <- rep(-Inf, length(o$j))
       for (q in seq_along(o$j)) {
-        rest <- target - c(o$j[q], o$c[q], o$m[q])
+        rest <- target - c(o$j[q], o$c[q], o$m[q]) - c(0, bounds[i, 1], bounds[i, 3])
         if (all(rest >= 0) && all(rest < dim(prev))) w[q] <- prev[rest[1] + 1, rest[2] + 1, rest[3] + 1] + o$lc[q]
       }
       q <- sample.int(length(w), 1, prob = exp(w - max(w)))

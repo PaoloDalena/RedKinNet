@@ -106,3 +106,22 @@ test_that("the memory of the global selection is checked before the tables are b
   b <- .rkn_global_singletons(rep(c(1, 0), 50), rep(0, 100), 2)
   expect_error(.rkn_global_select(b, 2, proportion_distance(0.5), max_cells = 10), "table cells")
 })
+
+test_that("the tables cover only the totals reachable with at most k individuals given up", {
+  # Three individuals without relatives for each value from 1 to 50: giving up at most
+  # three of them lowers the total by at most 150, whatever the values, while the
+  # widths of the groups add up to 3825.
+  fams <- list()
+  for (v in 1:50) {
+    t <- 0:3
+    fams[[v]] <- list(alpha = 3, exact = TRUE, group = 3, members = 1:3,
+                      options = list(j = t, c = (3 - t) * v, m = rep(0, 4), lc = lchoose(3, t), v = rep(NA_real_, 4)))
+  }
+  res <- .rkn_global_select(fams, 3, NULL, max_cells = 2000, draw = FALSE)
+  total <- 3 * sum(1:50)
+  expect_identical(dim(res$table), c(4L, 151L, 1L))
+  expect_equal(res$c_base, total - 150)
+  expect_equal(res$table[1, 151, 1], 0)
+  # Giving up one individual of value v: three ways.
+  expect_equal(res$table[2, total - (1:50) - res$c_base + 1, 1], rep(log(3), 50))
+})

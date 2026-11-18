@@ -6,7 +6,7 @@
 #' two covariate-based criteria instead of uniformly at random.
 #'
 #' Rule matching and deterministic (a priori) keep/discard decisions are
-#' identical to \code{rkn_select_random_upto5()} (same \code{rules_db}/
+#' identical to \code{.rkn_select_random_upto5()} (same \code{rules_db}/
 #' \code{custom_rules_db}, same \code{kept_rules}/\code{discarded_rules}/
 #' \code{kept_fn}/\code{discarded_fn}). The two functions differ only in how
 #' the remaining ambiguous conflict group is resolved:
@@ -28,7 +28,7 @@
 #' resolution correctly requires enumerating combinations across groups, which
 #' is not yet implemented.
 #'
-#' @inheritParams rkn_select_random_upto5
+#' @inheritParams .rkn_select_random_upto5
 #' @param criterion_primary An \code{rkn_criterion} object (see
 #'   \code{rkn_criterion_level()} and \code{rkn_criterion_cutoff()}) used to score
 #'   candidate resolutions of the conflict group.
@@ -37,14 +37,14 @@
 #' @param seed Optional integer RNG seed, used only to break exact ties in the
 #'   criterion score(s).
 #'
-#' @return Same structure as \code{rkn_select_random_upto5()}.
+#' @return Same structure as \code{.rkn_select_random_upto5()}.
 #'
-#' @seealso \code{rkn_select_random_upto5()}, \code{rkn_criterion_level()},
-#'   \code{rkn_score_candidate_set()}
+#' @seealso \code{.rkn_select_random_upto5()}, \code{rkn_criterion_level()},
+#'   \code{.rkn_score_candidate_set()}
 #'
 #' @keywords internal
 #' @noRd
-rkn_select_criteria_upto5 <- function(fam_df,
+.rkn_select_criteria_upto5 <- function(fam_df,
                                       criterion_primary,
                                       criterion_secondary = NULL,
                                       custom_rules_db = NULL,
@@ -113,7 +113,7 @@ rkn_select_criteria_upto5 <- function(fam_df,
 
   if (length(conflict_groups) > 1) {
     stop(
-      "rkn_select_criteria_upto5() does not support rules with more than one ",
+      ".rkn_select_criteria_upto5() does not support rules with more than one ",
       "disjoint conflict group (matched rule: '", rule$name, "'). ",
       "Scoring their joint resolution requires enumerating combinations across ",
       "groups, which is not yet implemented."

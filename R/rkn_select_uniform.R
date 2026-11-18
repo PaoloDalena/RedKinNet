@@ -22,9 +22,9 @@
 
   if (!sol$feasible) {
     out <- if (length(ids) <= 5) {
-      rkn_select_random_upto5(fam_df = fam_df, seed = seed, return_diagnostics = return_diagnostics, g_sub = g_sub)
+      .rkn_select_random_upto5(fam_df = fam_df, seed = seed, return_diagnostics = return_diagnostics, g_sub = g_sub)
     } else {
-      rkn_select_random_6plus(fam_df = fam_df, g_sub = g_sub, seed = seed, return_diagnostics = return_diagnostics)
+      .rkn_select_random_6plus(fam_df = fam_df, g_sub = g_sub, seed = seed, return_diagnostics = return_diagnostics)
     }
     out$uniform <- FALSE
     if (return_diagnostics) out$node_diagnostics$inclusion_probability <- NA_real_

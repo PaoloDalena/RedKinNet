@@ -70,14 +70,14 @@
 #'
 #' @examples
 #' \dontrun{
-#' out <- rkn_select_random_upto5(fam_df, seed = 1)
-#' out_diag <- rkn_select_random_upto5(fam_df, seed = 1,
+#' out <- .rkn_select_random_upto5(fam_df, seed = 1)
+#' out_diag <- .rkn_select_random_upto5(fam_df, seed = 1,
 #'                                    return_diagnostics = TRUE, g_sub = g_sub)
 #' }
 #'
 #' @keywords internal
 #' @noRd
-rkn_select_random_upto5 <- function(fam_df,
+.rkn_select_random_upto5 <- function(fam_df,
                                     custom_rules_db = NULL,
                                     seed = NULL,
                                     return_diagnostics = FALSE,

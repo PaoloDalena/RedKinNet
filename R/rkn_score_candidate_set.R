@@ -15,7 +15,7 @@
 #' @description
 #' Evaluates `criterion_primary` (and, if supplied, `criterion_secondary`) against a
 #' fully-specified candidate kept-set. Intended both as the scoring step used
-#' internally by \code{rkn_select_criteria_upto5()}/\code{rkn_select_criteria_6plus()},
+#' internally by \code{.rkn_select_criteria_upto5()}/\code{.rkn_select_criteria_6plus()},
 #' and as a standalone diagnostic tool for reporting how well an already-decided
 #' selection satisfies a set of criteria.
 #'
@@ -32,7 +32,7 @@
 #'
 #' @keywords internal
 #' @noRd
-rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criterion_secondary = NULL) {
+.rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criterion_secondary = NULL) {
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
     stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")
   }

@@ -8,9 +8,9 @@ rkn_select_criteria(
   g,
   criterion_primary,
   criterion_secondary = NULL,
+  optimal = FALSE,
   seed = NULL,
-  diagnostics = TRUE,
-  optimal = FALSE
+  diagnostics = TRUE
 )
 }
 \arguments{
@@ -28,17 +28,6 @@ family.}
 \item{criterion_secondary}{Optional \code{rkn_criterion} object used to break ties in
 \code{criterion_primary}.}
 
-\item{seed}{Optional integer, as in \code{\link{rkn_select_random}}: a seed is drawn
-from it for each family. Random numbers are used only to break exact ties in the
-criterion scores.}
-
-\item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
-how each individual and each family was resolved (\code{node_diagnostics} and
-\code{family_summary}), which \code{print()}, \code{summary()} and
-\code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
-of the returned object; on very large networks, \code{diagnostics = FALSE} returns
-the selection alone.}
-
 \item{optimal}{Logical. If \code{FALSE} (default), structural rules decide part of
 each family before the criteria are applied, and some of them fix individuals
 regardless of the criteria (for instance, they keep the individual at the end of a
@@ -49,6 +38,17 @@ each family, exactly, or as described in the section Search over maximum sets of
 intricate for this
 computation are selected as with \code{optimal = FALSE} and reported in the column
 \code{optimal} of \code{family_summary}.}
+
+\item{seed}{Optional integer, as in \code{\link{rkn_select_random}}: a seed is drawn
+from it for each family. Random numbers are used only to break exact ties in the
+criterion scores.}
+
+\item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
+how each individual and each family was resolved (\code{node_diagnostics} and
+\code{family_summary}), which \code{print()}, \code{summary()} and
+\code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
+of the returned object; on very large networks, \code{diagnostics = FALSE} returns
+the selection alone.}
 }
 \value{
 An object of class \code{\link{rkn_selection}}, as for

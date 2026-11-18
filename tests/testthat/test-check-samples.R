@@ -4,8 +4,8 @@ test_that("the check flags duplicates, contamination and different ancestry in a
   expect_identical(chk$duplicates[, c("id1", "id2")], data.frame(id1 = "S199", id2 = "S200"))
   expect_identical(chk$contamination$id, "S001")
   expect_identical(chk$contamination$n_relatives, 105L)
-  expect_identical(chk$largest_component, 121L)
-  expect_identical(chk$contamination$largest_component_without, 2L)
+  expect_identical(chk$largest_family, 121L)
+  expect_identical(chk$contamination$largest_family_without, 2L)
   ancestry <- chk$samples$id[chk$samples$flag == "possible different ancestry"]
   expect_identical(ancestry, sprintf("S%03d", 181:195))
   expect_true(chk$mean_kinship_available)
@@ -88,8 +88,8 @@ test_that("the joint removal of several contaminated samples is reported", {
   K["S002", -2] <- K[-2, "S002"] <- rnorm(199, 0.045, 0.01)
   chk <- rkn_check_samples(K, "third")
   expect_identical(chk$contamination$id, c("S001", "S002"))
-  expect_true(all(chk$contamination$largest_component_without > 50))
-  expect_identical(chk$largest_component_without_flagged, 2L)
+  expect_true(all(chk$contamination$largest_family_without > 50))
+  expect_identical(chk$largest_family_without_flagged, 2L)
   expect_output(print(chk), "without all the flagged samples together: 2 samples")
 })
 
@@ -97,5 +97,5 @@ test_that("without flagged samples the joint size equals the largest family", {
   K <- synthetic_cohort()
   chk <- rkn_check_samples(K, "third", z_kinship = Inf)
   expect_identical(nrow(chk$contamination), 0L)
-  expect_identical(chk$largest_component_without_flagged, chk$largest_component)
+  expect_identical(chk$largest_family_without_flagged, chk$largest_family)
 })

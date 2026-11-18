@@ -46,13 +46,13 @@
 #'
 #' @examples
 #' \dontrun{
-#' out <- rkn_select_random_6plus(fam_df, g_sub, seed = 1)
-#' out_diag <- rkn_select_random_6plus(fam_df, g_sub, seed = 1, return_diagnostics = TRUE)
+#' out <- .rkn_select_random_6plus(fam_df, g_sub, seed = 1)
+#' out_diag <- .rkn_select_random_6plus(fam_df, g_sub, seed = 1, return_diagnostics = TRUE)
 #' }
 #'
 #' @keywords internal
 #' @noRd
-rkn_select_random_6plus <- function(fam_df,
+.rkn_select_random_6plus <- function(fam_df,
                                     g_sub,
                                     seed = NULL,
                                     return_diagnostics = FALSE) {
@@ -68,7 +68,7 @@ rkn_select_random_6plus <- function(fam_df,
 
   n0 <- nrow(fam_df)
   if (n0 < 6) {
-    warning("rkn_select_random_6plus() called on a component with fewer than 6 nodes; ",
+    warning(".rkn_select_random_6plus() called on a component with fewer than 6 nodes; ",
             "all nodes are returned as discarded.")
     kept_final <- character(0)
     discarded_final <- fam_df$.name

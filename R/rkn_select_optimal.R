@@ -25,7 +25,7 @@
 
   # Families of up to 5 members always fit within the width limit.
   if (is.null(picked)) {
-    out <- rkn_select_criteria_6plus(fam_df = fam_df, g_sub = g_sub, criterion_primary = criterion_primary,
+    out <- .rkn_select_criteria_6plus(fam_df = fam_df, g_sub = g_sub, criterion_primary = criterion_primary,
                                      criterion_secondary = criterion_secondary, seed = seed,
                                      return_diagnostics = return_diagnostics)
     out$optimal <- FALSE

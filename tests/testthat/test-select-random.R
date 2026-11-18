@@ -8,9 +8,9 @@ test_that("per-family random selection returns a maximum independent set on ever
     alpha <- brute_force_mis(g)$alpha
     for (seed in 1:3) {
       out <- if (nrow(fam_df) <= 5) {
-        rkn_select_random_upto5(fam_df, seed = seed, g_sub = g)
+        .rkn_select_random_upto5(fam_df, seed = seed, g_sub = g)
       } else {
-        rkn_select_random_6plus(fam_df, g, seed = seed)
+        .rkn_select_random_6plus(fam_df, g, seed = seed)
       }
       p <- selection_problems(g, out$kept, out$discarded, alpha)
       if (length(p) > 0) problems <- c(problems, paste0(nm, " seed ", seed, ": ", p))
@@ -26,9 +26,9 @@ test_that("per-family random selection is reproducible and unaffected by diagnos
     fam_df <- fam_df_from_graph(g)
     run <- function(diag) {
       if (nrow(fam_df) <= 5) {
-        rkn_select_random_upto5(fam_df, seed = 7, g_sub = g, return_diagnostics = diag)
+        .rkn_select_random_upto5(fam_df, seed = 7, g_sub = g, return_diagnostics = diag)
       } else {
-        rkn_select_random_6plus(fam_df, g, seed = 7, return_diagnostics = diag)
+        .rkn_select_random_6plus(fam_df, g, seed = 7, return_diagnostics = diag)
       }
     }
     a <- run(FALSE)

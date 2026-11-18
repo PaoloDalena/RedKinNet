@@ -5,22 +5,22 @@ fam <- data.frame(
   stringsAsFactors = FALSE
 )
 
-test_that("rkn_score_candidate_set returns one row with primary and secondary scores", {
-  out <- rkn_score_candidate_set(fam, c("a", "c"), rkn_criterion_level("sex", "F"))
+test_that(".rkn_score_candidate_set returns one row with primary and secondary scores", {
+  out <- .rkn_score_candidate_set(fam, c("a", "c"), rkn_criterion_level("sex", "F"))
   expect_equal(nrow(out), 1)
   expect_named(out, c("primary_type", "primary_score", "secondary_type", "secondary_score"))
   expect_equal(out$primary_score, 0.5)
   expect_true(is.na(out$secondary_score))
 
-  out2 <- rkn_score_candidate_set(fam, "b", rkn_criterion_level("sex", "F"),
+  out2 <- .rkn_score_candidate_set(fam, "b", rkn_criterion_level("sex", "F"),
                                   rkn_criterion_cutoff("age", 40, "above"))
   expect_equal(out2$secondary_score, 1)
   expect_identical(out2$secondary_type, "cutoff")
 })
 
-test_that("rkn_score_candidate_set validates its criteria", {
-  expect_error(rkn_score_candidate_set(fam, "a", "x"), "criterion_primary")
-  expect_error(rkn_score_candidate_set(fam, "a", rkn_criterion_level("sex", "F"), "x"), "criterion_secondary")
+test_that(".rkn_score_candidate_set validates its criteria", {
+  expect_error(.rkn_score_candidate_set(fam, "a", "x"), "criterion_primary")
+  expect_error(.rkn_score_candidate_set(fam, "a", rkn_criterion_level("sex", "F"), "x"), "criterion_secondary")
 })
 
 test_that("candidate choice follows the primary score, then the secondary, then a seeded draw", {

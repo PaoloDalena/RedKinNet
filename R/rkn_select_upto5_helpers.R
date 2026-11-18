@@ -1,4 +1,4 @@
-# Helpers shared between rkn_select_random_upto5() and rkn_select_criteria_upto5().
+# Helpers shared between .rkn_select_random_upto5() and .rkn_select_criteria_upto5().
 # The two selectors are identical up to the point where an ambiguous conflict group
 # must be resolved (uniform random draw vs. criteria-based scoring); everything below
 # is that shared, pre-resolution part.
@@ -7,8 +7,8 @@
 #'
 #' @description
 #' Constructs the standard per-node diagnostics data frame (`pre_class`, `post_class`,
-#' `is_selected`, `pre_reason`) shared by \code{rkn_select_random_upto5()} and
-#' \code{rkn_select_criteria_upto5()}. If a node were to appear in more than one input
+#' `is_selected`, `pre_reason`) shared by \code{.rkn_select_random_upto5()} and
+#' \code{.rkn_select_criteria_upto5()}. If a node were to appear in more than one input
 #' set (should not happen for well-formed calls, since \code{conflict_groups} already
 #' excludes a priori decisions), the last of these wins, in order: \code{kept_apriori},
 #' \code{discarded_apriori}, \code{candidate_simple}, \code{candidate_complex}.
@@ -60,8 +60,8 @@
 #' \code{igraph::largest_ivs()} into those in every set and those in no set, which were
 #' decided without a choice (see the section Types of decision in
 #' \code{?rkn_selection}), and the others. Shared between the `use_largest_ivs`
-#' resolution branches of \code{rkn_select_random_upto5()} and
-#' \code{rkn_select_criteria_upto5()}.
+#' resolution branches of \code{.rkn_select_random_upto5()} and
+#' \code{.rkn_select_criteria_upto5()}.
 #'
 #' @param candidates Character vector of candidate names.
 #' @param sets List of character vectors, the maximum sets enumerated.
@@ -87,7 +87,7 @@
 #' the graph-dependent \code{rule$kept_fn}/\code{rule$discarded_fn}), then builds the
 #' remaining ambiguous conflict groups from \code{rule$conflict_rules}, always excluding
 #' nodes already decided a priori. Shared, resolution-agnostic step between
-#' \code{rkn_select_random_upto5()} and \code{rkn_select_criteria_upto5()}.
+#' \code{.rkn_select_random_upto5()} and \code{.rkn_select_criteria_upto5()}.
 #'
 #' @return A list with \code{kept_apriori}, \code{discarded_apriori}, \code{conflict_groups}
 #'   (a list of character vectors, one per group), and \code{candidates_all} (their union).
@@ -139,7 +139,7 @@
 #' \code{eligible}, so that a subsequent \code{igraph::largest_ivs()} call on the
 #' induced subgraph of \code{eligible} cannot return a set adjacent to what is already
 #' kept. Shared between the `use_largest_ivs` resolution branches of
-#' \code{rkn_select_random_upto5()} and \code{rkn_select_criteria_upto5()}.
+#' \code{.rkn_select_random_upto5()} and \code{.rkn_select_criteria_upto5()}.
 #'
 #' @keywords internal
 #' @noRd

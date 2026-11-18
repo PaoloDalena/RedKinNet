@@ -55,15 +55,15 @@
 #' rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
 #'
 #' @export
-rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE, uniform = FALSE) {
+rkn_select_random <- function(g, uniform = FALSE, seed = NULL, diagnostics = TRUE) {
 
   .rkn_check_network(g)
   .rkn_check_seed(seed)
   .rkn_check_flag(diagnostics, "diagnostics")
   .rkn_check_flag(uniform, "uniform")
 
-  select_upto5 <- rkn_select_random_upto5
-  select_6plus <- rkn_select_random_6plus
+  select_upto5 <- .rkn_select_random_upto5
+  select_6plus <- .rkn_select_random_6plus
   if (uniform) {
     select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
       .rkn_select_uniform_family(fam_df, g_sub, seed, return_diagnostics)

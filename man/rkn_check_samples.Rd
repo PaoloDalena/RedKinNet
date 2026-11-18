@@ -58,15 +58,15 @@ with the samples it is not related to (see Details); the robust z-scores
     contamination"}, \code{"possible different ancestry"} or an empty string;}
 \item{\code{duplicates}}{a data frame of the pairs with a kinship of at least 0.354;}
 \item{\code{contamination}}{a data frame of the samples flagged as possible
-contamination, with \code{largest_component_without}, the size of the largest
+contamination, with \code{largest_family_without}, the size of the largest
 family of the network after removing the sample;}
-\item{\code{threshold}, \code{largest_component}}{the threshold used and the size
+\item{\code{threshold}, \code{largest_family}}{the threshold used and the size
 of the largest family of the network;}
-\item{\code{largest_component_without_flagged}}{the size of the largest family after
+\item{\code{largest_family_without_flagged}}{the size of the largest family after
 removing all the samples flagged as possible contamination together. When several
 contaminated samples are related to the same samples, removing one of them leaves
 the others holding the families together, so only the joint removal shows their
-effect. It equals \code{largest_component} when no sample is flagged;}
+effect. It equals \code{largest_family} when no sample is flagged;}
 \item{\code{mean_kinship_available}}{whether the mean kinship could be computed.}
 }
 }

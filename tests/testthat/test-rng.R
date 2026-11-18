@@ -27,10 +27,10 @@ test_that("seeded per-family selections leave the caller's random number stream 
   fd5$sex <- c("F", "M", "F", "M", "F")
   fd7$sex <- c("F", "M", "F", "M", "F", "M", "F")
   crit <- rkn_criterion_level("sex", "F")
-  expect_identical(runif_after(function() rkn_select_random_upto5(fd5, seed = 1, g_sub = g5)), reference())
-  expect_identical(runif_after(function() rkn_select_random_6plus(fd7, g7, seed = 1)), reference())
-  expect_identical(runif_after(function() rkn_select_criteria_upto5(fd5, crit, seed = 1, g_sub = g5)), reference())
-  expect_identical(runif_after(function() rkn_select_criteria_6plus(fd7, g7, crit, seed = 1)), reference())
+  expect_identical(runif_after(function() .rkn_select_random_upto5(fd5, seed = 1, g_sub = g5)), reference())
+  expect_identical(runif_after(function() .rkn_select_random_6plus(fd7, g7, seed = 1)), reference())
+  expect_identical(runif_after(function() .rkn_select_criteria_upto5(fd5, crit, seed = 1, g_sub = g5)), reference())
+  expect_identical(runif_after(function() .rkn_select_criteria_6plus(fd7, g7, crit, seed = 1)), reference())
 })
 
 test_that("a session without a random seed stays without one after a seeded selection", {

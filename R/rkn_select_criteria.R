@@ -66,9 +66,9 @@
 rkn_select_criteria <- function(g,
                                 criterion_primary,
                                 criterion_secondary = NULL,
+                                optimal = FALSE,
                                 seed = NULL,
-                                diagnostics = TRUE,
-                                optimal = FALSE) {
+                                diagnostics = TRUE) {
 
   .rkn_check_network(g)
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
@@ -97,7 +97,7 @@ rkn_select_criteria <- function(g,
   .rkn_check_flag(optimal, "optimal")
 
   select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
-    rkn_select_criteria_upto5(
+    .rkn_select_criteria_upto5(
       fam_df = fam_df,
       criterion_primary = criterion_primary,
       criterion_secondary = criterion_secondary,
@@ -107,7 +107,7 @@ rkn_select_criteria <- function(g,
     )
   }
   select_6plus <- function(fam_df, g_sub, seed, return_diagnostics) {
-    rkn_select_criteria_6plus(
+    .rkn_select_criteria_6plus(
       fam_df = fam_df,
       g_sub = g_sub,
       criterion_primary = criterion_primary,

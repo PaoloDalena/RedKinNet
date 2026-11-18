@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Classifies a component (or post-peeling residual) as one of the structures
-#' \code{rkn_select_random_6plus()} recognizes -- star, clique, path, (bipartite or odd)
+#' \code{.rkn_select_random_6plus()} recognizes -- star, clique, path, (bipartite or odd)
 #' cycle -- or \code{"irregular"} if none apply. For fully deterministic structures
 #' (star, odd path), returns the resolved \code{kept}/\code{discarded} directly. For
 #' ambiguous structures (clique, even path, cycle), returns \code{candidate_sets}: for a
@@ -95,13 +95,13 @@
 #'
 #' @description
 #' Applies the same structural recognition and deterministic peeling logic as
-#' \code{rkn_select_random_6plus()} to a connected component with at least 6 nodes,
+#' \code{.rkn_select_random_6plus()} to a connected component with at least 6 nodes,
 #' but resolves every ambiguous case (an even path or cycle's two bipartite sides, a
 #' clique's single choice, an odd cycle's maximum independent sets) by criterion score
 #' instead of a uniform random draw, via the same \code{.rkn_select_among_candidates()}
-#' engine used by \code{rkn_select_criteria_upto5()}. Ties are broken with a seeded
+#' engine used by \code{.rkn_select_criteria_upto5()}. Ties are broken with a seeded
 #' random draw restricted to the tied candidates. \code{structure_name} uses the same
-#' coarse labels as \code{rkn_select_random_6plus()} (\code{"pathN"}, \code{"cycleN"}, not
+#' coarse labels as \code{.rkn_select_random_6plus()} (\code{"pathN"}, \code{"cycleN"}, not
 #' distinguishing odd/even in the name).
 #'
 #' @param fam_df A data frame describing the nodes in the component. Must contain a
@@ -119,13 +119,13 @@
 #' @param return_diagnostics Logical; if \code{TRUE}, returns additional per-node and
 #'   per-family diagnostics.
 #'
-#' @return Same structure as \code{rkn_select_criteria_upto5()}.
+#' @return Same structure as \code{.rkn_select_criteria_upto5()}.
 #'
-#' @seealso \code{rkn_select_random_6plus()}, \code{rkn_select_criteria_upto5()}
+#' @seealso \code{.rkn_select_random_6plus()}, \code{.rkn_select_criteria_upto5()}
 #'
 #' @keywords internal
 #' @noRd
-rkn_select_criteria_6plus <- function(fam_df,
+.rkn_select_criteria_6plus <- function(fam_df,
                                       g_sub,
                                       criterion_primary,
                                       criterion_secondary = NULL,
@@ -152,7 +152,7 @@ rkn_select_criteria_6plus <- function(fam_df,
   n0 <- length(all_names)
 
   if (n0 < 6) {
-    warning("rkn_select_criteria_6plus() called with n < 6. Returning fallback: all discarded.")
+    warning(".rkn_select_criteria_6plus() called with n < 6. Returning fallback: all discarded.")
     kept_final <- character(0)
     discarded_final <- all_names
     if (!return_diagnostics) return(list(kept = kept_final, discarded = discarded_final))
@@ -177,7 +177,7 @@ rkn_select_criteria_6plus <- function(fam_df,
   # structure. Returns NULL if the graph is irregular (caller handles the generic
   # exact-engine fallback, since only the residual case needs it). `fixed_kept` holds the
   # nodes already kept by the peeling loop, so that candidates are scored on the
-  # family-level kept set, as in rkn_select_criteria_upto5().
+  # family-level kept set, as in .rkn_select_criteria_upto5().
   resolve_component <- function(g, seed_offset, fixed_kept = character(0)) {
     shape <- .rkn_recognize_candidates_6plus(g)
     if (shape$kind == "irregular") return(NULL)

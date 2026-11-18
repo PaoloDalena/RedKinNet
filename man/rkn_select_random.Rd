@@ -4,7 +4,7 @@
 \alias{rkn_select_random}
 \title{Random selection over an entire network (connected-component-wise)}
 \usage{
-rkn_select_random(g, seed = NULL, diagnostics = TRUE, uniform = FALSE)
+rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
 }
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name. Vertex
@@ -13,6 +13,16 @@ these names are reserved for the structural measures computed during the selecti
 The network is usually built with \code{\link{rkn_graph_from_kinship}}, which also
 checks the samples; for a network built in another way, see
 \code{\link{rkn_check_samples}}.}
+
+\item{uniform}{Logical. If \code{FALSE} (default), structural rules decide most
+individuals and the remaining choices are made at random; the result is a maximum
+set of unrelated individuals, but not every maximum set has the same probability of
+being chosen. If \code{TRUE}, each family is drawn uniformly at random among all
+its maximum sets, which makes the selection probabilities exact: with diagnostics,
+\code{node_diagnostics$inclusion_probability} gives the probability that each
+individual is selected. Families too intricate for this exact computation are
+selected as with \code{uniform = FALSE} and reported in the column \code{uniform}
+of \code{family_summary} (see \code{\link{rkn_selection}}).}
 
 \item{seed}{Optional integer. If provided, the selection is reproducible: a seed is
 drawn from it for each family, so that the selection within a family does not
@@ -26,16 +36,6 @@ how each individual and each family was resolved (\code{node_diagnostics} and
 \code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
 of the returned object; on very large networks, \code{diagnostics = FALSE} returns
 the selection alone.}
-
-\item{uniform}{Logical. If \code{FALSE} (default), structural rules decide most
-individuals and the remaining choices are made at random; the result is a maximum
-set of unrelated individuals, but not every maximum set has the same probability of
-being chosen. If \code{TRUE}, each family is drawn uniformly at random among all
-its maximum sets, which makes the selection probabilities exact: with diagnostics,
-\code{node_diagnostics$inclusion_probability} gives the probability that each
-individual is selected. Families too intricate for this exact computation are
-selected as with \code{uniform = FALSE} and reported in the column \code{uniform}
-of \code{family_summary} (see \code{\link{rkn_selection}}).}
 }
 \value{
 An object of class \code{\link{rkn_selection}}, with \code{print},

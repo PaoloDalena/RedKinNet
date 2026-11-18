@@ -22,8 +22,8 @@ test_that("print names the criteria of a criteria-based selection", {
   igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
   igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
   sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"),
-                             rkn_criterion_target_mean("age", 50, 10), seed = 1)
-  expect_output(print(sel), "Criteria-based selection (level, then target_mean), seed 1", fixed = TRUE)
+                             rkn_criterion_cutoff("age", 50, "below"), seed = 1)
+  expect_output(print(sel), "Criteria-based selection (level, then cutoff), seed 1", fixed = TRUE)
 })
 
 test_that("print signals when diagnostics were not computed", {
@@ -100,6 +100,6 @@ test_that("plot falls back to the post plot when diagnostics were not computed",
 test_that("print shows a long call on one line without indentation", {
   sel <- make_selection()
   sel$call <- quote(rkn_select_criteria(g = g, criterion_primary = rkn_criterion_level("sex", "F"),
-                                        criterion_secondary = rkn_criterion_target_mean("age", target = 40, tolerance = 20)))
+                                        criterion_secondary = rkn_criterion_cutoff("age", cutoff = 40, prefer = "below")))
   expect_output(print(sel), 'criterion_primary = rkn_criterion_level("sex", "F"), criterion_secondary', fixed = TRUE)
 })

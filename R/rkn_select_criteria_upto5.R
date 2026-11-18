@@ -30,7 +30,7 @@
 #'
 #' @inheritParams rkn_select_random_upto5
 #' @param criterion_primary An \code{rkn_criterion} object (see
-#'   \code{\link{rkn_criterion_target_mean}} and siblings) used to score
+#'   \code{rkn_criterion_level()} and \code{rkn_criterion_cutoff()}) used to score
 #'   candidate resolutions of the conflict group.
 #' @param criterion_secondary Optional \code{rkn_criterion} object used to
 #'   break ties in \code{criterion_primary}.
@@ -39,7 +39,7 @@
 #'
 #' @return Same structure as \code{rkn_select_random_upto5()}.
 #'
-#' @seealso \code{rkn_select_random_upto5()}, \code{\link{rkn_criterion_target_mean}},
+#' @seealso \code{rkn_select_random_upto5()}, \code{rkn_criterion_level()},
 #'   \code{rkn_score_candidate_set()}
 #'
 #' @keywords internal

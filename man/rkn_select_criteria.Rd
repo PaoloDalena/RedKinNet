@@ -21,9 +21,9 @@ The network is usually built with \code{\link{rkn_graph_from_kinship}}, which al
 checks the samples; for a network built in another way, see
 \code{\link{rkn_check_samples}}.}
 
-\item{criterion_primary}{An \code{rkn_criterion} object (see
-\code{\link{rkn_criterion_target_mean}} and siblings) used to score candidate
-resolutions within each family.}
+\item{criterion_primary}{A criterion, created by \code{\link{rkn_criterion_level}} or
+\code{\link{rkn_criterion_cutoff}}, used to score candidate resolutions within each
+family.}
 
 \item{criterion_secondary}{Optional \code{rkn_criterion} object used to break ties in
 \code{criterion_primary}.}
@@ -44,9 +44,9 @@ each family before the criteria are applied, and some of them fix individuals
 regardless of the criteria (for instance, they keep the individual at the end of a
 chain of relatives); the result is the best maximum set among those compatible with
 the rules. If \code{TRUE}, the criteria are evaluated over all the maximum sets of
-each family: exactly for \code{level} and \code{cutoff}, and for
-\code{target_mean} and \code{category_balance} as described in the section Search
-over maximum sets of \code{\link{rkn_selection}}. Families too intricate for this
+each family, exactly, or as described in the section Search over maximum sets of
+\code{\link{rkn_selection}} when the covariate has missing values. Families too
+intricate for this
 computation are selected as with \code{optimal = FALSE} and reported in the column
 \code{optimal} of \code{family_summary}.}
 }
@@ -68,7 +68,9 @@ With \code{optimal = TRUE}, the structural rules are skipped and the criteria ch
 among all the maximum sets of each family.
 
 Covariates referenced by the criteria are read from the vertex attributes of
-\code{g}.
+\code{g}. The criteria express preferences for individuals, such as women or people
+younger than 50; for a target composition of the whole selection, such as half women
+or a mean age, see \code{\link{rkn_select_global}}.
 }
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
@@ -90,19 +92,18 @@ rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1)$kept
 # ... evaluating the criterion over all the maximum sets of each family ...
 rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1, optimal = TRUE)$kept
 
-# ... or a mean age close to 40
-rkn_select_criteria(g, rkn_criterion_target_mean("age", target = 40, tolerance = 20),
-                    seed = 1)$kept
+# ... or prefer individuals younger than 40
+rkn_select_criteria(g, rkn_criterion_cutoff("age", 40, prefer = "below"), seed = 1)$kept
 
 # A secondary criterion breaks the ties left by the primary one
 sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"),
-                           rkn_criterion_target_mean("age", target = 40, tolerance = 20),
-                           seed = 1)
+                           rkn_criterion_cutoff("age", 40, prefer = "below"), seed = 1)
 sel
 
 }
 \seealso{
 \code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
 \code{\link{plot.rkn_selection}}, \code{\link{rkn_select_random}},
-\code{\link{rkn_criterion_target_mean}}, \code{\link{rules_db}}.
+\code{\link{rkn_select_global}}, \code{\link{rkn_criterion_level}},
+\code{\link{rkn_criterion_cutoff}}, \code{\link{rules_db}}.
 }

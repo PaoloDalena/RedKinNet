@@ -32,6 +32,6 @@ rkn_criterion_cutoff("age", cutoff = 50, prefer = "below")
 
 }
 \seealso{
-\code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_target_mean}},
-\code{\link{rkn_criterion_level}}, \code{\link{rkn_criterion_category_balance}}
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_criterion_level}};
+\code{\link{rkn_select_global}} for a target composition of the whole selection.
 }

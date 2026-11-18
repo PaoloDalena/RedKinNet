@@ -22,8 +22,8 @@
 #' @param fam_df A data frame describing the nodes in a family. Must contain a `.name`
 #'   column and the covariate column(s) referenced by the supplied criteria.
 #' @param kept_ids Character vector of node identifiers in the candidate kept-set.
-#' @param criterion_primary An `rkn_criterion` object (see \code{\link{rkn_criterion_target_mean}}
-#'   and siblings).
+#' @param criterion_primary An `rkn_criterion` object (see \code{rkn_criterion_level()} and
+#'   \code{rkn_criterion_cutoff()}).
 #' @param criterion_secondary Optional `rkn_criterion` object.
 #'
 #' @return A one-row data frame with columns `primary_type`, `primary_score`,

@@ -13,9 +13,9 @@ test_that("rkn_score_candidate_set returns one row with primary and secondary sc
   expect_true(is.na(out$secondary_score))
 
   out2 <- rkn_score_candidate_set(fam, "b", rkn_criterion_level("sex", "F"),
-                                  rkn_criterion_target_mean("age", 50, 10))
+                                  rkn_criterion_cutoff("age", 40, "above"))
   expect_equal(out2$secondary_score, 1)
-  expect_identical(out2$secondary_type, "target_mean")
+  expect_identical(out2$secondary_type, "cutoff")
 })
 
 test_that("rkn_score_candidate_set validates its criteria", {
@@ -26,11 +26,11 @@ test_that("rkn_score_candidate_set validates its criteria", {
 test_that("candidate choice follows the primary score, then the secondary, then a seeded draw", {
   select <- .rkn_select_among_candidates
   level_f <- rkn_criterion_level("sex", "F")
-  near_50 <- rkn_criterion_target_mean("age", 50, 40)
+  over_40 <- rkn_criterion_cutoff("age", 40, "above")
 
   expect_identical(select(list("c", "a"), fam, criterion_primary = level_f)$chosen_set, "a")
   expect_identical(select(list("a", "b"), fam, criterion_primary = level_f,
-                          criterion_secondary = near_50)$chosen_set, "b")
+                          criterion_secondary = over_40)$chosen_set, "b")
 
   tied <- list("a", "b")
   first <- select(tied, fam, criterion_primary = level_f, seed = 5)$chosen_set
@@ -43,8 +43,11 @@ test_that("candidate choice follows the primary score, then the secondary, then 
 
 test_that("fixed kept nodes enter the score of every candidate", {
   select <- .rkn_select_among_candidates
-  near_50 <- rkn_criterion_target_mean("age", 50, 40)
-  out <- select(list("a", "c"), fam, fixed_kept_ids = "b", criterion_primary = near_50)
-  expect_true(out$chosen_set %in% c("a", "c"))
-  expect_equal(near_50$score_fn(fam, c("b", out$chosen_set)), near_50$score_fn(fam, c("b", "a")))
+  fam_na <- data.frame(.name = c("a", "b", "c"), sex = c(NA, "F", "M"), stringsAsFactors = FALSE)
+  level_f <- rkn_criterion_level("sex", "F")
+  # Alone, a (missing value) and c (a man) both score 0; with b, a scores 1 and c 1/2.
+  for (s in 1:5) {
+    expect_identical(select(list("a", "c"), fam_na, fixed_kept_ids = "b", criterion_primary = level_f,
+                            seed = s)$chosen_set, "a")
+  }
 })

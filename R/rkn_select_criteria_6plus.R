@@ -110,8 +110,8 @@
 #' @param g_sub An \pkg{igraph} object representing the same component as \code{fam_df}.
 #'   Must have \code{igraph::V(g_sub)$name}.
 #' @param criterion_primary An \code{rkn_criterion} object (see
-#'   \code{\link{rkn_criterion_target_mean}} and siblings) used to score candidate
-#'   resolutions.
+#'   \code{rkn_criterion_level()} and \code{rkn_criterion_cutoff()}) used to score
+#'   candidate resolutions.
 #' @param criterion_secondary Optional \code{rkn_criterion} object used to break ties in
 #'   \code{criterion_primary}.
 #' @param seed Optional integer RNG seed, used only to break exact ties in the criterion

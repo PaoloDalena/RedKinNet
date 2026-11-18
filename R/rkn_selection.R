@@ -126,21 +126,21 @@
 #'     no relative outside their own). This is used only for families too intricate for
 #'     the exact algorithm: the set chosen is still of maximum size, but not drawn
 #'     uniformly. In criteria-based selections an individual is removed only if that
-#'     relative meets the criteria \code{level} or \code{cutoff} at least as well, so
-#'     these criteria are still optimised exactly; \code{target_mean} and
-#'     \code{category_balance} are evaluated on the maximum sets that remain.}
+#'     relative meets the criteria at least as well, so the criteria are still optimised
+#'     exactly, or, with missing covariate values, evaluated on the maximum sets that
+#'     remain.}
 #'   \item{\code{"exact_sample"}}{criteria-based selections only: see below.}
 #' }
-#' In criteria-based selections (\code{\link{rkn_select_criteria}}), the criteria
-#' \code{level} and \code{cutoff} are optimised exactly by the same algorithm when no
-#' undecided member of the family lacks the covariate, because among sets of the same size
-#' they rank sets by the number of members meeting the condition. The criteria
-#' \code{target_mean} and \code{category_balance}, and \code{level} or \code{cutoff}
-#' with missing covariate values, are evaluated on all the maximum sets when there are
-#' at most 10,000; above that number, as in some large families of genetic isolates,
-#' they are evaluated on a uniform random sample of 10,000 maximum sets, and the best of
-#' the sample is kept (\code{"exact_sample"}). The number of such families is reported
-#' by \code{print()}.
+#' In criteria-based selections (\code{\link{rkn_select_criteria}}), the criteria are
+#' optimised exactly by the same algorithm when no undecided member of the family lacks
+#' the covariate, because among sets of the same size they rank sets by the number of
+#' members meeting the condition. When some undecided member lacks it, the score is a
+#' proportion among the members with a known value, which the algorithm cannot maximise
+#' directly: the criteria are then evaluated on all the maximum sets when there are at
+#' most 10,000; above that number, as in some large families of genetic isolates, they
+#' are evaluated on a uniform random sample of 10,000 maximum sets, and the best of the
+#' sample is kept (\code{"exact_sample"}). The number of such families is reported by
+#' \code{print()}.
 #' If a family remains too intricate even after this reduction, the selection stops
 #' with an error that suggests excluding the samples flagged by
 #' \code{\link{rkn_check_samples}} or using a stricter threshold.

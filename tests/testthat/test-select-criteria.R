@@ -1,9 +1,16 @@
+# level_na reads a covariate with a missing value, whose score is a proportion among the
+# members with a known value: it exercises the evaluation on candidate sets.
 crits <- list(
-  target_mean = rkn_criterion_target_mean("age", target = 50, tolerance = 30),
   cutoff = rkn_criterion_cutoff("age", cutoff = 50, prefer = "above"),
   level = rkn_criterion_level("sex", "F"),
-  balance = rkn_criterion_category_balance("grp", c(X = 0.5, Y = 0.5))
+  level_na = rkn_criterion_level("sex_na", "F")
 )
+
+with_missing_sex <- function(fam_df) {
+  fam_df$sex_na <- fam_df$sex
+  fam_df$sex_na[1] <- NA
+  fam_df
+}
 
 test_that("per-family criteria selection (<= 5 nodes) picks the best maximum set compatible with the a priori decisions", {
   graphs <- atlas_connected(1, 5)
@@ -12,7 +19,7 @@ test_that("per-family criteria selection (<= 5 nodes) picks the best maximum set
     g <- graphs[[nm]]
     ref <- brute_force_mis(g)
     for (cov_seed in 1:3) {
-      fam_df <- add_covariates(fam_df_from_graph(g), cov_seed)
+      fam_df <- with_missing_sex(add_covariates(fam_df_from_graph(g), cov_seed))
       for (cn in names(crits)) {
         out <- rkn_select_criteria_upto5(fam_df, crits[[cn]], seed = 1,
                                          return_diagnostics = TRUE, g_sub = g)
@@ -42,7 +49,7 @@ test_that("per-family criteria selection (6-7 nodes) returns a maximum independe
   for (nm in names(graphs)) {
     g <- graphs[[nm]]
     alpha <- brute_force_mis(g)$alpha
-    fam_df <- add_covariates(fam_df_from_graph(g), 1)
+    fam_df <- with_missing_sex(add_covariates(fam_df_from_graph(g), 1))
     for (cn in names(crits)) {
       out <- rkn_select_criteria_6plus(fam_df, g, crits[[cn]], seed = 1)
       p <- selection_problems(g, out$kept, out$discarded, alpha)
@@ -78,7 +85,7 @@ test_that("a secondary criterion breaks ties left by the primary one", {
   fam_df$age <- c(30, 68, 70)
   out <- rkn_select_criteria_upto5(fam_df,
                                    criterion_primary = rkn_criterion_level("sex", "F"),
-                                   criterion_secondary = rkn_criterion_target_mean("age", 70, 50),
+                                   criterion_secondary = rkn_criterion_cutoff("age", 50, "above"),
                                    seed = 1, g_sub = g)
   expect_identical(out$kept, "b")
 })
@@ -117,10 +124,10 @@ test_that("the criteria selection records its criteria in the rkn_selection obje
   set.seed(22)
   igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
   igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
-  sel <- rkn_select_criteria(g, crits$level, crits$target_mean, seed = 2, diagnostics = FALSE)
+  sel <- rkn_select_criteria(g, crits$level, crits$cutoff, seed = 2, diagnostics = FALSE)
   expect_s3_class(sel, "rkn_selection")
   expect_identical(sel$method, "criteria")
-  expect_identical(sel$criteria, list(primary = crits$level, secondary = crits$target_mean))
+  expect_identical(sel$criteria, list(primary = crits$level, secondary = crits$cutoff))
   expect_identical(sel$seed, 2)
   expect_false(sel$diagnostics)
 })
@@ -143,7 +150,7 @@ test_that("criteria reach the best score among all maximum sets of an irregular 
   fam_df <- fam_df_from_graph(petersen)
   fam_df$sex <- igraph::V(petersen)$sex
   fam_df$age <- igraph::V(petersen)$age
-  for (crit in list(crits$level, crits$target_mean, crits$cutoff)) {
+  for (crit in list(crits$level, crits$cutoff)) {
     best <- best_score(petersen, crit, sets)
     for (s in 1:5) {
       sel <- rkn_select_criteria(petersen, crit, seed = s)
@@ -162,11 +169,12 @@ test_that("criteria fall back on a declared sample when there are too many maxim
   petersen <- igraph::make_graph("Petersen")
   igraph::V(petersen)$name <- paste0("p", 1:10)
   fam_df <- fam_df_from_graph(petersen)
-  fam_df$age <- c(20, 35, 50, 65, 41, 28, 70, 33, 58, 46)
-  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$target_mean, NULL, seed = 1, limit = 3)
+  fam_df$sex_na <- c(NA, "M", "M", "F", "M", "M", "F", "M", "F", "M")
+  # With a missing value the criterion is evaluated on the 5 maximum sets, or on a sample.
+  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$level_na, NULL, seed = 1, limit = 3)
   expect_identical(picked$method, "exact_sample")
   expect_length(picked$kept, 4)
-  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$target_mean, NULL, seed = 1)
+  picked <- .rkn_criteria_maximum_set(petersen, fam_df, character(0), crits$level_na, NULL, seed = 1)
   expect_identical(picked$method, "exact")
 })
 
@@ -177,7 +185,8 @@ test_that("criteria over all maximum sets reach the best score of every family",
   set.seed(14)
   igraph::V(g)$sex <- sample(c("F", "M"), igraph::vcount(g), replace = TRUE)
   igraph::V(g)$age <- sample(20:80, igraph::vcount(g), replace = TRUE)
-  for (crit in list(crits$level, crits$target_mean)) {
+  igraph::V(g)$sex_na <- replace(igraph::V(g)$sex, sample(igraph::vcount(g), igraph::vcount(g) %/% 10), NA)
+  for (crit in list(crits$level, crits$cutoff, crits$level_na)) {
     sel <- rkn_select_criteria(g, crit, seed = 1, optimal = TRUE)
     expect_true(all(sel$family_summary$optimal))
     problems <- character(0)
@@ -186,6 +195,7 @@ test_that("criteria over all maximum sets reach the best score of every family",
       fam_df <- fam_df_from_graph(sub)
       fam_df$sex <- igraph::V(sub)$sex
       fam_df$age <- igraph::V(sub)$age
+      fam_df$sex_na <- igraph::V(sub)$sex_na
       kept <- intersect(sel$kept, igraph::V(sub)$name)
       best <- best_score(sub, crit, brute_force_mis(sub)$sets)
       if (!isTRUE(all.equal(crit$score_fn(fam_df, kept), best))) problems <- c(problems, names(pool)[k])

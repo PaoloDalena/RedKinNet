@@ -8,7 +8,8 @@
 }
 \arguments{
 \item{object}{An \code{rkn_selection} object, as returned by
-\code{\link{rkn_select_random}} or \code{\link{rkn_select_criteria}}.}
+\code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}} or
+\code{\link{rkn_select_global}}.}
 
 \item{...}{Not used.}
 }
@@ -23,8 +24,9 @@ giving the family size (a range for families of 6 or more members), the
 structure, and the numbers of families, of individuals and of selected
 individuals;}
 \item{\code{decisions}}{a contingency table of individuals by type of decision and
-outcome (selected or discarded), or \code{NULL} if diagnostics were not
-computed.}
+outcome (selected or discarded), or \code{NULL} if diagnostics were not computed
+and for global selections, which have no types of decision;}
+\item{\code{method}}{the \code{method} of the selection.}
 }
 }
 \description{

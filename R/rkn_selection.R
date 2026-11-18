@@ -4,9 +4,16 @@
 #' \code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}} and
 #' \code{\link{rkn_select_global}} return an object of class \code{rkn_selection}: a
 #' list holding the selected individuals, the network they were selected from and,
-#' when computed, diagnostics on how each individual and each family was resolved. The object has \code{\link[=print.rkn_selection]{print}},
+#' when computed, diagnostics on how each individual and each family was resolved. The
+#' object has \code{\link[=print.rkn_selection]{print}},
 #' \code{\link[=summary.rkn_selection]{summary}} and
 #' \code{\link[=plot.rkn_selection]{plot}} methods.
+#'
+#' Throughout the package, a \emph{maximum set} of unrelated individuals is a set with
+#' no related pair of the largest possible size: in graph terms, a maximum independent
+#' set of the relatedness network. A network usually has many maximum sets, which differ
+#' in which individuals they contain; a \emph{family} is a connected component of the
+#' network (see the section Family structures).
 #'
 #' @section Components:
 #' \describe{
@@ -27,8 +34,8 @@
 #'   \item{\code{node_diagnostics}}{a data frame with one row per individual, or
 #'     \code{NULL} without diagnostics. Columns: \code{id}; \code{pre_class}, how the
 #'     individual was decided (\code{"kept_apriori"}, \code{"discarded_apriori"},
-#'     \code{"candidate_simple"} or \code{"candidate_complex"}, described in the section
-#'     Types of decision below); \code{post_class}, \code{"kept"} or
+#'     \code{"candidate_simple"} or \code{"candidate_complex"}, described with their
+#'     labels in the section Types of decision below); \code{post_class}, \code{"kept"} or
 #'     \code{"discarded"}; \code{is_selected}, the outcome as a logical;
 #'     \code{pre_reason}, an internal label of the rule or procedure that decided the
 #'     individual; \code{family_id} and \code{family_size}; in uniform selections,
@@ -46,24 +53,26 @@
 #'     were evaluated over all maximum sets;
 #'     \code{structure_name}, an internal label of the recognised structure;
 #'     \code{mis_method}, how the individuals left undecided by the structural rules
-#'     were resolved (see the section Search over maximum sets): \code{NA} when the
-#'     rules decided everyone, \code{"enumeration"}, \code{"exact"},
-#'     \code{"exact_reduced"} or \code{"exact_sample"}; \code{uniform}, whether the
-#'     family was drawn uniformly among its maximum sets; \code{optimal}, whether the
-#'     criteria were evaluated over all its maximum sets; \code{n_max_sets}, in the
-#'     families drawn uniformly or evaluated over all maximum sets, the number of maximum
-#'     sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"};
+#'     were resolved (see the section Search over maximum sets): \code{"enumeration"},
+#'     \code{"exact"}, \code{"exact_reduced"} or \code{"exact_sample"}, or \code{NA}
+#'     when no search was needed because the rules decided every individual or chose
+#'     among the candidates they identified, as in a related pair; in uniform selections
+#'     and in selections over all maximum sets, every family is searched; \code{uniform},
+#'     whether the family was drawn uniformly among its maximum sets; \code{optimal},
+#'     whether the criteria were evaluated over all its maximum sets; \code{n_max_sets},
+#'     in the families drawn uniformly or evaluated over all maximum sets, the number of
+#'     maximum sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"};
 #'     \code{Inf} beyond about \eqn{1.8 \times 10^{308}}{1.8e308}, the largest number R
-#'     can store).
-#'     Since the choices in different families are independent, the maximum sets of the
-#'     network are all the combinations of one maximum set per family; their number,
-#'     reported by \code{print()}, is the product of \code{n_max_sets} over the families
-#'     and grows exponentially with the number of families that have a choice (each
-#'     related pair doubles it), so \code{print()} also reports how many families have
-#'     more than one maximum set; the numbers of kept and discarded individuals, overall
+#'     can store); the numbers of kept and discarded individuals, overall
 #'     (\code{n_kept}, \code{n_discarded}) and by type of decision
 #'     (\code{n_kept_apriori}, \code{n_discarded_apriori}, \code{n_candidate_simple},
-#'     \code{n_candidate_complex}). In global selections the columns are
+#'     \code{n_candidate_complex}). Since the choices in different families are
+#'     independent, the maximum sets of the network are all the combinations of one
+#'     maximum set per family: their number, reported by \code{print()}, is the product of
+#'     \code{n_max_sets} over the families and grows exponentially with the number of
+#'     families that have a choice (each related pair doubles it), so \code{print()} also
+#'     reports how many families have more than one maximum set. In global selections the
+#'     columns are
 #'     \code{family_id}, \code{family_size}, \code{selector} (\code{"global"}),
 #'     \code{exact} (\code{FALSE} for the families beyond the computational budget,
 #'     see \code{\link{rkn_select_global}}), \code{n_kept}, \code{n_discarded},
@@ -141,27 +150,32 @@
 #' are evaluated on a uniform random sample of 10,000 maximum sets, and the best of the
 #' sample is kept (\code{"exact_sample"}). The number of such families is reported by
 #' \code{print()}.
+#' In uniform selections and in selections over all maximum sets, no structural rule is
+#' applied, and every family is searched in this way.
 #' If a family remains too intricate even after this reduction, the selection stops
-#' with an error that suggests excluding the samples flagged by
-#' \code{\link{rkn_check_samples}} or using a stricter threshold.
+#' with an error that names one of its members and suggests excluding the samples
+#' flagged by \code{\link{rkn_check_samples}} or using a higher threshold, which joins
+#' closer relatives only.
 #'
 #' @section Types of decision:
 #' Within each family, every individual is decided in one of four ways, reported by
 #' \code{\link{summary.rkn_selection}} and shown by the \code{"diagnostics"} plot (see
 #' \code{\link{plot.rkn_selection}}):
 #' \describe{
-#'   \item{kept without a choice}{the individual is kept with no alternative to choose
-#'     from: a rule based on the structure of the family keeps them (for instance the
-#'     leaves of a star-shaped family), or they belong to every maximum set of the
-#'     individuals left undecided by the rules;}
-#'   \item{discarded without a choice}{likewise, the individual is discarded by a
-#'     structural rule (for instance the centre of a star) or belongs to no maximum set
-#'     of the individuals left undecided;}
-#'   \item{decided among single candidates}{the remaining choice is among
-#'     interchangeable candidates of a single group, such as the two members of a
-#'     related pair, and one of them is selected;}
-#'   \item{decided among alternative sets}{several maximum sets remain that differ in
-#'     more than one individual, and one of them is selected.}
+#'   \item{kept without a choice (\code{"kept_apriori"})}{the individual is kept with no
+#'     alternative to choose from: a rule based on the structure of the family keeps them
+#'     (for instance the leaves of a star-shaped family), or they belong to every maximum
+#'     set of the individuals left undecided by the rules;}
+#'   \item{discarded without a choice (\code{"discarded_apriori"})}{likewise, the
+#'     individual is discarded by a structural rule (for instance the centre of a star)
+#'     or belongs to no maximum set of the individuals left undecided;}
+#'   \item{decided among single candidates (\code{"candidate_simple"})}{the remaining
+#'     choice is among interchangeable candidates of a single group, such as the two
+#'     members of a related pair, and one of them is selected;}
+#'   \item{decided among alternative sets (\code{"candidate_complex"})}{several maximum
+#'     sets remain that differ in more than one individual, and one of them is selected.
+#'     These are the sets left by the rules, not necessarily all the maximum sets of the
+#'     family.}
 #' }
 #' The choices among candidates are made at random by
 #' \code{\link{rkn_select_random}} and by the criteria in
@@ -199,7 +213,7 @@
 #' names(sel)
 #' sel$kept
 #' head(sel$node_diagnostics)
-#' sel$family_summary[, c("family_id", "family_size", "structure_name")]
+#' sel$family_summary[, c("family_id", "family_size", "mis_method", "n_kept", "n_discarded")]
 #'
 #' @name rkn_selection
 NULL
@@ -289,11 +303,11 @@ NULL
 #' Print an rkn_selection object
 #'
 #' Prints a brief summary of a selection of unrelated individuals: how the selection
-#' was made, how many individuals were retained, and how the network decomposes into
+#' was made, how many individuals were selected, and how the network decomposes into
 #' families.
 #'
-#' @param x An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
-#'   or \code{\link{rkn_select_criteria}}.
+#' @param x An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}},
+#'   \code{\link{rkn_select_criteria}} or \code{\link{rkn_select_global}}.
 #' @param ... Not used.
 #'
 #' @return \code{x}, invisibly.
@@ -385,7 +399,7 @@ print.rkn_selection <- function(x, ...) {
       }
     } else {
       n_mis <- sum(!is.na(fs$mis_method))
-      cat(sprintf("Families resolved by a search over maximum independent sets: %d\n", n_mis))
+      cat(sprintf("Families resolved by a search over maximum sets: %d\n", n_mis))
     }
     n_sample <- sum(fs$mis_method %in% "exact_sample")
     if (n_sample > 0) {
@@ -439,7 +453,8 @@ print.rkn_selection <- function(x, ...) {
 #' sections Family structures and Types of decision of \code{\link{rkn_selection}}.
 #'
 #' @param object An \code{rkn_selection} object, as returned by
-#'   \code{\link{rkn_select_random}} or \code{\link{rkn_select_criteria}}.
+#'   \code{\link{rkn_select_random}}, \code{\link{rkn_select_criteria}} or
+#'   \code{\link{rkn_select_global}}.
 #' @param ... Not used.
 #'
 #' @return An object of class \code{summary.rkn_selection}: a list with elements
@@ -452,8 +467,9 @@ print.rkn_selection <- function(x, ...) {
 #'     structure, and the numbers of families, of individuals and of selected
 #'     individuals;}
 #'   \item{\code{decisions}}{a contingency table of individuals by type of decision and
-#'     outcome (selected or discarded), or \code{NULL} if diagnostics were not
-#'     computed.}
+#'     outcome (selected or discarded), or \code{NULL} if diagnostics were not computed
+#'     and for global selections, which have no types of decision;}
+#'   \item{\code{method}}{the \code{method} of the selection.}
 #' }
 #'
 #' @seealso \code{\link{rkn_selection}}

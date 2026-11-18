@@ -7,8 +7,8 @@
 \method{print}{rkn_selection}(x, ...)
 }
 \arguments{
-\item{x}{An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}}
-or \code{\link{rkn_select_criteria}}.}
+\item{x}{An \code{rkn_selection} object, as returned by \code{\link{rkn_select_random}},
+\code{\link{rkn_select_criteria}} or \code{\link{rkn_select_global}}.}
 
 \item{...}{Not used.}
 }
@@ -17,7 +17,7 @@ or \code{\link{rkn_select_criteria}}.}
 }
 \description{
 Prints a brief summary of a selection of unrelated individuals: how the selection
-was made, how many individuals were retained, and how the network decomposes into
+was made, how many individuals were selected, and how the network decomposes into
 families.
 }
 \examples{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rkn_criterion.R
 \name{rkn_criterion_level}
 \alias{rkn_criterion_level}
-\title{Preference for a specific level of a covariate}
+\title{Prefer individuals with a given value of a covariate}
 \usage{
 rkn_criterion_level(covariate, level)
 }
@@ -21,8 +21,8 @@ Scores a candidate set of individuals by the proportion of its members whose
 any covariate type supporting \code{==}.
 
 Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
-the structural rules leave several sets of unrelated individuals to choose from,
-each candidate set is scored and the best one is selected.
+several sets of unrelated individuals remain to choose from, each candidate set is
+scored and the best one is selected.
 }
 \examples{
 # Prefer women

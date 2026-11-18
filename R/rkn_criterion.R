@@ -9,15 +9,15 @@
   )
 }
 
-#' Preference for values above or below a cutoff on a continuous covariate
+#' Prefer individuals above or below a cutoff
 #'
 #' @description
 #' Scores a candidate set of individuals by the proportion of its members whose
 #' `covariate` value lies on the preferred side of `cutoff`.
 #'
 #' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
-#' the structural rules leave several sets of unrelated individuals to choose from,
-#' each candidate set is scored and the best one is selected.
+#' several sets of unrelated individuals remain to choose from, each candidate set is
+#' scored and the best one is selected.
 #'
 #' @param covariate Character. Name of a numeric vertex attribute of the network, such
 #'   as \code{"age"} for \code{V(g)$age}.
@@ -60,7 +60,7 @@ rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")
   )
 }
 
-#' Preference for a specific level of a covariate
+#' Prefer individuals with a given value of a covariate
 #'
 #' @description
 #' Scores a candidate set of individuals by the proportion of its members whose
@@ -68,8 +68,8 @@ rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")
 #' any covariate type supporting `==`.
 #'
 #' Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
-#' the structural rules leave several sets of unrelated individuals to choose from,
-#' each candidate set is scored and the best one is selected.
+#' several sets of unrelated individuals remain to choose from, each candidate set is
+#' scored and the best one is selected.
 #'
 #' @param covariate Character. Name of a vertex attribute of the network, such as
 #'   \code{"sex"} for \code{V(g)$sex}.

@@ -4,7 +4,7 @@
 \alias{rkn_tradeoff}
 \alias{print.rkn_tradeoff}
 \alias{plot.rkn_tradeoff}
-\title{Trade-off between the size of a selection and its composition}
+\title{Compute the trade-off between selection size and composition}
 \usage{
 rkn_tradeoff(
   g,
@@ -32,10 +32,10 @@ categorical (character, factor or logical), such as \code{"sex"} for
 \code{V(g)$sex}, or numeric, such as \code{"age"}.}
 
 \item{target}{For a categorical covariate, the target proportion of one category
-among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
+among the selected individuals, named by the category, e.g. \code{c(F = 0.5)}; for a
 covariate with two categories, the proportions of both may be given, summing to 1,
 and the first is used. For a numeric covariate, the target mean, a single unnamed
-number, as \code{45}. If \code{NULL} (default), the target is the composition of the
+number, e.g. \code{45}. If \code{NULL} (default), the target is the composition of the
 whole network, so that the selection keeps that of the cohort: the mean, or the
 proportion of the first category, which is \code{TRUE} for a logical covariate, the
 first level for a factor, and the first in alphabetical order otherwise; for a
@@ -51,10 +51,10 @@ rounded up. With a number, it covers every number of individuals given up from 0
 \item{resolution}{For numeric covariates only, a positive number: the values are
 rounded to multiples of \code{resolution} above the smallest value to search the
 selections (see Details). If \code{NULL} (default), integer values spanning at most
-100 are not rounded (a resolution of 1, as for ages in years or scores); other values
-are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their range
-into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
-to 200,000.}
+100 are not rounded (a resolution of 1, e.g. for ages in years or scores); other
+values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
+their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
+values from 0 to 200,000.}
 
 \item{seed}{Optional integer. Random numbers are used only in the families beyond the
 computational budget (see Details); a seed makes the table reproducible. If
@@ -87,13 +87,18 @@ family is beyond the computational budget.}
 }
 The proportions and means are computed among the selected individuals with a known
 value of the covariate, and are \code{NA} for a size at which no selection includes
-one. The attribute \code{"tradeoff"} is a list with the \code{type}
-(\code{"proportion"} or \code{"mean"}), the \code{covariate}, the \code{category}
-(for a categorical covariate), the \code{target}, the \code{resolution} (for a
-numeric covariate), \code{max_size} (the size of the largest selection),
-\code{reached} (the number of individuals given up at which the target comes within
-reach, \code{NA} if it does not within the table) and \code{n_inexact} (the number
-of families beyond the computational budget).
+one. The attribute \code{"tradeoff"} is a list describing the table: \code{type}
+(\code{"proportion"} or \code{"mean"}); \code{covariate}; \code{category}, for a
+categorical covariate; \code{target} and \code{cohort}, whether the target is the
+composition of the network; \code{resolution} and \code{rounded}, for a numeric
+covariate, whether some value was rounded; \code{max_size}, the size of the largest
+selection; \code{max_loss}, as given; \code{reached}, the number of individuals
+given up at which the target comes within reach (\code{NA} if it does not within the
+table); \code{limited}, why the default table stopped before the target came within
+reach, \code{"memory"} or \code{"work"} for the memory limit or the computational
+budget (\code{NA} otherwise); \code{n_missing}, the number of individuals of the
+network with a missing value; and \code{n_inexact}, the number of families beyond
+the computational budget.
 
 \code{print()} shows the first rows and those around \code{reached}, with the
 number of selections as a count. \code{plot()} draws, against the number of
@@ -136,7 +141,7 @@ approximation: it depends on the composition of the network, on the individuals
 without relatives, who are always selected, and on the alternatives that each family
 offers. \code{rkn_select_global(g, covariate, target, max_loss = L)} selects, among
 the rows from 0 to \code{L}, the smallest distance and, among the rows reaching it,
-the largest size. With a target beyond the range, as \code{c(F = 1)}, it selects the
+the largest size. With a target beyond the range, such as \code{c(F = 1)}, it selects the
 highest proportion of the category.
 
 For a numeric covariate, the means are those of the values rounded to multiples of

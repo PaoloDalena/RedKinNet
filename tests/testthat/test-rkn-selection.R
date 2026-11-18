@@ -10,7 +10,7 @@ test_that("print shows the method, the call and the selection counts, and return
   expect_output(print(sel), "<rkn_selection> Random selection, seed 1")
   expect_output(print(sel), "Call: rkn_select_random(g = g, seed = 1, diagnostics = diagnostics)", fixed = TRUE)
   expect_output(print(sel), sprintf("selected: %d", length(sel$kept)))
-  expect_output(print(sel), "a search over maximum independent sets")
+  expect_output(print(sel), "a search over maximum sets")
   capture.output(out <- withVisible(print(sel)))
   expect_false(out$visible)
   expect_identical(out$value, sel)

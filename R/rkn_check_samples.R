@@ -115,7 +115,7 @@
 #' head(chk$samples)
 #'
 #' # Build the network without the possibly contaminated sample; the warning still
-#' # reports the duplicates and the samples of different ancestry
+#' # reports the duplicates
 #' g <- rkn_graph_from_kinship(K, threshold = "third", exclude = chk$contamination$id)
 #'
 #' @export

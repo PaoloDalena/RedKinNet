@@ -128,10 +128,11 @@
 #' Build a relatedness network from kinship estimates
 #'
 #' @description
-#' Builds the relatedness network used by \code{\link{rkn_select_random}} and
-#' \code{\link{rkn_select_criteria}}: one vertex per sample, and an edge between two
-#' samples whose kinship coefficient is at least \code{threshold}. The families of the
-#' selectors are the connected components of this network.
+#' Builds the relatedness network used by \code{\link{rkn_select_random}},
+#' \code{\link{rkn_select_criteria}}, \code{\link{rkn_select_global}} and
+#' \code{\link{rkn_tradeoff}}: one vertex per sample, and an edge between two samples
+#' whose kinship coefficient is at least \code{threshold}. The families of the selectors
+#' are the connected components of this network.
 #'
 #' @param x Kinship estimates, either a square symmetric matrix with the sample
 #'   identifiers as row and column names (the diagonal is ignored), or a data frame with
@@ -153,7 +154,8 @@
 #'   network, for instance samples flagged by a quality check.
 #' @param covariates Optional data frame of sample covariates, with the sample
 #'   identifiers in the column named by \code{covariates_id}. Its other columns become
-#'   vertex attributes of the network, which \code{\link{rkn_select_criteria}} reads;
+#'   vertex attributes of the network, which \code{\link{rkn_select_criteria}} and
+#'   \code{\link{rkn_select_global}} read;
 #'   samples missing from \code{covariates} get \code{NA}. Covariates cannot be named
 #'   \code{name}, which holds the sample identifiers, nor \code{degree},
 #'   \code{max_path_length} or \code{.name}, which are reserved for the structural
@@ -197,7 +199,8 @@
 #' 26(22), 2867--2873. \doi{10.1093/bioinformatics/btq559}
 #'
 #' @seealso \code{\link{rkn_check_samples}}, \code{\link{rkn_select_random}},
-#'   \code{\link{rkn_select_criteria}}, \code{\link{rkn_plot_pre}}.
+#'   \code{\link{rkn_select_criteria}}, \code{\link{rkn_select_global}},
+#'   \code{\link{rkn_plot_pre}}.
 #'
 #' @examples
 #' # Kinship estimates for six samples: a parent and child (A, B), first cousins (C, D)

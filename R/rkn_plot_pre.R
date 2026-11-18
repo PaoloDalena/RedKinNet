@@ -6,10 +6,11 @@
 #' \itemize{
 #'   \item \code{rkn_plot_pre()} draws any network, for instance before a selection,
 #'     with the vertices coloured by the size of their family or by family.
-#'   \item \code{plot()} draws a selection returned by \code{\link{rkn_select_random}}
-#'     or \code{\link{rkn_select_criteria}} (an \code{\link{rkn_selection}} object): the
-#'     selected and discarded individuals, how each individual was decided, or the
-#'     families before the selection, as \code{rkn_plot_pre()} does.
+#'   \item \code{plot()} draws a selection returned by \code{\link{rkn_select_random}},
+#'     \code{\link{rkn_select_criteria}} or \code{\link{rkn_select_global}} (an
+#'     \code{\link{rkn_selection}} object): the selected and discarded individuals, how
+#'     each individual was decided, or the families before the selection, as
+#'     \code{rkn_plot_pre()} does.
 #' }
 #' All plots of the same network put each individual in the same position, so they can
 #' be compared or combined in panels, for instance with \code{par(mfrow = c(1, 3))}.
@@ -22,15 +23,16 @@
 #'     \item \code{"post"} (default): selected and discarded individuals;
 #'     \item \code{"diagnostics"}: how each individual was decided, as described in the
 #'       section Types of decision of \code{\link{rkn_selection}}; requires a selection
-#'       computed with \code{diagnostics = TRUE};
+#'       computed with \code{diagnostics = TRUE}, and is not available for global
+#'       selections, for which \code{"post"} is drawn instead;
 #'     \item \code{"pre"}: the families before the selection, as drawn by
 #'       \code{rkn_plot_pre()}.
 #'   }
 #' @param palette Character. Colours of the \code{"post"} and \code{"diagnostics"}
 #'   plots (\code{plot()} only). \code{"colorblind"} (default) uses the Okabe-Ito
 #'   colours, which remain distinguishable with the most common forms of colour
-#'   blindness; \code{"classic"} uses the earlier colours of the package, which pair red
-#'   with green.
+#'   blindness; \code{"classic"} uses red and green, which many people with colour
+#'   blindness cannot tell apart.
 #' @param show_outcome Logical. In the \code{"diagnostics"} plot (\code{plot()} only),
 #'   if \code{TRUE} (default), selected individuals are drawn as filled vertices and
 #'   discarded individuals as hollow vertices with a frame in the colour of their
@@ -77,7 +79,7 @@
 #' @return \code{rkn_plot_pre()} returns \code{NULL} and \code{plot()} returns \code{x},
 #'   both invisibly.
 #'
-#' @seealso \code{\link{rkn_selection}}
+#' @seealso \code{\link{rkn_selection}}, \code{\link{rkn_graph_from_kinship}}
 #'
 #' @example man-roxygen/example-network.R
 #' @examples

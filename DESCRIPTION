@@ -5,13 +5,18 @@ Authors@R:
     person("Paolo", "Dalena", , "paolodalena97@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0003-2920-9572"))
 Description: Selects sets of mutually unrelated individuals from pairwise
-    kinship estimates. Relatedness above a user-defined threshold is
-    represented as an undirected graph, and each connected component (family
-    network) is resolved as a maximum independent set problem, combining
-    structural rules and graph reductions with exact resolution of the
-    remaining ambiguity. Ambiguous choices can be resolved at random or
-    according to covariate-based criteria, and node-level diagnostics document
-    the reason for every retained or discarded individual.
+    kinship estimates. Pairs related above a kinship threshold, such as the
+    cutoffs of Manichaikul et al. (2010) <doi:10.1093/bioinformatics/btq559>,
+    form a network whose connected components (families) are resolved as
+    maximum independent set problems, by structural rules and an exact
+    elimination algorithm that also handles the large families of genetic
+    isolates. A largest set of unrelated individuals can be drawn at random,
+    uniformly among all such sets with exact inclusion probabilities, chosen
+    within families by preferences for individuals, or chosen jointly across
+    families to approach a target proportion or mean of a covariate,
+    optionally trading selection size for composition. Samples are screened
+    for duplicates and possible contamination, and diagnostics document how
+    each individual was selected.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

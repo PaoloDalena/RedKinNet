@@ -1,2 +1,28 @@
-#' @keywords internal
+#' RedKinNet: selection of unrelated individuals from kinship networks
+#'
+#' @description
+#' Genetic studies often need a set of individuals with no close relatives among them.
+#' RedKinNet joins every pair of related individuals in a network and selects a maximum
+#' set of unrelated individuals: a set with no related pair of the largest possible size
+#' (see \code{\link{rkn_selection}}). The families, the connected components of the
+#' network, are resolved by structural rules and by an exact search that also handles
+#' the large and intricate families of genetic isolates.
+#'
+#' A typical analysis follows these steps:
+#' \enumerate{
+#'   \item \code{\link{rkn_check_samples}} flags possible duplicates and contaminated
+#'     samples in the kinship estimates;
+#'   \item \code{\link{rkn_graph_from_kinship}} builds the network at a kinship
+#'     threshold, optionally leaving samples out and adding covariates;
+#'   \item a selector chooses the individuals: \code{\link{rkn_select_random}} at
+#'     random, optionally uniformly among all the maximum sets with exact inclusion
+#'     probabilities; \code{\link{rkn_select_criteria}} by preferences for individuals,
+#'     such as women; or \code{\link{rkn_select_global}} towards a target composition of
+#'     the whole selection, such as half women or a mean age, after
+#'     \code{\link{rkn_tradeoff}} has shown what the target costs in selection size;
+#'   \item the returned \code{\link{rkn_selection}} object is inspected with
+#'     \code{print()}, \code{summary()} and \code{plot()} (see
+#'     \code{\link{rkn_plot_pre}}).
+#' }
+#'
 "_PACKAGE"

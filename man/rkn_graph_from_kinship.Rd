@@ -39,7 +39,8 @@ network, for instance samples flagged by a quality check.}
 
 \item{covariates}{Optional data frame of sample covariates, with the sample
 identifiers in the column named by \code{covariates_id}. Its other columns become
-vertex attributes of the network, which \code{\link{rkn_select_criteria}} reads;
+vertex attributes of the network, which \code{\link{rkn_select_criteria}} and
+\code{\link{rkn_select_global}} read;
 samples missing from \code{covariates} get \code{NA}. Covariates cannot be named
 \code{name}, which holds the sample identifiers, nor \code{degree},
 \code{max_path_length} or \code{.name}, which are reserved for the structural
@@ -63,10 +64,11 @@ covariates, the edge attribute \code{kinship} holds the kinship coefficient, and
 the graph attribute \code{kinship_threshold} holds the cutoff used.
 }
 \description{
-Builds the relatedness network used by \code{\link{rkn_select_random}} and
-\code{\link{rkn_select_criteria}}: one vertex per sample, and an edge between two
-samples whose kinship coefficient is at least \code{threshold}. The families of the
-selectors are the connected components of this network.
+Builds the relatedness network used by \code{\link{rkn_select_random}},
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_select_global}} and
+\code{\link{rkn_tradeoff}}: one vertex per sample, and an edge between two samples
+whose kinship coefficient is at least \code{threshold}. The families of the selectors
+are the connected components of this network.
 }
 \details{
 The threshold labels select the boundaries between the degrees of relationship
@@ -119,5 +121,6 @@ relationship inference in genome-wide association studies. \emph{Bioinformatics}
 }
 \seealso{
 \code{\link{rkn_check_samples}}, \code{\link{rkn_select_random}},
-\code{\link{rkn_select_criteria}}, \code{\link{rkn_plot_pre}}.
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_select_global}},
+\code{\link{rkn_plot_pre}}.
 }

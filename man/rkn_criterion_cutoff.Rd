@@ -2,7 +2,7 @@
 % Please edit documentation in R/rkn_criterion.R
 \name{rkn_criterion_cutoff}
 \alias{rkn_criterion_cutoff}
-\title{Preference for values above or below a cutoff on a continuous covariate}
+\title{Prefer individuals above or below a cutoff}
 \usage{
 rkn_criterion_cutoff(covariate, cutoff, prefer = c("above", "below"))
 }
@@ -23,8 +23,8 @@ Scores a candidate set of individuals by the proportion of its members whose
 \code{covariate} value lies on the preferred side of \code{cutoff}.
 
 Criteria are used by \code{\link{rkn_select_criteria}}: within each family, where
-the structural rules leave several sets of unrelated individuals to choose from,
-each candidate set is scored and the best one is selected.
+several sets of unrelated individuals remain to choose from, each candidate set is
+scored and the best one is selected.
 }
 \examples{
 # Prefer individuals younger than 50

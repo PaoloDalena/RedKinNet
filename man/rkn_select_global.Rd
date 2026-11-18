@@ -2,7 +2,7 @@
 % Please edit documentation in R/rkn_select_global.R
 \name{rkn_select_global}
 \alias{rkn_select_global}
-\title{Selection with a target composition of the whole selection}
+\title{Select unrelated individuals with a target composition}
 \usage{
 rkn_select_global(
   g,
@@ -27,10 +27,10 @@ categorical (character, factor or logical), such as \code{"sex"} for
 \code{V(g)$sex}, or numeric, such as \code{"age"}.}
 
 \item{target}{For a categorical covariate, the target proportion of one category
-among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
+among the selected individuals, named by the category, e.g. \code{c(F = 0.5)}; for a
 covariate with two categories, the proportions of both may be given, summing to 1,
 and the first is used. For a numeric covariate, the target mean, a single unnamed
-number, as \code{45}. If \code{NULL} (default), the target is the composition of the
+number, e.g. \code{45}. If \code{NULL} (default), the target is the composition of the
 whole network, so that the selection keeps that of the cohort: the mean, or the
 proportion of the first category, which is \code{TRUE} for a logical covariate, the
 first level for a factor, and the first in alphabetical order otherwise; for a
@@ -45,20 +45,21 @@ given up allows.}
 \item{resolution}{For numeric covariates only, a positive number: the values are
 rounded to multiples of \code{resolution} above the smallest value to search the
 selections (see Details). If \code{NULL} (default), integer values spanning at most
-100 are not rounded (a resolution of 1, as for ages in years or scores); other values
-are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their range
-into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
-to 200,000.}
+100 are not rounded (a resolution of 1, e.g. for ages in years or scores); other
+values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
+their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
+values from 0 to 200,000.}
 
 \item{seed}{Optional integer. If provided, the draw among the best selections is
 reproducible. If \code{NULL} (default), the current random number stream is used.}
 
 \item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
-how each individual and each family was resolved (\code{node_diagnostics} and
-\code{family_summary}), which \code{print()}, \code{summary()} and
-\code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
-of the returned object; on very large networks, \code{diagnostics = FALSE} returns
-the selection alone.}
+the family of each individual and, for each family, the individuals selected, those
+in the category or their mean, and those with a missing value (\code{node_diagnostics}
+and \code{family_summary}, see \code{\link{rkn_selection}}). Global selections have
+no types of decision, so that \code{summary()} shows no decision table and
+\code{plot(type = "diagnostics")} draws the selected and discarded individuals
+instead.}
 }
 \value{
 An object of class \code{\link{rkn_selection}} with \code{method = "global"};
@@ -66,10 +67,12 @@ its element \code{global} describes the composition reached (see
 \code{\link{rkn_selection}}).
 }
 \description{
-Selects a maximum set of unrelated individuals whose composition, over the whole
-selection, is as close as possible to a target: the proportion of one category of a
-categorical covariate, such as the proportion of women, or the mean of a numeric
-covariate, such as the mean age. Unlike \code{\link{rkn_select_criteria}}, which
+Selects a set of unrelated individuals whose composition, over the whole selection,
+is as close as possible to a target: the proportion of one category of a categorical
+covariate, such as the proportion of women, or the mean of a numeric covariate, such
+as the mean age. The set has the largest possible size, as a maximum set (see
+\code{\link{rkn_selection}}), unless \code{max_loss} allows a smaller one in exchange
+for a closer composition. Unlike \code{\link{rkn_select_criteria}}, which
 applies its criteria within each family, the families are chosen jointly: the choice
 in one family depends on what the others contribute. For instance, with ten unrelated
 women and ten related pairs of a woman and a man, choosing within each pair gives

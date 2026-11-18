@@ -1,17 +1,16 @@
-#' Criteria-based selection over an entire network (connected-component-wise)
+#' Select unrelated individuals by criteria
 #'
 #' @description
-#' Criteria-based counterpart of \code{\link{rkn_select_random}}. The network is
-#' partitioned into families, defined as the connected components of \code{g}, and
-#' each family is resolved independently: families with at most 5 nodes through the
-#' structural rules in \code{\link{rules_db}}, larger families through structural
-#' reductions followed by the resolution of the remaining ambiguity. Ambiguous
-#' selections are resolved by criterion score rather than at random; the partition into
-#' families and the returned object are as in \code{rkn_select_random()}. How the
-#' criteria are evaluated in large families, exactly or on a sample of maximum sets, is
-#' described in the section Search over maximum sets of \code{\link{rkn_selection}}.
-#' With \code{optimal = TRUE}, the structural rules are skipped and the criteria choose
-#' among all the maximum sets of each family.
+#' Selects a maximum set of unrelated individuals, as \code{\link{rkn_select_random}}
+#' does, but makes the choices that the network leaves open by criteria on the
+#' covariates instead of at random. Each family is resolved on its own: families of up to
+#' 5 members through the structural rules in \code{\link{rules_db}}, larger families
+#' through structural reductions followed by a search of what remains; the returned
+#' object is as for \code{rkn_select_random()}. How the criteria are evaluated in large
+#' families, exactly or on a sample of maximum sets, is described in the section Search
+#' over maximum sets of \code{\link{rkn_selection}}. With \code{optimal = TRUE}, the
+#' structural rules are skipped and the criteria choose among all the maximum sets of
+#' each family.
 #'
 #' Covariates referenced by the criteria are read from the vertex attributes of
 #' \code{g}. The criteria express preferences for individuals, such as women or people

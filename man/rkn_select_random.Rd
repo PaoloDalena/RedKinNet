@@ -2,7 +2,7 @@
 % Please edit documentation in R/rkn_select_random.R
 \name{rkn_select_random}
 \alias{rkn_select_random}
-\title{Random selection over an entire network (connected-component-wise)}
+\title{Select unrelated individuals at random}
 \usage{
 rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
 }
@@ -16,9 +16,11 @@ checks the samples; for a network built in another way, see
 
 \item{uniform}{Logical. If \code{FALSE} (default), structural rules decide most
 individuals and the remaining choices are made at random; the result is a maximum
-set of unrelated individuals, but not every maximum set has the same probability of
-being chosen. If \code{TRUE}, each family is drawn uniformly at random among all
-its maximum sets, which makes the selection probabilities exact: with diagnostics,
+set, but the maximum sets are not equally likely, and the rules never choose some of
+them: in a chain of six relatives, two of its four maximum sets. If \code{TRUE},
+each family is drawn uniformly at random among all its maximum sets, so that every
+maximum set of the network has the same probability, and the selection
+probabilities are exact: with diagnostics,
 \code{node_diagnostics$inclusion_probability} gives the probability that each
 individual is selected. Families too intricate for this exact computation are
 selected as with \code{uniform = FALSE} and reported in the column \code{uniform}
@@ -43,14 +45,14 @@ An object of class \code{\link{rkn_selection}}, with \code{print},
 selected individuals.
 }
 \description{
-The network is partitioned into families, defined as the connected components of
-\code{g}, and each family is resolved independently. Since no relationship crosses
-two components, the union of the per-family selections is a set of mutually
-unrelated individuals. Where several maximum sets of unrelated individuals are
-possible, the choice among them is made at random. Structural rules decide most
-individuals; those left undecided in large families are resolved by an exact
-algorithm that also handles the intricate families of genetic isolates (see the
-section Search over maximum sets of \code{\link{rkn_selection}}).
+Selects a maximum set of unrelated individuals, a set with no related pair of the
+largest possible size (see \code{\link{rkn_selection}}), and makes at random the
+choices that the network leaves open. The network is partitioned into families, its
+connected components, and each family is resolved on its own: since no relationship
+crosses two families, the union of their selections has no related pair. Structural
+rules decide most individuals; those left undecided in large families are resolved by
+an exact algorithm that also handles the intricate families of genetic isolates (see
+the section Search over maximum sets of \code{\link{rkn_selection}}).
 }
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
@@ -74,8 +76,15 @@ summary(sel)
 # The selection alone, without diagnostics
 rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
 
+# Uniformly among all the maximum sets, with the probability that each individual is
+# selected
+u <- rkn_select_random(g, uniform = TRUE, seed = 1)
+u
+u$node_diagnostics[, c("id", "inclusion_probability")]
+
 }
 \seealso{
 \code{\link{rkn_selection}}, \code{\link{summary.rkn_selection}},
-\code{\link{plot.rkn_selection}}, \code{\link{rkn_select_criteria}}.
+\code{\link{plot.rkn_selection}}, \code{\link{rkn_select_criteria}},
+\code{\link{rkn_select_global}}.
 }

@@ -1,4 +1,4 @@
-#' Trade-off between the size of a selection and its composition
+#' Compute the trade-off between selection size and composition
 #'
 #' @description
 #' For a target composition of the whole selection, as in
@@ -45,7 +45,7 @@
 #' without relatives, who are always selected, and on the alternatives that each family
 #' offers. \code{rkn_select_global(g, covariate, target, max_loss = L)} selects, among
 #' the rows from 0 to \code{L}, the smallest distance and, among the rows reaching it,
-#' the largest size. With a target beyond the range, as \code{c(F = 1)}, it selects the
+#' the largest size. With a target beyond the range, such as \code{c(F = 1)}, it selects the
 #' highest proportion of the category.
 #'
 #' For a numeric covariate, the means are those of the values rounded to multiples of
@@ -91,13 +91,18 @@
 #'   }
 #'   The proportions and means are computed among the selected individuals with a known
 #'   value of the covariate, and are \code{NA} for a size at which no selection includes
-#'   one. The attribute \code{"tradeoff"} is a list with the \code{type}
-#'   (\code{"proportion"} or \code{"mean"}), the \code{covariate}, the \code{category}
-#'   (for a categorical covariate), the \code{target}, the \code{resolution} (for a
-#'   numeric covariate), \code{max_size} (the size of the largest selection),
-#'   \code{reached} (the number of individuals given up at which the target comes within
-#'   reach, \code{NA} if it does not within the table) and \code{n_inexact} (the number
-#'   of families beyond the computational budget).
+#'   one. The attribute \code{"tradeoff"} is a list describing the table: \code{type}
+#'   (\code{"proportion"} or \code{"mean"}); \code{covariate}; \code{category}, for a
+#'   categorical covariate; \code{target} and \code{cohort}, whether the target is the
+#'   composition of the network; \code{resolution} and \code{rounded}, for a numeric
+#'   covariate, whether some value was rounded; \code{max_size}, the size of the largest
+#'   selection; \code{max_loss}, as given; \code{reached}, the number of individuals
+#'   given up at which the target comes within reach (\code{NA} if it does not within the
+#'   table); \code{limited}, why the default table stopped before the target came within
+#'   reach, \code{"memory"} or \code{"work"} for the memory limit or the computational
+#'   budget (\code{NA} otherwise); \code{n_missing}, the number of individuals of the
+#'   network with a missing value; and \code{n_inexact}, the number of families beyond
+#'   the computational budget.
 #'
 #'   \code{print()} shows the first rows and those around \code{reached}, with the
 #'   number of selections as a count. \code{plot()} draws, against the number of

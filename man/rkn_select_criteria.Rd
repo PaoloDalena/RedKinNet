@@ -28,8 +28,9 @@ resolutions within each family.}
 \item{criterion_secondary}{Optional \code{rkn_criterion} object used to break ties in
 \code{criterion_primary}.}
 
-\item{seed}{Optional integer base seed. If provided, family-specific seeds are derived
-as seed + family_id and are used only to break exact ties in the criterion score(s).}
+\item{seed}{Optional integer, as in \code{\link{rkn_select_random}}: a seed is drawn
+from it for each family. Random numbers are used only to break exact ties in the
+criterion scores.}
 
 \item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
 how each individual and each family was resolved (\code{node_diagnostics} and

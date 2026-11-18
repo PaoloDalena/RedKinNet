@@ -12,6 +12,8 @@
 #' men.
 #'
 #' @inheritParams rkn_select_random
+#' @param seed Optional integer. If provided, the draw among the best selections is
+#'   reproducible. If \code{NULL} (default), the current random number stream is used.
 #' @param covariate Character. Name of a vertex attribute of the network, either
 #'   categorical (character, factor or logical), such as \code{"sex"} for
 #'   \code{V(g)$sex}, or numeric, such as \code{"age"}.

@@ -22,8 +22,9 @@
 #'   resolutions within each family.
 #' @param criterion_secondary Optional \code{rkn_criterion} object used to break ties in
 #'   \code{criterion_primary}.
-#' @param seed Optional integer base seed. If provided, family-specific seeds are derived
-#'   as seed + family_id and are used only to break exact ties in the criterion score(s).
+#' @param seed Optional integer, as in \code{\link{rkn_select_random}}: a seed is drawn
+#'   from it for each family. Random numbers are used only to break exact ties in the
+#'   criterion scores.
 #' @param optimal Logical. If \code{FALSE} (default), structural rules decide part of
 #'   each family before the criteria are applied, and some of them fix individuals
 #'   regardless of the criteria (for instance, they keep the individual at the end of a

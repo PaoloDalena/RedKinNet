@@ -53,6 +53,18 @@
     do.call(.rkn_df, cols)
   }
 
+  # Each family gets its own seed, drawn from the base seed: the selection of a family
+  # does not depend on the random numbers used by the others, and different base seeds
+  # give independent selections. Seeds such as seed + i would not: family i of one run
+  # would reuse the seed of family i + 1 of the run with the next base seed. The margin
+  # below the largest integer leaves room for the offsets added within a family.
+  fam_seeds <- NULL
+  if (!is.null(seed)) {
+    withr::local_preserve_seed()
+    set.seed(seed)
+    fam_seeds <- sample.int(.Machine$integer.max - 2L, n_fam)
+  }
+
   kept_list <- vector("list", n_fam)
   discarded_list <- vector("list", n_fam)
 
@@ -76,7 +88,7 @@
     g_sub <- igraph::induced_subgraph(g, vids = fam_idx[[i]])
 
     fam_df <- .fam_df_from_ids(fam_idx[[i]])
-    fam_seed <- if (is.null(seed)) NULL else as.integer(seed + i)
+    fam_seed <- fam_seeds[i]
 
     if (nrow(fam_df) <= 5) {
       out <- select_upto5(

@@ -16,7 +16,11 @@
 #'   The network is usually built with \code{\link{rkn_graph_from_kinship}}, which also
 #'   checks the samples; for a network built in another way, see
 #'   \code{\link{rkn_check_samples}}.
-#' @param seed Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.
+#' @param seed Optional integer. If provided, the selection is reproducible: a seed is
+#'   drawn from it for each family, so that the selection within a family does not
+#'   depend on the random numbers used by the others, and different values give
+#'   independent selections. If \code{NULL} (default), the current random number stream
+#'   is used.
 #' @param diagnostics Logical. If \code{TRUE} (default), the returned object also records
 #'   how each individual and each family was resolved (\code{node_diagnostics} and
 #'   \code{family_summary}), which \code{print()}, \code{summary()} and

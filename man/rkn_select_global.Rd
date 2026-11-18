@@ -49,7 +49,8 @@ are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their 
 into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
 to 200,000.}
 
-\item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
+\item{seed}{Optional integer. If provided, the draw among the best selections is
+reproducible. If \code{NULL} (default), the current random number stream is used.}
 
 \item{diagnostics}{Logical. If \code{TRUE} (default), the returned object also records
 how each individual and each family was resolved (\code{node_diagnostics} and

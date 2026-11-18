@@ -50,3 +50,25 @@ test_that("seeded uniform selections leave the caller's random number stream unt
   g <- make_network(43)
   expect_identical(runif_after(function() rkn_select_random(g, seed = 1, uniform = TRUE)), reference())
 })
+
+test_that("consecutive seeds give independent selections", {
+  # 300 identical pairs: if family i used the seed seed + i, the selection with seed 2
+  # would repeat in pair i the choice made with seed 1 in pair i + 1.
+  n <- 300
+  g <- igraph::make_empty_graph(2 * n, directed = FALSE)
+  g <- igraph::add_edges(g, as.vector(rbind(seq(1, 2 * n, 2), seq(2, 2 * n, 2))))
+  igraph::V(g)$name <- paste0("v", seq_len(2 * n))
+  igraph::V(g)$sex <- "F"
+  first_kept <- function(sel) seq(1, 2 * n, 2) %in% which(igraph::V(g)$name %in% sel$kept)
+  selectors <- list(
+    function(seed) rkn_select_random(g, seed = seed, diagnostics = FALSE),
+    function(seed) rkn_select_random(g, seed = seed, uniform = TRUE, diagnostics = FALSE),
+    function(seed) rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = seed, diagnostics = FALSE)
+  )
+  for (select in selectors) {
+    a <- first_kept(select(1))
+    b <- first_kept(select(2))
+    expect_lt(mean(b[-n] == a[-1]), 0.75)
+    expect_lt(mean(b == a), 0.75)
+  }
+})

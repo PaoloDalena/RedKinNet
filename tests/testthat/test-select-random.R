@@ -87,7 +87,7 @@ test_that("diagnostics have the documented structure and agree with the selectio
 test_that("invalid inputs are rejected", {
   expect_error(rkn_select_random(list()), "igraph object")
   g_unnamed <- igraph::make_ring(5)
-  expect_error(rkn_select_random(g_unnamed), "must be defined")
+  expect_error(rkn_select_random(g_unnamed), "must have names")
   expect_error(rkn_select_random(igraph::make_empty_graph(0)), "at least one vertex")
 })
 

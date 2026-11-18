@@ -71,10 +71,12 @@ rkn_select_criteria <- function(g,
 
   .rkn_check_network(g)
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
-    stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")
+    stop("`criterion_primary` must be a criterion, created by rkn_criterion_level() or rkn_criterion_cutoff().",
+         call. = FALSE)
   }
   if (!is.null(criterion_secondary) && !inherits(criterion_secondary, "rkn_criterion")) {
-    stop("`criterion_secondary` must be an rkn_criterion object or NULL.")
+    stop("`criterion_secondary` must be NULL or a criterion, created by rkn_criterion_level() or ",
+         "rkn_criterion_cutoff().", call. = FALSE)
   }
   # The covariates are checked here, since they are read only in the families that
   # leave a choice.

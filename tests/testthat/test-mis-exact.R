@@ -107,6 +107,8 @@ test_that("draws fall back on the dominance reduction and then stop when a graph
   igraph::V(cycle)$name <- as.character(1:7)
   expect_identical(.rkn_draw_maximum_set(cycle)$method, "exact")
   expect_error(.rkn_draw_maximum_set(cycle, max_width = 1), "too intricate for an exact selection")
+  expect_error(.rkn_draw_maximum_set(cycle, max_width = 1), "The family of \"1\"")
+  expect_error(.rkn_draw_maximum_set(cycle, max_width = 1), "\"second\" instead of \"third\"")
 })
 
 test_that("all maximum independent sets are listed once", {

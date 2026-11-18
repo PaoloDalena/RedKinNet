@@ -23,11 +23,13 @@
 #' @keywords internal
 #' @noRd
 .rkn_check_network <- function(g) {
-  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
-  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
-  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
+  if (!igraph::is_igraph(g)) stop("`g` must be an igraph object.", call. = FALSE)
+  if (igraph::vcount(g) == 0) stop("`g` must contain at least one vertex.", call. = FALSE)
+  if (is.null(igraph::V(g)$name)) {
+    stop("The vertices of `g` must have names, the identifiers of the individuals (`V(g)$name`).", call. = FALSE)
+  }
   reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
-  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved), call. = FALSE)
   invisible(NULL)
 }
 

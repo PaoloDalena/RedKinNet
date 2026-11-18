@@ -113,7 +113,7 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   .rkn_global_check_input(g, covariate)
   if (!is.numeric(max_loss) || length(max_loss) != 1 || is.na(max_loss) || max_loss < 0 ||
       max_loss != round(max_loss)) {
-    stop("`max_loss` must be a single non-negative integer.")
+    stop("`max_loss` must be a single non-negative integer.", call. = FALSE)
   }
   .rkn_check_seed(seed)
   .rkn_check_flag(diagnostics, "diagnostics")
@@ -202,10 +202,10 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
 .rkn_global_check_input <- function(g, covariate) {
   .rkn_check_network(g)
   if (!is.character(covariate) || length(covariate) != 1) {
-    stop("`covariate` must be the name of a vertex attribute, as \"sex\".")
+    stop("`covariate` must be the name of a vertex attribute, such as \"sex\".", call. = FALSE)
   }
   if (!(covariate %in% igraph::vertex_attr_names(g))) {
-    stop(sprintf("The network has no vertex attribute \"%s\".", covariate))
+    stop(sprintf("The network has no vertex attribute \"%s\".", covariate), call. = FALSE)
   }
   invisible(NULL)
 }
@@ -285,34 +285,34 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
 #' @noRd
 .rkn_global_target <- function(x, target, resolution = NULL) {
   if (is.numeric(x)) return(.rkn_global_target_mean(x, target, resolution))
-  if (!is.null(resolution)) stop("`resolution` applies to numeric covariates only.")
+  if (!is.null(resolution)) stop("`resolution` applies to numeric covariates only.", call. = FALSE)
   known <- !is.na(x)
   x <- as.character(x)
   categories <- sort(unique(x[known]))
-  if (length(categories) == 0) stop("The covariate has no known value.")
+  if (length(categories) == 0) stop("The covariate has no known value.", call. = FALSE)
   if (is.null(target)) {
     if (length(categories) > 2) {
       stop("The covariate has more than two categories: name one in `target` with its target ",
-           "proportion, as c(A = 0.3).")
+           "proportion, such as c(A = 0.3).", call. = FALSE)
     }
     category <- categories[1]
     p <- mean(x[known] == category)
   } else {
     if (!is.numeric(target) || is.null(names(target)) || any(names(target) == "") || anyNA(target)) {
-      stop("`target` must name the category with its target proportion, as c(F = 0.5).")
+      stop("`target` must name the category with its target proportion, such as c(F = 0.5).", call. = FALSE)
     }
-    if (any(target < 0 | target > 1)) stop("The proportions in `target` must lie between 0 and 1.")
+    if (any(target < 0 | target > 1)) stop("The proportions in `target` must lie between 0 and 1.", call. = FALSE)
     if (length(target) > 2 || (length(target) == 2 && length(categories) > 2)) {
       stop("`target` sets the proportion of one category against the others: give one named ",
-           "proportion, or two for a covariate with two categories.")
+           "proportion, or two for a covariate with two categories.", call. = FALSE)
     }
     if (length(target) == 2 && abs(sum(target) - 1) > 1e-8) {
-      stop("The two proportions in `target` must sum to 1.")
+      stop("The two proportions in `target` must sum to 1.", call. = FALSE)
     }
     absent <- setdiff(names(target), categories)
     if (length(absent) > 0) {
       stop(sprintf("Category %s not found among the values of the covariate.",
-                   paste0("\"", absent, "\"", collapse = ", ")))
+                   paste0("\"", absent, "\"", collapse = ", ")), call. = FALSE)
     }
     category <- names(target)[1]
     p <- unname(target[1])
@@ -330,16 +330,17 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
 #' @noRd
 .rkn_global_target_mean <- function(x, target, resolution) {
   known <- !is.na(x)
-  if (!any(known)) stop("The covariate has no known value.")
-  if (any(is.infinite(x[known]))) stop("The covariate has infinite values.")
+  if (!any(known)) stop("The covariate has no known value.", call. = FALSE)
+  if (any(is.infinite(x[known]))) stop("The covariate has infinite values.", call. = FALSE)
   if (!is.null(target) && (!is.numeric(target) || length(target) != 1 || !is.finite(target) ||
                            !is.null(names(target)))) {
-    stop("For a numeric covariate, `target` is the target mean: a single unnamed number, as 45.")
+    stop("For a numeric covariate, `target` is the target mean: a single unnamed number, such as 45.",
+         call. = FALSE)
   }
   if (is.null(resolution)) {
     resolution <- .rkn_default_resolution(x[known])
   } else if (!is.numeric(resolution) || length(resolution) != 1 || !is.finite(resolution) || resolution <= 0) {
-    stop("`resolution` must be a single positive number.")
+    stop("`resolution` must be a single positive number.", call. = FALSE)
   }
   lowest <- min(x[known])
   steps <- round((x - lowest) / resolution)

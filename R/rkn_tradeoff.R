@@ -132,7 +132,7 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
   if (!is.null(max_loss) && (!is.numeric(max_loss) || length(max_loss) != 1 || is.na(max_loss) ||
                              max_loss < 0 || max_loss != round(max_loss))) {
     stop("`max_loss` must be NULL, to extend the table until the target comes within reach (up to 5% ",
-         "of the largest selection), or a single non-negative integer.")
+         "of the largest selection), or a single non-negative integer.", call. = FALSE)
   }
   tgt <- .rkn_global_target(igraph::vertex_attr(g, covariate), target, resolution)
   p <- tgt$p
@@ -319,7 +319,7 @@ print.rkn_tradeoff <- function(x, ...) {
 #' @export
 plot.rkn_tradeoff <- function(x, main = NULL, ...) {
   info <- attr(x, "tradeoff")
-  if (is.null(info)) stop("x has lost the attributes of the object returned by rkn_tradeoff().")
+  if (is.null(info)) stop("`x` has lost the attributes of the object returned by rkn_tradeoff().", call. = FALSE)
   cols <- .rkn_tradeoff_columns(info$type)
   ok <- !is.na(x[[cols[1]]])
   loss <- x$loss[ok]

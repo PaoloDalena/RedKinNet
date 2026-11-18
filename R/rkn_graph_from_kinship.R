@@ -10,7 +10,8 @@
     threshold <- .rkn_king_cutoffs[[threshold]]
   }
   if (!is.numeric(threshold) || length(threshold) != 1 || !is.finite(threshold)) {
-    stop("threshold must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".")
+    stop("`threshold` must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".",
+         call. = FALSE)
   }
   threshold
 }
@@ -27,9 +28,10 @@
   if (is.matrix(x)) {
     ids <- rownames(x)
     if (!is.numeric(x) || is.null(ids) || !identical(ids, colnames(x))) {
-      stop("A kinship matrix must be numeric, with the sample identifiers as identical row and column names.")
+      stop("A kinship matrix must be numeric, with the sample identifiers as identical row and column names.",
+           call. = FALSE)
     }
-    if (!isSymmetric(unname(x))) stop("A kinship matrix must be symmetric.")
+    if (!isSymmetric(unname(x))) stop("A kinship matrix must be symmetric.", call. = FALSE)
     out <- list(ids = ids, matrix = x, complete = TRUE)
     n_missing <- (sum(is.na(x)) - sum(is.na(diag(x)))) / 2
   } else if (is.data.frame(x)) {
@@ -37,7 +39,7 @@
     cols <- if (all(c("iid1", "iid2") %in% nm)) c("iid1", "iid2") else c("id1", "id2")
     if (!all(c(cols, "kinship") %in% nm)) {
       stop("A pair table needs two identifier columns (ID1 and ID2, IID1 and IID2, or id1 and id2) ",
-           "and a kinship column.")
+           "and a kinship column.", call. = FALSE)
     }
     a <- as.character(x[[match(cols[1], nm)]])
     b <- as.character(x[[match(cols[2], nm)]])
@@ -47,7 +49,7 @@
     absent <- setdiff(listed, ids)
     if (length(absent) > 0) {
       stop("The pair table refers to samples missing from `samples`, for instance ",
-           paste(absent[seq_len(min(3, length(absent)))], collapse = ", "), ".")
+           paste(absent[seq_len(min(3, length(absent)))], collapse = ", "), ".", call. = FALSE)
     }
     n_pairs <- nrow(unique(data.frame(lo = pmin(a, b), hi = pmax(a, b))))
     complete <- n_pairs >= length(ids) * (length(ids) - 1) / 2
@@ -58,10 +60,11 @@
     out <- list(ids = ids, id1 = a, id2 = b, kinship = k, complete = complete)
     n_missing <- sum(is.na(k))
   } else {
-    stop("x must be a kinship matrix or a data frame of pairs.")
+    stop("`x` must be a kinship matrix or a data frame of pairs.", call. = FALSE)
   }
   if (n_missing > 0) {
-    warning(sprintf("%d pairs have a missing kinship estimate and are treated as unrelated.", n_missing),
+    warning(sprintf(if (n_missing == 1) "%d pair has a missing kinship estimate and is treated as unrelated." else
+                      "%d pairs have a missing kinship estimate and are treated as unrelated.", n_missing),
             call. = FALSE)
   }
   out
@@ -231,8 +234,8 @@ rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
   if (!is.null(exclude)) {
     unknown <- setdiff(exclude, input$ids)
     if (length(unknown) > 0) {
-      stop("exclude contains identifiers absent from the data, for instance ",
-           paste(unknown[seq_len(min(3, length(unknown)))], collapse = ", "), ".")
+      stop("`exclude` contains identifiers absent from the data, for instance ",
+           paste(unknown[seq_len(min(3, length(unknown)))], collapse = ", "), ".", call. = FALSE)
     }
     input <- .rkn_exclude_samples(input, exclude)
   }
@@ -251,14 +254,17 @@ rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
   vertices <- data.frame(name = ids, stringsAsFactors = FALSE)
   if (!is.null(covariates)) {
     if (!is.data.frame(covariates) || !covariates_id %in% names(covariates)) {
-      stop("covariates must be a data frame with an identifier column named ", covariates_id, ".")
+      stop("`covariates` must be a data frame with an identifier column named \"", covariates_id, "\".",
+           call. = FALSE)
     }
     cid <- as.character(covariates[[covariates_id]])
-    if (anyDuplicated(cid) > 0) stop("covariates contains duplicated identifiers.")
+    if (anyDuplicated(cid) > 0) stop("`covariates` contains duplicated identifiers.", call. = FALSE)
     vars <- setdiff(names(covariates), covariates_id)
-    if ("name" %in% vars) stop("A covariate cannot be called name, which holds the sample identifiers.")
+    if ("name" %in% vars) {
+      stop("A covariate cannot be called \"name\", which holds the sample identifiers.", call. = FALSE)
+    }
     reserved <- intersect(vars, .rkn_reserved_attributes)
-    if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+    if (length(reserved) > 0) stop(.rkn_reserved_message(reserved), call. = FALSE)
     row <- match(ids, cid)
     if (anyNA(row)) {
       message(sprintf("Covariates are missing for %d of %d samples and set to NA.", sum(is.na(row)), length(ids)))

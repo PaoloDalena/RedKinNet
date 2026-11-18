@@ -113,11 +113,9 @@ rkn_plot_pre <- function(g,
   layout <- match.arg(layout)
   colour_by <- match.arg(colour_by)
 
-  if (!igraph::is_igraph(g)) {
-    stop("g must be an igraph object.")
-  }
+  if (!igraph::is_igraph(g)) stop("`g` must be an igraph object.", call. = FALSE)
   if (is.null(igraph::V(g)$name)) {
-    stop("V(g)$name must be defined (vertex identifiers are required).")
+    stop("The vertices of `g` must have names, the identifiers of the individuals (`V(g)$name`).", call. = FALSE)
   }
 
   fam <- .rkn_filter_families(g, min_family_size)

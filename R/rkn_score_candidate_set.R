@@ -4,7 +4,7 @@
 #' @noRd
 .rkn_get_covariate <- function(fam_df, kept_ids, covariate) {
   if (is.null(fam_df[[covariate]])) {
-    stop(sprintf("Covariate '%s' not found in fam_df.", covariate))
+    stop(sprintf("Covariate \"%s\" not found.", covariate))
   }
   idx <- fam_df$.name %in% kept_ids
   fam_df[[covariate]][idx]
@@ -190,10 +190,7 @@ rkn_score_candidate_set <- function(fam_df, kept_ids, criterion_primary, criteri
   }
   if (!sol$feasible) {
     if (!error_if_wide) return(NULL)
-    stop(sprintf(paste0("A family with %d individuals left after the structural rules is too intricate for ",
-                        "an exact selection (elimination width %d, limit %d). Exclude the samples flagged by ",
-                        "rkn_check_samples(), or use a stricter threshold such as \"second\"."),
-                 length(ids), sol$width, max_width), call. = FALSE)
+    stop(.rkn_intricate_message(ids, sol$width, max_width), call. = FALSE)
   }
   ids <- ids[keep]
   if (fully_additive) return(list(kept = ids[.rkn_mis_sample(sol)], method = method, searched = ids))

@@ -278,12 +278,25 @@
     method <- "exact_reduced"
   }
   if (!sol$feasible) {
-    stop(sprintf(paste0("A family with %d individuals left after the structural rules is too intricate for ",
-                        "an exact selection (elimination width %d, limit %d). Exclude the samples flagged by ",
-                        "rkn_check_samples(), or use a stricter threshold such as \"second\"."),
-                 length(ids), sol$width, max_width), call. = FALSE)
+    stop(.rkn_intricate_message(ids, sol$width, max_width), call. = FALSE)
   }
   list(kept = ids[keep][.rkn_mis_sample(sol)], method = method, searched = ids[keep])
+}
+
+#' Internal helper: error message for a family too intricate for the exact search
+#'
+#' @param ids The individuals of the family left after the structural rules.
+#' @param width The elimination width reached.
+#' @param max_width The largest width allowed.
+#' @return The message, naming one of the individuals so that the family can be found.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_intricate_message <- function(ids, width, max_width) {
+  sprintf(paste0("The family of \"%s\" is too intricate for an exact selection: %d individuals are left after ",
+                 "the structural rules (elimination width %d, limit %d). Exclude the samples flagged by ",
+                 "rkn_check_samples(), or use a higher threshold, which joins closer relatives only, such as ",
+                 "\"second\" instead of \"third\"."), ids[1], length(ids), width, max_width)
 }
 
 #' Internal helper: inclusion probabilities of the search over maximum sets

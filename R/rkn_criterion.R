@@ -94,10 +94,10 @@ rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")
   prefer <- tryCatch(match.arg(prefer),
                      error = function(e) stop("`prefer` must be \"above\" or \"below\".", call. = FALSE))
   if (!is.character(covariate) || length(covariate) != 1L) {
-    stop("`covariate` must be a single character string.")
+    stop("`covariate` must be a single character string.", call. = FALSE)
   }
   if (!is.numeric(cutoff) || length(cutoff) != 1L || is.na(cutoff)) {
-    stop("`cutoff` must be a single non-missing numeric value.")
+    stop("`cutoff` must be a single non-missing numeric value.", call. = FALSE)
   }
 
   score_fn <- function(fam_df, kept_ids) {
@@ -142,10 +142,10 @@ rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")
 #' @export
 rkn_criterion_level <- function(covariate, level) {
   if (!is.character(covariate) || length(covariate) != 1L) {
-    stop("`covariate` must be a single character string.")
+    stop("`covariate` must be a single character string.", call. = FALSE)
   }
   if (length(level) != 1L || is.na(level)) {
-    stop("`level` must be a single non-missing value.")
+    stop("`level` must be a single non-missing value.", call. = FALSE)
   }
 
   score_fn <- function(fam_df, kept_ids) {

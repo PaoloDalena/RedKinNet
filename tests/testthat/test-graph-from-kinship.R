@@ -41,10 +41,10 @@ test_that("threshold labels select the KING cutoffs", {
   expect_identical(rkn_graph_from_kinship(K, "duplicate")$kinship_threshold, 0.354)
   expect_identical(edge_set(rkn_graph_from_kinship(K, "second")), c("A B", "E F"))
   expect_identical(edge_set(rkn_graph_from_kinship(K, "first")), "A B")
-  expect_error(rkn_graph_from_kinship(K, "cousins"), "threshold must be")
+  expect_error(rkn_graph_from_kinship(K, "cousins"), "`threshold` must be")
   expect_error(rkn_graph_from_kinship(K, "fourth"), "\"duplicate\", \"first\", \"second\" and \"third\"")
   expect_error(rkn_graph_from_kinship(K, "third", check = "no"), "`check` must be TRUE or FALSE")
-  expect_error(rkn_graph_from_kinship(K, c(0.1, 0.2)), "threshold must be")
+  expect_error(rkn_graph_from_kinship(K, c(0.1, 0.2)), "`threshold` must be")
 })
 
 test_that("a complete pair table gives the same network as the matrix", {
@@ -88,7 +88,7 @@ test_that("covariates become vertex attributes, with NA for missing samples", {
                  "missing for 3 of 6")
   expect_identical(igraph::V(g)$sex, c("M", "F", NA, NA, NA, "F"))
   expect_identical(igraph::V(g)$age, c(50, 20, NA, NA, NA, 30))
-  expect_error(rkn_graph_from_kinship(kinship_example(), "third", covariates = covariates), "named id")
+  expect_error(rkn_graph_from_kinship(kinship_example(), "third", covariates = covariates), "named \"id\"")
   covariates$sample[2] <- "F"
   expect_error(rkn_graph_from_kinship(kinship_example(), "third", covariates = covariates, covariates_id = "sample"),
                "duplicated")
@@ -101,7 +101,7 @@ test_that("invalid matrices and missing estimates are handled", {
   asym["A", "B"] <- 0.1
   expect_error(rkn_graph_from_kinship(asym, "third"), "symmetric")
   K["E", "F"] <- K["F", "E"] <- NA
-  expect_warning(g <- rkn_graph_from_kinship(K, "third"), "1 pairs have a missing kinship")
+  expect_warning(g <- rkn_graph_from_kinship(K, "third"), "1 pair has a missing kinship estimate")
   expect_identical(edge_set(g), c("A B", "A C", "C D"))
   expect_error(rkn_graph_from_kinship(list(), "third"), "kinship matrix or a data frame")
 })

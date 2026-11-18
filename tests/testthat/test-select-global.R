@@ -243,3 +243,16 @@ test_that("print and the family summary describe selections by mean", {
   expect_output(print(rounded), "Values of bmi rounded to multiples of 0.2 for the search")
   expect_output(print(rounded), "Selections reaching this mean of the rounded values: 1")
 })
+
+test_that("an error explains when no selection includes an individual with a known value", {
+  # A star whose centre alone has a known value: the largest selections are the leaves.
+  g <- igraph::make_star(4, mode = "undirected")
+  igraph::V(g)$name <- c("hub", "a", "b", "c")
+  igraph::V(g)$sex <- c("F", NA, NA, NA)
+  expect_error(rkn_select_global(g, "sex", c(F = 0.5)),
+               "No selection of the largest size includes an individual with a known value of \"sex\"")
+  expect_error(rkn_select_global(g, "sex", c(F = 0.5), max_loss = 1), "within `max_loss`")
+  expect_identical(rkn_select_global(g, "sex", c(F = 0.5), max_loss = 2, seed = 1)$kept, "hub")
+  expect_error(rkn_tradeoff(g, "sex", c(F = 0.5), max_loss = 1),
+               "giving up at most 1 individual includes an individual with a known value of \"sex\"")
+})

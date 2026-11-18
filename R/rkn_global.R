@@ -306,7 +306,11 @@
   d <- distance(c_base + off[1] + slice.index(tab, 2) - 1, m_base + off[3] + slice.index(tab, 3) - 1, size)
   d[tab == -Inf] <- Inf
   d_min <- min(d)
-  if (!is.finite(d_min)) stop("No selection has a defined value of the criterion.", call. = FALSE)
+  if (!is.finite(d_min)) {
+    stop(structure(class = c("rkn_no_known_value", "error", "condition"),
+                   list(message = "No selection includes an individual with a known value of the covariate.",
+                        call = NULL)))
+  }
   best <- d <= d_min + 1e-12
   best <- best & size == max(size[best])
   lw <- tab[best]

@@ -15,6 +15,47 @@
          paste0("\"", reserved, "\"", collapse = ", "), ".")
 }
 
+#' Internal helper: checks of the network given to a selector
+#'
+#' @param g The network.
+#' @return \code{NULL}, invisibly; stops with an error on an invalid network.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_check_network <- function(g) {
+  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
+  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
+  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
+  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
+  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  invisible(NULL)
+}
+
+#' Internal helper: check of a seed argument
+#'
+#' @keywords internal
+#' @noRd
+.rkn_check_seed <- function(seed) {
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1 || !is.finite(seed))) {
+    stop("`seed` must be NULL or a single number.", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+#' Internal helper: check of a logical option
+#'
+#' @param x The value of the option.
+#' @param name The name of the argument, for the error message.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_check_flag <- function(x, name) {
+  if (!is.logical(x) || length(x) != 1 || is.na(x)) {
+    stop(sprintf("`%s` must be TRUE or FALSE.", name), call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 #' Internal helper: network-level selection shared by the random and criteria selectors
 #'
 #' Partitions \code{g} into families (connected components), resolves each family with

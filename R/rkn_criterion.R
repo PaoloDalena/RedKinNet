@@ -91,7 +91,8 @@ rkn_criterion_target_mean <- function(covariate, target, tolerance) {
 #'
 #' @export
 rkn_criterion_cutoff <- function(covariate, cutoff, prefer = c("above", "below")) {
-  prefer <- match.arg(prefer)
+  prefer <- tryCatch(match.arg(prefer),
+                     error = function(e) stop("`prefer` must be \"above\" or \"below\".", call. = FALSE))
   if (!is.character(covariate) || length(covariate) != 1L) {
     stop("`covariate` must be a single character string.")
   }

@@ -41,7 +41,9 @@ test_that("threshold labels select the KING cutoffs", {
   expect_identical(rkn_graph_from_kinship(K, "duplicate")$kinship_threshold, 0.354)
   expect_identical(edge_set(rkn_graph_from_kinship(K, "second")), c("A B", "E F"))
   expect_identical(edge_set(rkn_graph_from_kinship(K, "first")), "A B")
-  expect_error(rkn_graph_from_kinship(K, "cousins"))
+  expect_error(rkn_graph_from_kinship(K, "cousins"), "threshold must be")
+  expect_error(rkn_graph_from_kinship(K, "fourth"), "\"duplicate\", \"first\", \"second\" and \"third\"")
+  expect_error(rkn_graph_from_kinship(K, "third", check = "no"), "`check` must be TRUE or FALSE")
   expect_error(rkn_graph_from_kinship(K, c(0.1, 0.2)), "threshold must be")
 })
 

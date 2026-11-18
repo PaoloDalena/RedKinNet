@@ -57,15 +57,14 @@
 #' @export
 rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE, uniform = FALSE) {
 
-  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
-  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
-  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
-  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
-  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  .rkn_check_network(g)
+  .rkn_check_seed(seed)
+  .rkn_check_flag(diagnostics, "diagnostics")
+  .rkn_check_flag(uniform, "uniform")
 
   select_upto5 <- rkn_select_random_upto5
   select_6plus <- rkn_select_random_6plus
-  if (isTRUE(uniform)) {
+  if (uniform) {
     select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
       .rkn_select_uniform_family(fam_df, g_sub, seed, return_diagnostics)
     }
@@ -81,6 +80,6 @@ rkn_select_random <- function(g, seed = NULL, diagnostics = TRUE, uniform = FALS
     method = "random",
     criteria = NULL,
     call = match.call(),
-    uniform = isTRUE(uniform)
+    uniform = uniform
   )
 }

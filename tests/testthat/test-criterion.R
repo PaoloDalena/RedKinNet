@@ -16,7 +16,7 @@ test_that("constructors return rkn_criterion objects and validate their inputs",
   expect_error(rkn_criterion_target_mean("age", "10", 5), "target")
   expect_error(rkn_criterion_target_mean("age", 10, 0), "tolerance")
   expect_error(rkn_criterion_cutoff("age", NA_real_), "cutoff")
-  expect_error(rkn_criterion_cutoff("age", 10, prefer = "sideways"))
+  expect_error(rkn_criterion_cutoff("age", 10, prefer = "sideways"), "`prefer` must be \"above\" or \"below\"")
   expect_error(rkn_criterion_level("sex", c("F", "M")), "level")
   expect_error(rkn_criterion_category_balance("grp", c(0.5, 0.5)), "named numeric")
   expect_error(rkn_criterion_category_balance("grp", c(X = 0.6, Y = 0.6)), "sum to 1")

@@ -115,6 +115,8 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
       max_loss != round(max_loss)) {
     stop("`max_loss` must be a single non-negative integer.")
   }
+  .rkn_check_seed(seed)
+  .rkn_check_flag(diagnostics, "diagnostics")
   values <- igraph::vertex_attr(g, covariate)
   tgt <- .rkn_global_target(values, target, resolution)
 
@@ -128,7 +130,12 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   comp <- fam$comp
 
   # The network cannot give up more individuals than its maximum size.
-  res <- .rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt))
+  res <- tryCatch(.rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt)),
+                  rkn_no_known_value = function(e) {
+                    stop(sprintf("No selection %s includes an individual with a known value of \"%s\".",
+                                 if (max_loss == 0) "of the largest size" else
+                                   "within `max_loss` of the largest size", covariate), call. = FALSE)
+                  })
   sets <- .rkn_global_realise(fam$fams, res$choice)
   selected <- rep(FALSE, length(ids))
   for (i in seq_along(sets)) selected[fam$members[[i]][sets[[i]]]] <- TRUE
@@ -193,11 +200,7 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
 #' @keywords internal
 #' @noRd
 .rkn_global_check_input <- function(g, covariate) {
-  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
-  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
-  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
-  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
-  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  .rkn_check_network(g)
   if (!is.character(covariate) || length(covariate) != 1) {
     stop("`covariate` must be the name of a vertex attribute, as \"sex\".")
   }

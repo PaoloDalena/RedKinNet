@@ -166,6 +166,11 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
     k <- min(max(1, 2 * k), limit)
   }
 
+  if (all(is.na(rows$value))) {
+    last <- max(rows$loss)
+    stop(sprintf("No selection giving up at most %d %s includes an individual with a known value of \"%s\".",
+                 last, if (last == 1) "individual" else "individuals", covariate), call. = FALSE)
+  }
   within <- within_reach(rows)
   reached <- if (length(within) > 0) rows$loss[within[1]] else NA_integer_
   if (is.null(max_loss) && !is.na(reached)) rows <- rows[seq_len(reached + 1), ]

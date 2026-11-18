@@ -223,3 +223,15 @@ test_that("families too intricate for uniform sampling are selected by the rules
   expect_true(all(is.na(out$node_diagnostics$inclusion_probability)))
   expect_false(rkn_select_random(petersen, seed = 1)$family_summary$uniform)
 })
+
+test_that("the seed and the logical options of the selectors are validated", {
+  g <- example_network()
+  expect_error(rkn_select_random(g, seed = "a"), "`seed` must be NULL or a single number")
+  expect_error(rkn_select_random(g, seed = c(1, 2)), "`seed`")
+  expect_error(rkn_select_random(g, diagnostics = NA), "`diagnostics` must be TRUE or FALSE")
+  expect_error(rkn_select_random(g, uniform = "yes"), "`uniform`")
+  expect_error(rkn_select_criteria(g, rkn_criterion_level("sex", "F"), optimal = 1), "`optimal`")
+  expect_error(rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = Inf), "`seed`")
+  expect_error(rkn_select_global(g, "sex", seed = "a"), "`seed`")
+  expect_error(rkn_select_global(g, "sex", diagnostics = "no"), "`diagnostics`")
+})

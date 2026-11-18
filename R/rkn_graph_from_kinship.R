@@ -5,8 +5,9 @@
 #' @keywords internal
 #' @noRd
 .rkn_resolve_threshold <- function(threshold) {
-  if (is.character(threshold)) {
-    threshold <- .rkn_king_cutoffs[[match.arg(threshold, names(.rkn_king_cutoffs))]]
+  labels <- names(.rkn_king_cutoffs)
+  if (is.character(threshold) && length(threshold) == 1 && !is.na(threshold) && threshold %in% labels) {
+    threshold <- .rkn_king_cutoffs[[threshold]]
   }
   if (!is.numeric(threshold) || length(threshold) != 1 || !is.finite(threshold)) {
     stop("threshold must be a number or one of \"duplicate\", \"first\", \"second\" and \"third\".")
@@ -224,6 +225,7 @@
 rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
                                    covariates = NULL, covariates_id = "id", check = TRUE) {
   threshold <- .rkn_resolve_threshold(threshold)
+  .rkn_check_flag(check, "check")
   input <- .rkn_read_kinship(x, samples)
 
   if (!is.null(exclude)) {
@@ -235,7 +237,7 @@ rkn_graph_from_kinship <- function(x, threshold, samples = NULL, exclude = NULL,
     input <- .rkn_exclude_samples(input, exclude)
   }
 
-  if (isTRUE(check)) {
+  if (check) {
     msg <- .rkn_check_warning(.rkn_check_input(input, threshold))
     if (!is.null(msg)) warning(msg, call. = FALSE)
   }

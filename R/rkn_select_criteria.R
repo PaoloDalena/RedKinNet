@@ -69,17 +69,29 @@ rkn_select_criteria <- function(g,
                                 diagnostics = TRUE,
                                 optimal = FALSE) {
 
-  if (!igraph::is_igraph(g)) stop("g must be an igraph object.")
-  if (igraph::vcount(g) == 0) stop("g must contain at least one vertex.")
-  if (is.null(igraph::V(g)$name)) stop("V(g)$name must be defined (vertex identifiers are required).")
-  reserved <- intersect(igraph::vertex_attr_names(g), .rkn_reserved_attributes)
-  if (length(reserved) > 0) stop(.rkn_reserved_message(reserved))
+  .rkn_check_network(g)
   if (missing(criterion_primary) || !inherits(criterion_primary, "rkn_criterion")) {
     stop("`criterion_primary` must be an rkn_criterion object (see rkn_criterion_*()).")
   }
   if (!is.null(criterion_secondary) && !inherits(criterion_secondary, "rkn_criterion")) {
     stop("`criterion_secondary` must be an rkn_criterion object or NULL.")
   }
+  # The covariates are checked here, since they are read only in the families that
+  # leave a choice.
+  for (criterion in list(criterion_primary, criterion_secondary)) {
+    if (is.null(criterion)) next
+    covariate <- criterion$params$covariate
+    if (!covariate %in% igraph::vertex_attr_names(g)) {
+      stop(sprintf("The network has no vertex attribute \"%s\".", covariate), call. = FALSE)
+    }
+    if (identical(criterion$type, "cutoff") && !is.numeric(igraph::vertex_attr(g, covariate))) {
+      stop(sprintf("A cutoff criterion needs a numeric covariate, and \"%s\" is not numeric.", covariate),
+           call. = FALSE)
+    }
+  }
+  .rkn_check_seed(seed)
+  .rkn_check_flag(diagnostics, "diagnostics")
+  .rkn_check_flag(optimal, "optimal")
 
   select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
     rkn_select_criteria_upto5(
@@ -101,7 +113,7 @@ rkn_select_criteria <- function(g,
       return_diagnostics = return_diagnostics
     )
   }
-  if (isTRUE(optimal)) {
+  if (optimal) {
     select_upto5 <- function(fam_df, g_sub, seed, return_diagnostics) {
       .rkn_select_optimal_family(fam_df, g_sub, criterion_primary, criterion_secondary, seed, return_diagnostics)
     }
@@ -117,6 +129,6 @@ rkn_select_criteria <- function(g,
     method = "criteria",
     criteria = list(primary = criterion_primary, secondary = criterion_secondary),
     call = match.call(),
-    optimal = isTRUE(optimal)
+    optimal = optimal
   )
 }

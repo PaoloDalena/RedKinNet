@@ -231,3 +231,14 @@ test_that("families too intricate for the evaluation over all maximum sets are s
   expect_length(out$kept, 4)
   expect_null(out$n_max_sets)
 })
+
+test_that("the covariates of the criteria are checked before the selection", {
+  g <- example_network()
+  expect_error(rkn_select_criteria(g, rkn_criterion_level("sexx", "F")), "no vertex attribute \"sexx\"")
+  # Also when no family leaves a choice, so that the criterion would never be read.
+  alone <- igraph::induced_subgraph(g, "U1")
+  expect_error(rkn_select_criteria(alone, rkn_criterion_level("sexx", "F")), "no vertex attribute")
+  expect_error(rkn_select_criteria(g, rkn_criterion_level("sex", "F"), rkn_criterion_cutoff("height", 1)),
+               "\"height\"")
+  expect_error(rkn_select_criteria(g, rkn_criterion_cutoff("sex", 1)), "needs a numeric covariate")
+})

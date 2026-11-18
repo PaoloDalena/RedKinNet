@@ -21,10 +21,11 @@
 #'   among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
 #'   covariate with two categories, the proportions of both may be given, summing to 1,
 #'   and the first is used. For a numeric covariate, the target mean, a single unnamed
-#'   number, as \code{45}. If \code{NULL} (default), the target is the proportion of the
-#'   first category, in alphabetical order, or the mean, in the whole network, so that
-#'   the selection keeps the composition of the cohort; for a categorical covariate this
-#'   requires two categories.
+#'   number, as \code{45}. If \code{NULL} (default), the target is the composition of the
+#'   whole network, so that the selection keeps that of the cohort: the mean, or the
+#'   proportion of the first category, which is \code{TRUE} for a logical covariate, the
+#'   first level for a factor, and the first in alphabetical order otherwise; for a
+#'   categorical covariate this requires two categories.
 #' @param max_loss Non-negative integer. Largest number of individuals that may be
 #'   selected below the maximum, to bring the composition closer to the target. With
 #'   \code{0} (default) the selection keeps the maximum size. \code{\link{rkn_tradeoff}}
@@ -159,15 +160,15 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   node_diagnostics <- NULL
   family_summary <- NULL
   if (diagnostics) {
-    family_id <- comp$membership
-    family_size <- comp$csize[family_id]
+    family_id <- as.integer(comp$membership)
+    family_size <- as.integer(comp$csize)[family_id]
     node_diagnostics <- .rkn_df(
       id = ids, pre_class = rep(NA_character_, length(ids)),
       post_class = ifelse(selected, "kept", "discarded"), is_selected = selected,
       pre_reason = rep(NA_character_, length(ids)), family_id = family_id, family_size = family_size
     )
     family_summary <- .rkn_df(
-      family_id = seq_len(comp$no), family_size = comp$csize,
+      family_id = seq_len(comp$no), family_size = as.integer(comp$csize),
       selector = rep("global", comp$no), exact = fam$exact,
       n_kept = tabulate(family_id[selected], nbins = comp$no),
       n_discarded = tabulate(family_id[!selected], nbins = comp$no)
@@ -184,7 +185,7 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   }
 
   .new_rkn_selection(
-    kept = ids[selected], discarded = ids[!selected], family_sizes = comp$csize,
+    kept = ids[selected], discarded = ids[!selected], family_sizes = as.integer(comp$csize),
     method = "global", criteria = NULL, seed = seed,
     node_diagnostics = node_diagnostics, family_summary = family_summary, graph = g,
     call = match.call(), global = global
@@ -287,8 +288,12 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   if (is.numeric(x)) return(.rkn_global_target_mean(x, target, resolution))
   if (!is.null(resolution)) stop("`resolution` applies to numeric covariates only.", call. = FALSE)
   known <- !is.na(x)
+  # The first category, the default target, is TRUE for a logical covariate and the first
+  # level for a factor.
+  categories <- if (is.logical(x)) c("TRUE", "FALSE") else if (is.factor(x)) levels(x) else
+    sort(unique(as.character(x[known])))
   x <- as.character(x)
-  categories <- sort(unique(x[known]))
+  categories <- categories[categories %in% x[known]]
   if (length(categories) == 0) stop("The covariate has no known value.", call. = FALSE)
   if (is.null(target)) {
     if (length(categories) > 2) {

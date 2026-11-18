@@ -6,7 +6,14 @@
 \alias{plot.rkn_tradeoff}
 \title{Trade-off between the size of a selection and its composition}
 \usage{
-rkn_tradeoff(g, covariate, target = NULL, max_loss = NULL, resolution = NULL)
+rkn_tradeoff(
+  g,
+  covariate,
+  target = NULL,
+  max_loss = NULL,
+  resolution = NULL,
+  seed = NULL
+)
 
 \method{print}{rkn_tradeoff}(x, ...)
 
@@ -28,10 +35,11 @@ categorical (character, factor or logical), such as \code{"sex"} for
 among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
 covariate with two categories, the proportions of both may be given, summing to 1,
 and the first is used. For a numeric covariate, the target mean, a single unnamed
-number, as \code{45}. If \code{NULL} (default), the target is the proportion of the
-first category, in alphabetical order, or the mean, in the whole network, so that
-the selection keeps the composition of the cohort; for a categorical covariate this
-requires two categories.}
+number, as \code{45}. If \code{NULL} (default), the target is the composition of the
+whole network, so that the selection keeps that of the cohort: the mean, or the
+proportion of the first category, which is \code{TRUE} for a logical covariate, the
+first level for a factor, and the first in alphabetical order otherwise; for a
+categorical covariate this requires two categories.}
 
 \item{max_loss}{Either \code{NULL} (default) or a non-negative integer, the largest
 number of individuals given up covered by the table. With \code{NULL}, the table
@@ -47,6 +55,10 @@ selections (see Details). If \code{NULL} (default), integer values spanning at m
 are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their range
 into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
 to 200,000.}
+
+\item{seed}{Optional integer. Random numbers are used only in the families beyond the
+computational budget (see Details); a seed makes the table reproducible. If
+\code{NULL} (default), the current random number stream is used.}
 
 \item{x}{An \code{rkn_tradeoff} object.}
 
@@ -148,7 +160,7 @@ minutes.
 The families beyond the computational budget of \code{rkn_select_global()} contribute
 only maximum sets, and cannot give up individuals in the table: the range reachable
 may then be wider than reported, and the number of selections is not available. Their
-options come in part from random draws, so that \code{set.seed()} makes the table
+options come in part from random draws, so that \code{seed} makes the table
 reproducible; \code{print()} reports their number.
 }
 \examples{

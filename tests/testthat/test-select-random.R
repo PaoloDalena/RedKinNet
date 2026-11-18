@@ -235,3 +235,9 @@ test_that("the seed and the logical options of the selectors are validated", {
   expect_error(rkn_select_global(g, "sex", seed = "a"), "`seed`")
   expect_error(rkn_select_global(g, "sex", diagnostics = "no"), "`diagnostics`")
 })
+
+test_that("print reports numbers of maximum sets beyond the largest double", {
+  sel <- rkn_select_random(example_network(), seed = 1, uniform = TRUE)
+  sel$family_summary$n_max_sets[4] <- Inf
+  expect_output(print(sel), "Maximum sets: more than 1.8e+308 in total", fixed = TRUE)
+})

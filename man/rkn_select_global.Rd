@@ -30,10 +30,11 @@ categorical (character, factor or logical), such as \code{"sex"} for
 among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
 covariate with two categories, the proportions of both may be given, summing to 1,
 and the first is used. For a numeric covariate, the target mean, a single unnamed
-number, as \code{45}. If \code{NULL} (default), the target is the proportion of the
-first category, in alphabetical order, or the mean, in the whole network, so that
-the selection keeps the composition of the cohort; for a categorical covariate this
-requires two categories.}
+number, as \code{45}. If \code{NULL} (default), the target is the composition of the
+whole network, so that the selection keeps that of the cohort: the mean, or the
+proportion of the first category, which is \code{TRUE} for a logical covariate, the
+first level for a factor, and the first in alphabetical order otherwise; for a
+categorical covariate this requires two categories.}
 
 \item{max_loss}{Non-negative integer. Largest number of individuals that may be
 selected below the maximum, to bring the composition closer to the target. With

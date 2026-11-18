@@ -134,6 +134,19 @@ test_that("factor and logical covariates are categories", {
   expect_identical(rkn_select_global(g, "sex", c(F = 0.5), seed = 2)$kept, sel$kept)
   igraph::V(g)$woman <- as.character(igraph::V(g)$sex) == "F"
   expect_identical(rkn_select_global(g, "woman", c(`TRUE` = 0.5), seed = 2)$kept, sel$kept)
+  # The default target is the proportion of TRUE, or of the first level of a factor.
+  expect_identical(rkn_select_global(g, "woman", seed = 1)$global$category, "TRUE")
+  igraph::V(g)$sex <- factor(igraph::V(g)$sex, levels = c("M", "F"))
+  expect_identical(rkn_select_global(g, "sex", seed = 1)$global$category, "M")
+  expect_equal(rkn_select_global(g, "sex", seed = 1)$global$target, 8 / 15)
+})
+
+test_that("global selections store family sizes and identifiers as integers, as the others do", {
+  sel <- rkn_select_global(example_network(), "sex", c(F = 0.5), seed = 1)
+  expect_type(sel$family_sizes, "integer")
+  expect_type(sel$family_summary$family_size, "integer")
+  expect_type(sel$node_diagnostics$family_id, "integer")
+  expect_type(sel$node_diagnostics$family_size, "integer")
 })
 
 test_that("print, summary and plot describe global selections", {

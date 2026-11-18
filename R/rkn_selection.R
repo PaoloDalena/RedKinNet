@@ -52,7 +52,9 @@
 #'     family was drawn uniformly among its maximum sets; \code{optimal}, whether the
 #'     criteria were evaluated over all its maximum sets; \code{n_max_sets}, in the
 #'     families drawn uniformly or evaluated over all maximum sets, the number of maximum
-#'     sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"}).
+#'     sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"};
+#'     \code{Inf} beyond about \eqn{1.8 \times 10^{308}}{1.8e308}, the largest number R
+#'     can store).
 #'     Since the choices in different families are independent, the maximum sets of the
 #'     network are all the combinations of one maximum set per family; their number,
 #'     reported by \code{print()}, is the product of \code{n_max_sets} over the families
@@ -180,10 +182,16 @@
 #' accordingly.
 #'
 #' In criteria-based selections over all maximum sets
-#' (\code{rkn_select_criteria(optimal = TRUE)}) no structural rule is applied either, so
-#' "kept without a choice" and "discarded without a choice" mean in every and in no
-#' maximum set of the family, and "decided among alternative sets" means chosen by the
-#' criteria among maximum sets that differ.
+#' (\code{rkn_select_criteria(optimal = TRUE)}) no structural rule is applied either:
+#' \code{"kept_apriori"} and \code{"discarded_apriori"} again mean in every and in no
+#' maximum set, and \code{"candidate_complex"} chosen by the criteria among maximum sets
+#' that differ, which \code{summary()} and \code{plot()} label accordingly.
+#'
+#' In both kinds of selection, the families too intricate for the exact computation,
+#' whose number \code{print()} reports, are selected by the structural rules, and their
+#' codes keep the meaning given above for selections with rules. In the families reduced
+#' by dominance (\code{mis_method} \code{"exact_reduced"}), the individuals removed by the
+#' reduction count as in no maximum set, although some maximum sets may contain them.
 #'
 #' @example man-roxygen/example-network.R
 #' @examples
@@ -206,18 +214,25 @@ NULL
                           candidate_simple = "decided among single candidates",
                           candidate_complex = "decided among alternative sets")
 
-# In uniform selections the same codes have an exact meaning (see ?rkn_selection).
+# In uniform selections and in selections over all maximum sets, which apply no
+# structural rule, the same codes have an exact meaning (see ?rkn_selection).
 .rkn_decision_labels_uniform <- c(kept_apriori = "in every maximum set",
                                   discarded_apriori = "in no maximum set",
                                   candidate_simple = "decided among single candidates",
                                   candidate_complex = "chosen at random among maximum sets")
+.rkn_decision_labels_optimal <- c(kept_apriori = "in every maximum set",
+                                  discarded_apriori = "in no maximum set",
+                                  candidate_simple = "decided among single candidates",
+                                  candidate_complex = "chosen by the criteria among maximum sets")
 
 #' Internal helper: decision labels of a selection
 #'
 #' @keywords internal
 #' @noRd
 .rkn_labels_of <- function(x) {
-  if (isTRUE(x$uniform)) .rkn_decision_labels_uniform else .rkn_decision_labels
+  if (isTRUE(x$uniform)) return(.rkn_decision_labels_uniform)
+  if (isTRUE(x$optimal)) return(.rkn_decision_labels_optimal)
+  .rkn_decision_labels
 }
 
 #' Internal constructor for rkn_selection objects
@@ -399,11 +414,13 @@ print.rkn_selection <- function(x, ...) {
 #'
 #' Formats a count known only through its logarithm, since counts of sets of
 #' individuals easily exceed the largest double: in full below a million, in
-#' scientific notation above.
+#' scientific notation above; an infinite count, beyond the largest double, is reported as
+#' larger than it.
 #'
 #' @keywords internal
 #' @noRd
 .rkn_format_log10 <- function(total) {
+  if (!is.finite(total)) return("more than 1.8e+308")
   if (total < 6) return(formatC(round(10^total), format = "f", digits = 0, big.mark = ","))
   exponent <- floor(total)
   mantissa <- round(10^(total - exponent), 1)

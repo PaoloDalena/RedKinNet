@@ -56,7 +56,9 @@ rules decided everyone, \code{"enumeration"}, \code{"exact"},
 family was drawn uniformly among its maximum sets; \code{optimal}, whether the
 criteria were evaluated over all its maximum sets; \code{n_max_sets}, in the
 families drawn uniformly or evaluated over all maximum sets, the number of maximum
-sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"}).
+sets of the family (\code{NA} otherwise, and after \code{"exact_reduced"};
+\code{Inf} beyond about \eqn{1.8 \times 10^{308}}{1.8e308}, the largest number R
+can store).
 Since the choices in different families are independent, the maximum sets of the
 network are all the combinations of one maximum set per family; their number,
 reported by \code{print()}, is the product of \code{n_max_sets} over the families
@@ -190,10 +192,16 @@ strictly between 0 and 1). \code{summary()} and \code{plot()} label them
 accordingly.
 
 In criteria-based selections over all maximum sets
-(\code{rkn_select_criteria(optimal = TRUE)}) no structural rule is applied either, so
-"kept without a choice" and "discarded without a choice" mean in every and in no
-maximum set of the family, and "decided among alternative sets" means chosen by the
-criteria among maximum sets that differ.
+(\code{rkn_select_criteria(optimal = TRUE)}) no structural rule is applied either:
+\code{"kept_apriori"} and \code{"discarded_apriori"} again mean in every and in no
+maximum set, and \code{"candidate_complex"} chosen by the criteria among maximum sets
+that differ, which \code{summary()} and \code{plot()} label accordingly.
+
+In both kinds of selection, the families too intricate for the exact computation,
+whose number \code{print()} reports, are selected by the structural rules, and their
+codes keep the meaning given above for selections with rules. In the families reduced
+by dominance (\code{mis_method} \code{"exact_reduced"}), the individuals removed by the
+reduction count as in no maximum set, although some maximum sets may contain them.
 }
 
 \examples{

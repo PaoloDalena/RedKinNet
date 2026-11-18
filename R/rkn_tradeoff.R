@@ -15,6 +15,9 @@
 #'   reach (see Details), and at the latest at 5\% of the size of the largest selection,
 #'   rounded up. With a number, it covers every number of individuals given up from 0 to
 #'   \code{max_loss}, and at most the size of the largest selection.
+#' @param seed Optional integer. Random numbers are used only in the families beyond the
+#'   computational budget (see Details); a seed makes the table reproducible. If
+#'   \code{NULL} (default), the current random number stream is used.
 #'
 #' @details
 #' The largest possible selection keeps one maximum set of unrelated individuals per
@@ -66,7 +69,7 @@
 #' The families beyond the computational budget of \code{rkn_select_global()} contribute
 #' only maximum sets, and cannot give up individuals in the table: the range reachable
 #' may then be wider than reported, and the number of selections is not available. Their
-#' options come in part from random draws, so that \code{set.seed()} makes the table
+#' options come in part from random draws, so that \code{seed} makes the table
 #' reproducible; \code{print()} reports their number.
 #'
 #' @return A data frame of class \code{rkn_tradeoff}, with one row per number of
@@ -125,7 +128,7 @@
 #' plot(rkn_tradeoff(g, "age", 45, max_loss = 4))
 #'
 #' @export
-rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolution = NULL) {
+rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolution = NULL, seed = NULL) {
 
   if (missing(covariate)) covariate <- NULL
   .rkn_global_check_input(g, covariate)
@@ -134,7 +137,12 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
     stop("`max_loss` must be NULL, to extend the table until the target comes within reach (up to 5% ",
          "of the largest selection), or a single non-negative integer.", call. = FALSE)
   }
+  .rkn_check_seed(seed)
   tgt <- .rkn_global_target(igraph::vertex_attr(g, covariate), target, resolution)
+  if (!is.null(seed)) {
+    withr::local_preserve_seed()
+    set.seed(seed)
+  }
   p <- tgt$p
   within_reach <- function(rows) {
     which(rows$min_value <= p + 1e-12 & rows$max_value >= p - 1e-12)

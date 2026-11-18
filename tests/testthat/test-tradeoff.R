@@ -244,3 +244,14 @@ test_that("print and plot describe the trade-off of a numeric covariate", {
   on.exit(grDevices::dev.off())
   expect_silent(plot(tr))
 })
+
+test_that("a seeded trade-off is validated and leaves the caller's random number stream untouched", {
+  g <- example_network()
+  expect_error(rkn_tradeoff(g, "sex", seed = "a"), "`seed`")
+  set.seed(123)
+  tr <- rkn_tradeoff(g, "sex", c(F = 0.7), seed = 1)
+  after <- stats::runif(3)
+  set.seed(123)
+  expect_identical(after, stats::runif(3))
+  expect_identical(tr$loss, 0:1)
+})

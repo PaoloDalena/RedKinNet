@@ -242,3 +242,12 @@ test_that("the covariates of the criteria are checked before the selection", {
                "\"height\"")
   expect_error(rkn_select_criteria(g, rkn_criterion_cutoff("sex", 1)), "needs a numeric covariate")
 })
+
+test_that("selections over all maximum sets label the decisions by their exact meaning", {
+  g <- example_network()
+  sel <- rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1, optimal = TRUE)
+  labels <- rownames(summary(sel)$decisions)
+  expect_true("in every maximum set" %in% labels)
+  expect_true("chosen by the criteria among maximum sets" %in% labels)
+  expect_false(any(grepl("without a choice", labels)))
+})

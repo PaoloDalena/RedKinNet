@@ -125,3 +125,12 @@ test_that("the tables cover only the totals reachable with at most k individuals
   # Giving up one individual of value v: three ways.
   expect_equal(res$table[2, total - (1:50) - res$c_base + 1, 1], rep(log(3), 50))
 })
+
+test_that("the work of the global tables is estimated before they are built", {
+  b <- .rkn_global_singletons(rep(c(1, 0), 50), rep(0, 100), 2)
+  expect_error(.rkn_global_select(b, 2, proportion_distance(0.5), max_work = 1, long = "stop"),
+               class = "rkn_work_limit")
+  expect_message(res <- .rkn_global_select(b, 2, proportion_distance(0.5), max_work = 1), "may take several minutes")
+  expect_gt(res$work, 1)
+  expect_silent(.rkn_global_select(b, 2, proportion_distance(0.5)))
+})

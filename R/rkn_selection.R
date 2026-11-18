@@ -65,21 +65,28 @@
 #'     \code{family_id}, \code{family_size}, \code{selector} (\code{"global"}),
 #'     \code{exact} (\code{FALSE} for the families beyond the computational budget,
 #'     see \code{\link{rkn_select_global}}), \code{n_kept}, \code{n_discarded},
-#'     \code{n_category} (selected members in the category) and \code{n_missing}
-#'     (selected members with a missing value), and the types of decision of
+#'     \code{n_category} (selected members in the category) or, for a numeric
+#'     covariate, \code{mean} (mean of the covariate among the selected members with a
+#'     known value, \code{NA} if none), and \code{n_missing} (selected members with a
+#'     missing value), and the types of decision of
 #'     \code{node_diagnostics} are not available;}
 #'   \item{\code{graph}}{the igraph network the selection was made on;}
 #'   \item{\code{call}}{the call that produced the selection;}
 #'   \item{\code{global}}{for global selections, a list describing the composition
-#'     reached: \code{covariate}, \code{category} and \code{target}; \code{cohort},
-#'     whether the target is the proportion of the network; \code{proportion}, the
-#'     proportion reached among the selected individuals with a known value,
-#'     \code{n_category} of \code{n_known}; \code{n_missing}; \code{size},
-#'     \code{max_size} and \code{max_loss}; \code{log_count}, the natural logarithm of
-#'     the number of selections reaching the same proportion and size (\code{NA} when
-#'     \code{exact} is \code{FALSE}); \code{exact}, whether every family was computed
-#'     exactly; \code{n_inexact}, the number of families that were not. \code{NULL}
-#'     otherwise.}
+#'     reached: \code{type}, \code{"proportion"} for a categorical covariate or
+#'     \code{"mean"} for a numeric one; \code{covariate} and \code{target};
+#'     \code{cohort}, whether the target is the proportion or mean of the network;
+#'     \code{n_known} and \code{n_missing}, the selected individuals with a known and
+#'     a missing value; \code{size}, \code{max_size} and \code{max_loss};
+#'     \code{log_count}, the natural logarithm of the number of selections reaching
+#'     the same composition and size (\code{NA} when \code{exact} is \code{FALSE});
+#'     \code{exact}, whether every family was computed exactly; \code{n_inexact}, the
+#'     number of families that were not. For a categorical covariate, also
+#'     \code{category}, \code{proportion} (the proportion reached among the selected
+#'     individuals with a known value) and \code{n_category}; for a numeric covariate,
+#'     \code{mean} (the mean of the recorded values among the selected individuals with
+#'     a known value), \code{resolution} and \code{rounded} (whether some value was
+#'     rounded for the search). \code{NULL} otherwise.}
 #' }
 #'
 #' @section Family structures:
@@ -254,7 +261,11 @@ NULL
       "Criteria-based selection (%s)", crit)
   }
   if (identical(x$method, "global")) {
-    header <- sprintf("Global selection (proportion of %s = %s)", x$global$covariate, x$global$category)
+    header <- if (x$global$type == "proportion") {
+      sprintf("Global selection (proportion of %s = %s)", x$global$covariate, x$global$category)
+    } else {
+      sprintf("Global selection (mean of %s)", x$global$covariate)
+    }
   }
   if (!is.null(x$seed)) header <- paste0(header, ", seed ", x$seed)
   header
@@ -297,20 +308,33 @@ print.rkn_selection <- function(x, ...) {
 
   if (identical(x$method, "global")) {
     gl <- x$global
-    cat(sprintf("Proportion of %s = %s among the selected: %.4f (%d of %d%s; target %.4g%s)\n",
-                gl$covariate, gl$category, gl$proportion, gl$n_category, gl$n_known,
-                if (gl$n_missing > 0) " with a known value" else "", gl$target,
-                if (gl$cohort) ", the proportion of the network" else ""))
+    if (gl$type == "proportion") {
+      cat(sprintf("Proportion of %s = %s among the selected: %.4f (%d of %d%s; target %.4g%s)\n",
+                  gl$covariate, gl$category, gl$proportion, gl$n_category, gl$n_known,
+                  if (gl$n_missing > 0) " with a known value" else "", gl$target,
+                  if (gl$cohort) ", the proportion of the network" else ""))
+    } else {
+      cat(sprintf("Mean of %s among the selected: %s (%d individuals%s; target %s%s)\n",
+                  gl$covariate, .rkn_format_mean(gl$mean, gl$resolution), gl$n_known,
+                  if (gl$n_missing > 0) " with a known value" else "", format(gl$target, digits = 6),
+                  if (gl$cohort) ", the mean of the network" else ""))
+      if (gl$rounded) {
+        cat(sprintf(paste0("Values of %s rounded to multiples of %s for the search: the distance of this mean ",
+                           "from the target exceeds the smallest possible by at most %s\n"),
+                    gl$covariate, format(gl$resolution), format(gl$resolution)))
+      }
+    }
     if (gl$n_missing > 0) cat(sprintf("Selected with a missing value of %s: %d\n", gl$covariate, gl$n_missing))
     if (gl$max_loss > 0) {
       cat(sprintf("Selected: %d of a largest possible %d (max_loss = %d)\n", gl$size, gl$max_size, gl$max_loss))
     }
     if (gl$exact) {
-      cat(sprintf("Selections reaching this proportion%s: %s, one drawn uniformly\n",
+      cat(sprintf("Selections reaching this %s%s: %s, one drawn uniformly\n",
+                  if (gl$type == "proportion") "proportion" else if (gl$rounded) "mean of the rounded values" else "mean",
                   if (gl$max_loss > 0) " and size" else "", .rkn_format_log10(gl$log_count / log(10))))
     } else {
-      cat(sprintf(paste0("Families beyond the computational budget: %d; the proportion may not be the best ",
-                         "possible, and the choice within them is not uniform\n"), gl$n_inexact))
+      cat(sprintf(paste0("Families beyond the computational budget: %d; the %s may not be the best ",
+                         "possible, and the choice within them is not uniform\n"), gl$n_inexact, gl$type))
     }
   }
 
@@ -357,6 +381,18 @@ print.rkn_selection <- function(x, ...) {
             "rerun with diagnostics = TRUE for a richer output.")
   }
   invisible(x)
+}
+
+#' Internal helper: a mean formatted to two decimals beyond its resolution
+#'
+#' @param x The mean.
+#' @param resolution The resolution of the covariate.
+#' @return A character string.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_format_mean <- function(x, resolution) {
+  formatC(x, format = "f", digits = max(0, 2 - floor(log10(resolution))))
 }
 
 #' Internal helper: a number given by its base-10 logarithm, as text

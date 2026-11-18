@@ -1,9 +1,13 @@
 # For each number of individuals given up, the range of proportions of women, the
 # closest to p and the number of selections reaching it, by exhaustive enumeration.
-brute_tradeoff <- function(g, p) {
+brute_tradeoff <- function(g, p, x = NULL) {
   sex <- igraph::V(g)$sex
   miss <- is.na(sex)
   cat <- !miss & sex == "F"
+  if (!is.null(x)) {
+    miss <- is.na(x)
+    cat <- ifelse(miss, 0, x)
+  }
   A <- .rkn_adjacency(g)
   n <- nrow(A)
   size <- C <- M <- numeric(0)
@@ -84,6 +88,14 @@ test_that("by default the table stops where the target comes within reach", {
   expect_identical(nrow(tr), 13L)
   given <- rkn_tradeoff(singletons(108, 120), "sex", c(F = 0.5), max_loss = 12)
   for (col in names(tr)) expect_equal(tr[[col]], given[[col]])
+  # The same with families, whose options are reused while the table is extended.
+  net <- make_network(7, n_atlas = 30, tree_sizes = c(9, 13, 20))
+  igraph::V(net)$sex <- rep(c("F", "M", "M"), length.out = igraph::vcount(net))
+  steps <- rkn_tradeoff(net, "sex", c(F = 0.5))
+  reached <- attr(steps, "tradeoff")$reached
+  expect_gt(reached, 1)
+  given <- rkn_tradeoff(net, "sex", c(F = 0.5), max_loss = reached)
+  for (col in names(steps)) expect_equal(steps[[col]], given[[col]])
   # 105 women and 120 men would need 15, beyond 5% of 225 rounded up.
   short <- rkn_tradeoff(singletons(105, 120), "sex", c(F = 0.5))
   expect_identical(short$loss, 0:12)
@@ -121,16 +133,31 @@ test_that("the table predicts the global selection for each max_loss", {
 test_that("the table stops before exceeding the memory limit when max_loss is NULL", {
   real <- .rkn_global_select
   local_mocked_bindings(.rkn_global_select = function(fams, k, ...) {
-    if (k > 10) stop(structure(class = c("rkn_table_limit", "error", "condition"),
+    if (k > 8) stop(structure(class = c("rkn_table_limit", "error", "condition"),
                                list(message = "Table limit.", call = NULL)))
     real(fams, k, ...)
   })
   g <- singletons(108, 120)
+  # The table is extended to 1, 2, 4, 8 and then 12 individuals given up.
   tr <- rkn_tradeoff(g, "sex", c(F = 0.5))
-  expect_identical(tr$loss, 0:10)
-  expect_true(attr(tr, "tradeoff")$limited)
+  expect_identical(tr$loss, 0:8)
+  expect_identical(attr(tr, "tradeoff")$limited, "memory")
   expect_output(print(tr), "a longer table would exceed the memory limit")
   expect_error(rkn_tradeoff(g, "sex", c(F = 0.5), max_loss = 12), "Table limit", class = "rkn_table_limit")
+})
+
+test_that("the table stops before exceeding the computational budget when max_loss is NULL", {
+  real <- .rkn_global_select
+  local_mocked_bindings(.rkn_global_select = function(fams, k, ...) {
+    real(fams, k, ..., max_work = if (k >= 4) 1 else Inf)
+  })
+  g <- singletons(108, 120)
+  tr <- rkn_tradeoff(g, "sex", c(F = 0.5))
+  expect_identical(tr$loss, 0:2)
+  expect_identical(attr(tr, "tradeoff")$limited, "work")
+  expect_output(print(tr), "a longer table would exceed the computational budget: set max_loss to extend it")
+  expect_message(given <- rkn_tradeoff(g, "sex", c(F = 0.5), max_loss = 12), "may take several minutes")
+  expect_identical(given$loss, 0:12)
 })
 
 test_that("the inputs of the trade-off are validated", {
@@ -141,8 +168,9 @@ test_that("the inputs of the trade-off are validated", {
     expect_error(rkn_tradeoff(g, "sex", c(F = 0.5), max_loss = bad), "max_loss` must be NULL")
   }
   expect_error(rkn_tradeoff(g, "sex", c(X = 0.5)), "not found")
+  expect_error(rkn_tradeoff(g, "sex", c(F = 0.5), resolution = 1), "numeric covariates only")
   igraph::V(g)$age <- seq_len(igraph::vcount(g))
-  expect_error(rkn_tradeoff(g, "age"), "categorical covariates")
+  expect_error(rkn_tradeoff(g, "age", c(F = 45)), "single unnamed number")
 })
 
 test_that("print and plot describe the trade-off", {
@@ -173,4 +201,46 @@ test_that("print and plot describe the trade-off", {
   expect_silent(plot(tr))
   expect_silent(plot(rkn_tradeoff(example_network(), "sex")))
   expect_silent(plot(long, main = "Trade-off"))
+})
+
+test_that("the trade-off of a numeric covariate matches exhaustive enumeration", {
+  set.seed(32)
+  pool <- c(atlas_connected(1, 5), atlas_connected(1, 1))
+  for (i in 1:8) {
+    repeat {
+      parts <- pool[sample(length(pool), sample(2:4, 1))]
+      for (j in seq_along(parts)) igraph::V(parts[[j]])$name <- paste0(j, "_", seq_len(igraph::vcount(parts[[j]])))
+      net <- do.call(igraph::disjoint_union, unname(parts))
+      if (igraph::vcount(net) <= 12) break
+    }
+    age <- sample(c(20:70, NA), igraph::vcount(net), replace = TRUE, prob = c(rep(0.9 / 51, 51), 0.1))
+    igraph::V(net)$age <- age
+    p <- stats::runif(1, 20, 70)
+    ref <- brute_tradeoff(net, p, age)
+    tr <- rkn_tradeoff(net, "age", p, max_loss = nrow(ref) - 1)
+    expect_named(tr, c("loss", "size", "mean", "distance", "min_mean", "max_mean", "log_count"))
+    expect_equal(tr$mean, ref$proportion)
+    expect_equal(tr$distance, ref$distance)
+    expect_equal(tr$min_mean, ref$min_proportion)
+    expect_equal(tr$max_mean, ref$max_proportion)
+    expect_equal(exp(tr$log_count), ref$count)
+  }
+})
+
+test_that("print and plot describe the trade-off of a numeric covariate", {
+  g <- example_network()
+  igraph::V(g)$age <- c(52, 21, 55, 34, 31, 60, 33, 29, 63, 35, 61, 38, 30, 58, 44)[
+    match(igraph::V(g)$name, c("P1", "C1", "P2", "S1", "S2", "T1", "T2", "T3", "D1", "K1", "D2", "K2", "K3", "D3", "U1"))]
+  tr <- rkn_tradeoff(g, "age", 45, max_loss = 4)
+  expect_output(print(tr), "Mean of age by individuals given up (target 45)", fixed = TRUE)
+  expect_output(print(tr), "Largest selection: 8 individuals, mean of age from 49.12 to 53.38", fixed = TRUE)
+  expect_output(print(tr), "min_mean")
+  expect_identical(attr(rkn_tradeoff(g, "age", 45), "tradeoff")$reached, 1L)
+  igraph::V(g)$bmi <- c(22.3, 31.7, 27.4, 19.8, 24.1, 29.9, 21.5, 33.2, 26.6, 23.4, 28.8, 25.0, 20.7, 30.4, 24.9)
+  expect_output(print(rkn_tradeoff(g, "bmi", 25, max_loss = 2)),
+                "Values of bmi rounded to multiples of 0.2: each mean is within 0.1 of that of the recorded values",
+                fixed = TRUE)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_silent(plot(tr))
 })

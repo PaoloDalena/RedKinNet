@@ -69,21 +69,28 @@ more than one maximum set; the numbers of kept and discarded individuals, overal
 \code{family_id}, \code{family_size}, \code{selector} (\code{"global"}),
 \code{exact} (\code{FALSE} for the families beyond the computational budget,
 see \code{\link{rkn_select_global}}), \code{n_kept}, \code{n_discarded},
-\code{n_category} (selected members in the category) and \code{n_missing}
-(selected members with a missing value), and the types of decision of
+\code{n_category} (selected members in the category) or, for a numeric
+covariate, \code{mean} (mean of the covariate among the selected members with a
+known value, \code{NA} if none), and \code{n_missing} (selected members with a
+missing value), and the types of decision of
 \code{node_diagnostics} are not available;}
 \item{\code{graph}}{the igraph network the selection was made on;}
 \item{\code{call}}{the call that produced the selection;}
 \item{\code{global}}{for global selections, a list describing the composition
-reached: \code{covariate}, \code{category} and \code{target}; \code{cohort},
-whether the target is the proportion of the network; \code{proportion}, the
-proportion reached among the selected individuals with a known value,
-\code{n_category} of \code{n_known}; \code{n_missing}; \code{size},
-\code{max_size} and \code{max_loss}; \code{log_count}, the natural logarithm of
-the number of selections reaching the same proportion and size (\code{NA} when
-\code{exact} is \code{FALSE}); \code{exact}, whether every family was computed
-exactly; \code{n_inexact}, the number of families that were not. \code{NULL}
-otherwise.}
+reached: \code{type}, \code{"proportion"} for a categorical covariate or
+\code{"mean"} for a numeric one; \code{covariate} and \code{target};
+\code{cohort}, whether the target is the proportion or mean of the network;
+\code{n_known} and \code{n_missing}, the selected individuals with a known and
+a missing value; \code{size}, \code{max_size} and \code{max_loss};
+\code{log_count}, the natural logarithm of the number of selections reaching
+the same composition and size (\code{NA} when \code{exact} is \code{FALSE});
+\code{exact}, whether every family was computed exactly; \code{n_inexact}, the
+number of families that were not. For a categorical covariate, also
+\code{category}, \code{proportion} (the proportion reached among the selected
+individuals with a known value) and \code{n_category}; for a numeric covariate,
+\code{mean} (the mean of the recorded values among the selected individuals with
+a known value), \code{resolution} and \code{rounded} (whether some value was
+rounded for the search). \code{NULL} otherwise.}
 }
 }
 

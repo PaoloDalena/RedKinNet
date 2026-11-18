@@ -96,6 +96,14 @@ test_that("max_loss gives up individuals to bring the proportion closer to the t
   expect_identical(huge$global$max_loss, 1e6)
 })
 
+test_that("a message warns before a selection beyond the computational budget", {
+  real <- .rkn_global_select
+  local_mocked_bindings(.rkn_global_select = function(...) real(..., max_work = 1))
+  g <- example_network()
+  expect_message(sel <- rkn_select_global(g, "sex", c(F = 0.5), seed = 1), "may take several minutes")
+  expect_identical(sel$global$n_category, 4)
+})
+
 test_that("the inputs of a global selection are validated", {
   g <- example_network()
   expect_error(rkn_select_global(g), "covariate")
@@ -107,7 +115,12 @@ test_that("the inputs of a global selection are validated", {
   expect_error(rkn_select_global(g, "sex", c(F = 1.2)), "between 0 and 1")
   expect_error(rkn_select_global(g, "sex", c(F = 0.3, M = 0.3)), "sum to 1")
   igraph::V(g)$age <- seq_len(igraph::vcount(g))
-  expect_error(rkn_select_global(g, "age", seed = 1), "categorical covariates")
+  expect_error(rkn_select_global(g, "age", c(F = 0.5)), "single unnamed number")
+  expect_error(rkn_select_global(g, "age", c(40, 50)), "single unnamed number")
+  expect_error(rkn_select_global(g, "age", 10, resolution = 0), "single positive number")
+  expect_error(rkn_select_global(g, "sex", c(F = 0.5), resolution = 1), "numeric covariates only")
+  igraph::V(g)$age[1] <- Inf
+  expect_error(rkn_select_global(g, "age", 10), "infinite")
   igraph::V(g)$sex[1:3] <- "other"
   expect_error(rkn_select_global(g, "sex"), "more than two categories")
   expect_error(rkn_select_global(g, "sex", c(F = 0.5, M = 0.5)), "one category")
@@ -145,4 +158,88 @@ test_that("print, summary and plot describe global selections", {
   expect_null(plain$family_summary)
   expect_identical(plain$kept, sel$kept)
   expect_message(expect_output(print(plain), "Proportion of sex = F"), "diagnostics = FALSE")
+})
+
+labels_of <- function(best, ids) {
+  out <- character(length(best))
+  for (i in seq_along(best)) out[i] <- paste(sort(ids[as.integer(strsplit(best[i], ",")[[1]])]), collapse = ",")
+  out
+}
+
+random_small_network <- function(pool) {
+  repeat {
+    parts <- pool[sample(length(pool), sample(2:4, 1))]
+    for (j in seq_along(parts)) igraph::V(parts[[j]])$name <- paste0(j, "_", seq_len(igraph::vcount(parts[[j]])))
+    net <- do.call(igraph::disjoint_union, unname(parts))
+    if (igraph::vcount(net) <= 12) return(net)
+  }
+}
+
+test_that("global selections reach the best mean of a numeric covariate", {
+  set.seed(23)
+  pool <- c(atlas_connected(1, 5), atlas_connected(1, 1))
+  for (i in 1:15) {
+    net <- random_small_network(pool)
+    age <- sample(c(20:70, NA), igraph::vcount(net), replace = TRUE, prob = c(rep(0.9 / 51, 51), 0.1))
+    igraph::V(net)$age <- age
+    k <- sample(0:2, 1)
+    p <- stats::runif(1, 20, 70)
+    sel <- rkn_select_global(net, "age", p, max_loss = k, seed = i)
+    expect_false(sel$global$rounded)
+    best <- labels_of(best_selections(net, ifelse(is.na(age), 0, age), as.numeric(is.na(age)), k, p),
+                      igraph::V(net)$name)
+    expect_true(paste(sort(sel$kept), collapse = ",") %in% best)
+    expect_equal(exp(sel$global$log_count), length(best))
+    expect_equal(sel$global$mean, mean(age[igraph::V(net)$name %in% sel$kept], na.rm = TRUE))
+  }
+})
+
+test_that("rounded values give the best selection for them, within one resolution of the best", {
+  set.seed(24)
+  pool <- c(atlas_connected(1, 5), atlas_connected(1, 1))
+  for (i in 1:10) {
+    net <- random_small_network(pool)
+    bmi <- round(stats::runif(igraph::vcount(net), 17, 40), 1)
+    igraph::V(net)$bmi <- bmi
+    p <- stats::runif(1, 20, 35)
+    sel <- rkn_select_global(net, "bmi", p, max_loss = 1, resolution = 2, seed = i)
+    expect_true(sel$global$rounded)
+    steps <- round((bmi - min(bmi)) / 2)
+    best <- labels_of(best_selections(net, steps, rep(0, length(bmi)), 1, (p - min(bmi)) / 2), igraph::V(net)$name)
+    expect_true(paste(sort(sel$kept), collapse = ",") %in% best)
+    exact <- labels_of(best_selections(net, bmi, rep(0, length(bmi)), 1, p), igraph::V(net)$name)[1]
+    best_mean <- mean(bmi[igraph::V(net)$name %in% strsplit(exact, ",")[[1]]])
+    expect_lte(abs(sel$global$mean - p), abs(best_mean - p) + 2)
+  }
+})
+
+test_that("the default resolution keeps integers and divides other ranges into at most 100 steps", {
+  expect_identical(.rkn_default_resolution(20:85), 1)
+  expect_identical(.rkn_default_resolution(c(0, 1)), 1)
+  expect_identical(.rkn_default_resolution(c(5, 5)), 1)
+  expect_equal(.rkn_default_resolution(c(16.2, 45.1)), 0.5)
+  expect_equal(.rkn_default_resolution(c(0, 3.3)), 0.05)
+  expect_equal(.rkn_default_resolution(c(0, 150)), 2)
+  expect_equal(.rkn_default_resolution(c(0, 200000)), 2000)
+})
+
+test_that("print and the family summary describe selections by mean", {
+  g <- example_network()
+  igraph::V(g)$age <- c(52, 21, 55, 34, 31, 60, 33, 29, 63, 35, 61, 38, 30, 58, 44)[
+    match(igraph::V(g)$name, c("P1", "C1", "P2", "S1", "S2", "T1", "T2", "T3", "D1", "K1", "D2", "K2", "K3", "D3", "U1"))]
+  sel <- rkn_select_global(g, "age", 45, seed = 1)
+  expect_identical(sel$global$type, "mean")
+  expect_equal(sel$global$mean, 393 / 8)
+  expect_output(print(sel), "Global selection (mean of age), seed 1", fixed = TRUE)
+  expect_output(print(sel), "Mean of age among the selected: 49.12 (8 individuals; target 45)", fixed = TRUE)
+  expect_named(sel$family_summary, c("family_id", "family_size", "selector", "exact", "n_kept", "n_discarded",
+                                     "mean", "n_missing"))
+  expect_equal(sel$family_summary$mean[1], 53.5)
+  expect_output(print(rkn_select_global(g, "age", seed = 1)), "the mean of the network")
+
+  igraph::V(g)$bmi <- c(22.3, 31.7, 27.4, 19.8, 24.1, 29.9, 21.5, 33.2, 26.6, 23.4, 28.8, 25.0, 20.7, 30.4, 24.9)
+  rounded <- rkn_select_global(g, "bmi", 25, seed = 1)
+  expect_equal(rounded$global$resolution, 0.2)
+  expect_output(print(rounded), "Values of bmi rounded to multiples of 0.2 for the search")
+  expect_output(print(rounded), "Selections reaching this mean of the rounded values: 1")
 })

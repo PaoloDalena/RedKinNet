@@ -6,7 +6,7 @@
 \alias{plot.rkn_tradeoff}
 \title{Trade-off between the size of a selection and its composition}
 \usage{
-rkn_tradeoff(g, covariate, target = NULL, max_loss = NULL)
+rkn_tradeoff(g, covariate, target = NULL, max_loss = NULL, resolution = NULL)
 
 \method{print}{rkn_tradeoff}(x, ...)
 
@@ -20,15 +20,18 @@ The network is usually built with \code{\link{rkn_graph_from_kinship}}, which al
 checks the samples; for a network built in another way, see
 \code{\link{rkn_check_samples}}.}
 
-\item{covariate}{Character. Name of a categorical vertex attribute of the network
-(character, factor or logical), such as \code{"sex"} for \code{V(g)$sex}.}
+\item{covariate}{Character. Name of a vertex attribute of the network, either
+categorical (character, factor or logical), such as \code{"sex"} for
+\code{V(g)$sex}, or numeric, such as \code{"age"}.}
 
-\item{target}{The target proportion of one category among the selected
-individuals, named by the category, as \code{c(F = 0.5)}; for a covariate with two
-categories, the proportions of both may be given, summing to 1, and the first is
-used. If \code{NULL} (default), the target is the proportion of the first category,
-in alphabetical order, in the whole network, so that the selection keeps the
-composition of the cohort; this requires a covariate with two categories.}
+\item{target}{For a categorical covariate, the target proportion of one category
+among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
+covariate with two categories, the proportions of both may be given, summing to 1,
+and the first is used. For a numeric covariate, the target mean, a single unnamed
+number, as \code{45}. If \code{NULL} (default), the target is the proportion of the
+first category, in alphabetical order, or the mean, in the whole network, so that
+the selection keeps the composition of the cohort; for a categorical covariate this
+requires two categories.}
 
 \item{max_loss}{Either \code{NULL} (default) or a non-negative integer, the largest
 number of individuals given up covered by the table. With \code{NULL}, the table
@@ -37,12 +40,20 @@ reach (see Details), and at the latest at 5\\% of the size of the largest select
 rounded up. With a number, it covers every number of individuals given up from 0 to
 \code{max_loss}, and at most the size of the largest selection.}
 
+\item{resolution}{For numeric covariates only, a positive number: the values are
+rounded to multiples of \code{resolution} above the smallest value to search the
+selections (see Details). If \code{NULL} (default), integer values spanning at most
+100 are not rounded (a resolution of 1, as for ages in years or scores); other values
+are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their range
+into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
+to 200,000.}
+
 \item{x}{An \code{rkn_tradeoff} object.}
 
 \item{...}{Not used.}
 
 \item{main}{Title of the plot; \code{NULL} (default) describes the covariate, the
-category and the target.}
+category if any, and the target.}
 }
 \value{
 A data frame of class \code{rkn_tradeoff}, with one row per number of
@@ -51,25 +62,30 @@ individuals given up and the columns:
 \item{loss}{Number of individuals given up, below the largest selection.}
 \item{size}{Size of the selection.}
 \item{proportion}{Proportion of the category closest to the target among the
-selections of that size (the smaller of two equally close).}
-\item{distance}{Absolute difference between \code{proportion} and the target.}
-\item{min_proportion, max_proportion}{Smallest and largest proportions of the
-category among the selections of that size.}
+selections of that size (the lower of two equally close); \code{mean} for a
+numeric covariate.}
+\item{distance}{Absolute difference between \code{proportion} or \code{mean} and
+the target.}
+\item{min_proportion, max_proportion}{Lowest and highest proportions of the
+category among the selections of that size; \code{min_mean} and
+\code{max_mean} for a numeric covariate.}
 \item{log_count}{Natural logarithm of the number of selections of that size at
 the smallest distance from the target, on either side; \code{NA} when some
 family is beyond the computational budget.}
 }
-The proportions are computed among the selected individuals with a known value of
-the covariate, and are \code{NA} for a size at which no selection includes one. The
-attribute \code{"tradeoff"} is a list with the \code{covariate}, the
-\code{category}, the \code{target}, \code{max_size} (the size of the largest
-selection), \code{reached} (the number of individuals given up at which the target
-comes within reach, \code{NA} if it does not within the table) and
-\code{n_inexact} (the number of families beyond the computational budget).
+The proportions and means are computed among the selected individuals with a known
+value of the covariate, and are \code{NA} for a size at which no selection includes
+one. The attribute \code{"tradeoff"} is a list with the \code{type}
+(\code{"proportion"} or \code{"mean"}), the \code{covariate}, the \code{category}
+(for a categorical covariate), the \code{target}, the \code{resolution} (for a
+numeric covariate), \code{max_size} (the size of the largest selection),
+\code{reached} (the number of individuals given up at which the target comes within
+reach, \code{NA} if it does not within the table) and \code{n_inexact} (the number
+of families beyond the computational budget).
 
 \code{print()} shows the first rows and those around \code{reached}, with the
 number of selections as a count. \code{plot()} draws, against the number of
-individuals given up, the range of proportions (shaded), the proportion closest to
+individuals given up, the range of proportions or means (shaded), the one closest to
 the target (line and points) and the target (dashed), with the size of the
 selection on the top axis and, if the target comes within reach after giving up
 individuals, a dotted line at that number.
@@ -78,30 +94,30 @@ individuals, a dotted line at that number.
 For a target composition of the whole selection, as in
 \code{\link{rkn_select_global}}, shows what each individual given up allows: for each
 number of individuals below the largest possible selection, the range of proportions
-of the category reached by the selections of that size, and the proportion closest to
-the target. It helps to choose the \code{max_loss} of \code{rkn_select_global()}
-before selecting.
+of the category, or of means of a numeric covariate, reached by the selections of that
+size, and the one closest to the target. It helps to choose the \code{max_loss} of
+\code{rkn_select_global()} before selecting.
 }
 \details{
 The largest possible selection keeps one maximum set of unrelated individuals per
 family, and a family usually has several, with different numbers of members in the
-category. The selections of the largest size therefore reach a range of proportions,
-from the one with the fewest individuals in the category to the one with the most.
-This range is not an uncertainty: every proportion in it is that of selections that
-exist. Giving up individuals widens it, since members inside or outside the category
-can be left out, and since smaller sets of unrelated members of a family can include
-individuals that none of its maximum sets includes.
+category or different values of the covariate. The selections of the largest size
+therefore reach a range of proportions or means, from the lowest to the highest. This
+range is not an uncertainty: every proportion or mean in it is that of selections
+that exist. Giving up individuals widens it, since members with any value can be left
+out, and since smaller sets of unrelated members of a family can include individuals
+that none of its maximum sets includes.
 
-For each number of individuals given up, the table reports the proportion closest to
-the target: the largest of the range when the target lies above it, the smallest
-when the target lies below it, and, when the target lies within it, the closest of
-the proportions reached, usually within \eqn{1/(2n)} of the target, since the
-proportion among \eqn{n} individuals with a known value is a multiple of \eqn{1/n}
-(the range may have gaps when few families offer alternatives). When two proportions on
-either side of the target are equally close, the table reports the smaller, while
-\code{rkn_select_global()} draws among the selections reaching either. The target
-comes within reach at the first number of individuals given up at which it lies
-within the range.
+For each number of individuals given up, the table reports the proportion or mean
+closest to the target: the highest of the range when the target lies above it, the
+lowest when the target lies below it, and, when the target lies within it, the
+closest of those reached. A proportion among \eqn{n} individuals with a known value is
+a multiple of \eqn{1/n}, so that it usually lies within \eqn{1/(2n)} of a target within
+the range (the range may have gaps when few families offer alternatives). When two
+values on either side of the target are equally close, the table reports the lower,
+while \code{rkn_select_global()} draws among the selections reaching either. The
+target comes within reach at the first number of individuals given up at which it
+lies within the range.
 
 The distance from the target at the largest size is a property of the data, not an
 approximation: it depends on the composition of the network, on the individuals
@@ -109,22 +125,31 @@ without relatives, who are always selected, and on the alternatives that each fa
 offers. \code{rkn_select_global(g, covariate, target, max_loss = L)} selects, among
 the rows from 0 to \code{L}, the smallest distance and, among the rows reaching it,
 the largest size. With a target beyond the range, as \code{c(F = 1)}, it selects the
-largest proportion of the category.
+highest proportion of the category.
+
+For a numeric covariate, the means are those of the values rounded to multiples of
+\code{resolution}, as in the search of \code{rkn_select_global()}: each lies within
+half the resolution of the mean of the recorded values of the same selections, and
+they are exact when no value is rounded, as for ages in whole years with the default
+resolution.
 
 The table comes from the exact counts of \code{rkn_select_global()} (see its
 Details), without drawing a selection. With \code{max_loss = NULL}, the table is
-computed for 10 individuals given up, then for twice as many, until the target comes
-within reach or the limit of 5\\% is reached; the time grows somewhat faster than the
-number of individuals given up. If extending the table would exceed the memory limit
-of \code{rkn_select_global()}, the table stops at the last number computed and
-\code{print()} reports it; with a number as \code{max_loss}, the function stops with
-an error before allocating the tables.
+computed with no individual given up, then for 1, 2, 4 and so on, doubling until the
+target comes within reach or the limit of 5\\% is reached; the time grows faster than
+the number of individuals given up, and much faster for a numeric covariate. The
+table also stops at the last number computed if the next would exceed the memory
+limit of \code{rkn_select_global()}, or its computational budget, of about half a
+minute on a recent laptop; \code{print()} reports why. With a number as
+\code{max_loss}, the function stops with an error beyond the memory limit, and a
+message warns beyond the computational budget that the table may take several
+minutes.
 
 The families beyond the computational budget of \code{rkn_select_global()} contribute
-only maximum sets, and cannot give up individuals in the table: the proportions
-reachable may then be wider than reported, and the number of selections is not
-available. Their options come in part from random draws, so that \code{set.seed()}
-makes the table reproducible; \code{print()} reports their number.
+only maximum sets, and cannot give up individuals in the table: the range reachable
+may then be wider than reported, and the number of selections is not available. Their
+options come in part from random draws, so that \code{set.seed()} makes the table
+reproducible; \code{print()} reports their number.
 }
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
@@ -153,6 +178,9 @@ rkn_tradeoff(g, "sex", c(F = 0.7), max_loss = 4)
 
 # The proportion of women of the network is within reach at the largest size
 rkn_tradeoff(g, "sex")
+
+# A mean age of 45 years
+plot(rkn_tradeoff(g, "age", 45, max_loss = 4))
 
 }
 \seealso{

@@ -2,18 +2,20 @@
 #'
 #' Lists what a family can contribute to a global selection: for each number \code{j}
 #' of individuals below its maximum size (0 to \code{k}), each combination of
-#' \code{c}, the number of selected members in the category, and \code{m}, the number of
-#' selected members with a missing value, with \code{lc}, the logarithm of the number of
-#' sets of unrelated members that give it. The two counts are combined into one value,
-#' \code{c + (n_c + 1) m} with \code{n_c} the members in the category, so that the profile
-#' of \code{.rkn_family_profile()} counts both at once. Single individuals and pairs are
+#' \code{c}, the number of selected members in the category (or the sum of their
+#' values, as integer steps), and \code{m}, the number of selected members with a
+#' missing value, with \code{lc}, the logarithm of the number of sets of unrelated
+#' members that give it. The two totals are combined into one value,
+#' \code{c + (n_c + 1) m} with \code{n_c} the total of \code{cat} over the family, so
+#' that the profile of \code{.rkn_family_profile()} counts both at once. Single individuals and pairs are
 #' listed directly. A family beyond the budget of the profile contributes the maximum
 #' sets of its partial profile, a family too intricate even for that the set returned
 #' by \code{fallback}; in both cases the options are not exhaustive, their counts are
 #' not known, and the family is marked \code{exact = FALSE}.
 #'
 #' @param A Symmetric logical adjacency matrix of a connected family.
-#' @param cat,miss 0/1 vectors: member in the category, member with a missing value.
+#' @param cat,miss Vectors over the members: 1 in the category, or the steps of the
+#'   values, and 0 for a missing value; 1 for a missing value.
 #' @param k Largest number of individuals below the maximum size.
 #' @param fallback A function returning a maximum set of the family as a logical vector,
 #'   or \code{NULL}.
@@ -81,13 +83,14 @@
 
 #' Internal helper: single individuals of a global selection, grouped
 #'
-#' Single individuals of the same kind (in the category, not in it, with a missing
-#' value) are interchangeable, so each kind forms one group whose options are the
-#' number \code{t} of members left out, from 0 to \code{k}, in \code{choose(n, t)}
-#' ways. This keeps the number of families to combine small when \code{k > 0}, where
+#' Single individuals with the same value (in the category or not, or the same steps of
+#' a numeric covariate) or with a missing value are interchangeable, so each value forms
+#' one group whose options are the number \code{t} of members left out, from 0 to
+#' \code{k}, in \code{choose(n, t)} ways; the known values come in decreasing order,
+#' then the missing ones. This keeps the number of families to combine small when \code{k > 0}, where
 #' every single individual could otherwise be left out on its own.
 #'
-#' @param cat,miss 0/1 vectors over the single individuals.
+#' @param cat,miss Vectors over the single individuals, as in \code{.rkn_global_options()}.
 #' @param k Largest number of individuals below the maximum size.
 #' @return A list of groups, each in the format of \code{.rkn_global_options()} with
 #'   \code{group}, the number of members, and \code{members}, their positions in
@@ -97,7 +100,10 @@
 #' @noRd
 .rkn_global_singletons <- function(cat, miss, k) {
   groups <- list()
-  for (kind in list(c(1, 0), c(0, 0), c(0, 1))) {
+  kinds <- list()
+  for (value in sort(unique(cat[miss == 0]), decreasing = TRUE)) kinds[[length(kinds) + 1]] <- c(value, 0)
+  if (any(miss == 1)) kinds[[length(kinds) + 1]] <- c(0, 1)
+  for (kind in kinds) {
     members <- which(cat == kind[1] & miss == kind[2])
     n <- length(members)
     if (n == 0) next
@@ -150,17 +156,26 @@
 #'   the function stops with an error of class \code{rkn_table_limit}.
 #' @param draw If \code{FALSE}, only the table of the totals is computed, without
 #'   keeping the tables needed to go back, and \code{distance} is not used.
+#' @param max_work Budget of work, in cells written while combining the families,
+#'   estimated before any table is built; the default takes about half a minute on a
+#'   recent laptop (from 4e7 to 8e7 cells per second).
+#' @param long What to do beyond \code{max_work}: \code{"message"} warns that the
+#'   computation may take several minutes and carries on; \code{"stop"} stops with an
+#'   error of class \code{rkn_work_limit}.
 #' @return A list with \code{choice}, the option chosen in each family; the totals
 #'   \code{size}, \code{j}, \code{c} and \code{m} of the selection; \code{distance};
 #'   \code{log_count}, the logarithm of the number of selections reaching the best
 #'   totals (\code{NA} when some family is not \code{exact}); \code{exact}; and
 #'   \code{table}, the table of the totals. With \code{draw = FALSE}, a list with
 #'   \code{table}, \code{alpha} (the maximum size), \code{c_base} and \code{m_base}
-#'   (the totals of the first cell of the table) and \code{exact}.
+#'   (the totals of the first cell of the table) and \code{exact}. Both include
+#'   \code{work}, the work estimated.
 #'
 #' @keywords internal
 #' @noRd
-.rkn_global_select <- function(fams, k, distance, max_cells = 1e7, draw = TRUE) {
+.rkn_global_select <- function(fams, k, distance, max_cells = 1e7, draw = TRUE, max_work = 1.5e9,
+                               long = c("message", "stop")) {
+  long <- match.arg(long)
   n_fam <- length(fams)
   n_opt <- integer(n_fam)
   alpha <- 0
@@ -204,8 +219,10 @@
   c_hi <- m_hi <- rep(-Inf, k + 1)
   c_lo[start + 1] <- c_hi[start + 1] <- m_lo[start + 1] <- m_hi[start + 1] <- 0
   bounds <- matrix(0, n_free + 1, 4)
+  n_valid <- numeric(n_free)
   for (i in seq_len(n_free)) {
     o <- fams[[free[i]]]$options
+    n_valid[i] <- sum(o$j <= k)
     n_c_lo <- n_m_lo <- rep(Inf, k + 1)
     n_c_hi <- n_m_hi <- rep(-Inf, k + 1)
     for (q in which(o$j <= k)) {
@@ -231,9 +248,21 @@
   # Without going back, only two consecutive tables are held at once.
   need <- if (draw) sum(kept) + peak else max(box[-1] + box[-length(box)], box[1])
   if (need > max_cells) {
-    msg <- sprintf(paste0("The global selection would keep %.1e table cells (limit %.1e). Reduce max_loss, or ",
-                          "the number of individuals with a missing value of the covariate."), need, max_cells)
+    msg <- sprintf(paste0("The global selection would keep %.1e table cells (limit %.1e). Reduce max_loss or ",
+                          "the number of individuals with a missing value of the covariate, or, for a ",
+                          "numeric covariate, choose a coarser resolution."), need, max_cells)
     stop(structure(class = c("rkn_table_limit", "error", "condition"), list(message = msg, call = NULL)))
+  }
+  # Each option of a family writes a copy of the table before it into the next one;
+  # going back recomputes the tables between checkpoints once more.
+  work <- sum(n_valid * box[-length(box)] + box[-1]) * (if (draw) 2 else 1)
+  if (work > max_work) {
+    if (long == "stop") {
+      stop(structure(class = c("rkn_work_limit", "error", "condition"),
+                     list(message = "The computation would exceed the computational budget.", call = NULL)))
+    }
+    message("This computation is large and may take several minutes; a smaller max_loss or, for a numeric ",
+            "covariate, a coarser resolution shortens it.")
   }
 
   # Adds the i-th family to the table of the families before it. The totals that fall
@@ -269,7 +298,8 @@
   }
   off <- bounds[n_free + 1, ]
   if (!draw) {
-    return(list(table = tab, alpha = alpha, c_base = c_base + off[1], m_base = m_base + off[3], exact = exact))
+    return(list(table = tab, alpha = alpha, c_base = c_base + off[1], m_base = m_base + off[3], exact = exact,
+                work = work))
   }
 
   size <- alpha - (slice.index(tab, 1) - 1)
@@ -314,7 +344,7 @@
   stopifnot(all(target == c(start, 0, 0)))
 
   list(choice = choice, size = alpha - totals[1], j = totals[1], c = c_base + totals[2], m = m_base + totals[3],
-       distance = d_min, log_count = if (exact) log_count else NA_real_, exact = exact, table = tab)
+       distance = d_min, log_count = if (exact) log_count else NA_real_, exact = exact, table = tab, work = work)
 }
 
 #' Internal helper: the sets of unrelated individuals chosen in each family

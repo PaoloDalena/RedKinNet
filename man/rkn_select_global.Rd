@@ -9,6 +9,7 @@ rkn_select_global(
   covariate,
   target = NULL,
   max_loss = 0,
+  resolution = NULL,
   seed = NULL,
   diagnostics = TRUE
 )
@@ -21,21 +22,32 @@ The network is usually built with \code{\link{rkn_graph_from_kinship}}, which al
 checks the samples; for a network built in another way, see
 \code{\link{rkn_check_samples}}.}
 
-\item{covariate}{Character. Name of a categorical vertex attribute of the network
-(character, factor or logical), such as \code{"sex"} for \code{V(g)$sex}.}
+\item{covariate}{Character. Name of a vertex attribute of the network, either
+categorical (character, factor or logical), such as \code{"sex"} for
+\code{V(g)$sex}, or numeric, such as \code{"age"}.}
 
-\item{target}{The target proportion of one category among the selected
-individuals, named by the category, as \code{c(F = 0.5)}; for a covariate with two
-categories, the proportions of both may be given, summing to 1, and the first is
-used. If \code{NULL} (default), the target is the proportion of the first category,
-in alphabetical order, in the whole network, so that the selection keeps the
-composition of the cohort; this requires a covariate with two categories.}
+\item{target}{For a categorical covariate, the target proportion of one category
+among the selected individuals, named by the category, as \code{c(F = 0.5)}; for a
+covariate with two categories, the proportions of both may be given, summing to 1,
+and the first is used. For a numeric covariate, the target mean, a single unnamed
+number, as \code{45}. If \code{NULL} (default), the target is the proportion of the
+first category, in alphabetical order, or the mean, in the whole network, so that
+the selection keeps the composition of the cohort; for a categorical covariate this
+requires two categories.}
 
 \item{max_loss}{Non-negative integer. Largest number of individuals that may be
-selected below the maximum, to bring the proportion closer to the target. With
+selected below the maximum, to bring the composition closer to the target. With
 \code{0} (default) the selection keeps the maximum size. \code{\link{rkn_tradeoff}}
-shows, before selecting, the proportion that each number of individuals given up
-allows.}
+shows, before selecting, the proportion or mean that each number of individuals
+given up allows.}
+
+\item{resolution}{For numeric covariates only, a positive number: the values are
+rounded to multiples of \code{resolution} above the smallest value to search the
+selections (see Details). If \code{NULL} (default), integer values spanning at most
+100 are not rounded (a resolution of 1, as for ages in years or scores); other values
+are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides their range
+into at most 100 steps, as 0.5 for values from 16 to 45, or 2000 for values from 0
+to 200,000.}
 
 \item{seed}{Optional integer base seed. If provided, family-specific seeds are derived as seed + family_id.}
 
@@ -54,40 +66,56 @@ its element \code{global} describes the composition reached (see
 \description{
 Selects a maximum set of unrelated individuals whose composition, over the whole
 selection, is as close as possible to a target: the proportion of one category of a
-covariate, such as the proportion of women. Unlike \code{\link{rkn_select_criteria}},
-which applies its criteria within each family, the families are chosen jointly: the
-choice in one family depends on what the others contribute. For instance, with ten
-unrelated women and ten related pairs of a woman and a man, choosing within each pair
-gives fifteen women on average, while choosing the man in every pair gives ten women
-and ten men.
+categorical covariate, such as the proportion of women, or the mean of a numeric
+covariate, such as the mean age. Unlike \code{\link{rkn_select_criteria}}, which
+applies its criteria within each family, the families are chosen jointly: the choice
+in one family depends on what the others contribute. For instance, with ten unrelated
+women and ten related pairs of a woman and a man, choosing within each pair gives
+fifteen women on average, while choosing the man in every pair gives ten women and ten
+men.
 }
 \details{
-The selection is chosen in three steps: first the proportion closest to the target;
-then, among the selections that reach it, the largest; then one of the selections
-with that proportion and that size, drawn uniformly at random. With
+The selection is chosen in three steps: first the proportion or mean closest to the
+target; then, among the selections that reach it, the largest; then one of the
+selections with that composition and that size, drawn uniformly at random. With
 \code{max_loss > 0}, individuals are given up even for a small improvement of the
-proportion. The proportion is computed among the selected individuals with a known
-value of the covariate; the number of selected individuals with a missing value is
-reported by \code{print()}.
+composition. The proportion or the mean is computed among the selected individuals
+with a known value of the covariate; the number of selected individuals with a
+missing value is reported by \code{print()}.
 
 The optimisation is exact. For each family, the exact algorithm described in the
 section Search over maximum sets of \code{\link{rkn_selection}} counts its sets of
-unrelated members by size and by number of members in the category; dynamic
-programming then combines the families. The counts are kept on the logarithmic scale,
-so that rare combinations, as for an extreme target, are not lost, and
-\code{print()} reports the number of selections reaching the best proportion.
+unrelated members by size and by number of members in the category, or by sum of the
+values; dynamic programming then combines the families. The counts are kept on the
+logarithmic scale, so that rare combinations, as for an extreme target, are not lost,
+and \code{print()} reports the number of selections reaching the best composition.
+
+For a numeric covariate, counting the selections by sum of the values requires values
+on a grid: with values recorded to the day, almost every selection would have its own
+sum. The values are therefore rounded to multiples of \code{resolution} for the search
+only, and \code{print()} reports the mean of the recorded values of the selected
+individuals. Since the rounding moves the mean of any selection by at most half the
+resolution, the distance of the selected mean from the target exceeds the smallest
+possible by at most \code{resolution}; in practice the rounding errors largely cancel,
+and the mean of \eqn{n} individuals moves by about
+\eqn{\mathrm{resolution}/\sqrt{12 n}}{resolution / sqrt(12 n)}. The time grows with
+the number of steps over the range of the values, and quickly with \code{max_loss}: a
+coarser resolution shortens it.
 
 The computation of a family is not attempted when it would exceed a budget of memory
 and time, as for the largest families of genetic isolates at the third degree of
 relationship. Such a family contributes the maximum sets with the smallest and the
-largest number of members in the category, found exactly, and those of 100 uniform
-draws; a family too intricate even for this is selected as by
+largest number of members in the category, or sum of the values, found exactly, and
+those of 100 uniform draws; a family too intricate even for this is selected as by
 \code{\link{rkn_select_random}}. The selection then keeps the maximum size, but the
-proportion may not be the best possible and the draw is not uniform within these
+composition may not be the best possible and the draw is not uniform within these
 families, whose number \code{print()} reports. If the tables that combine the
 families would exceed about 80 MB, which requires many individuals with a missing
-value or a large \code{max_loss}, the selection stops with an error before
-allocating them.
+value, a large \code{max_loss} or, for a numeric covariate, a fine resolution, the
+selection stops with an error before allocating them. The work of these tables is
+also estimated beforehand: beyond about half a minute on a recent laptop, a message
+warns that the selection may take several minutes, and a smaller \code{max_loss} or a
+coarser resolution shortens it.
 }
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
@@ -114,9 +142,12 @@ rkn_select_global(g, "sex", seed = 1)
 # Give up to two individuals to get closer to 70\% women
 rkn_select_global(g, "sex", c(F = 0.7), max_loss = 2, seed = 1)
 
+# A mean age of 45 years
+rkn_select_global(g, "age", 45, seed = 1)
+
 }
 \seealso{
-\code{\link{rkn_tradeoff}} for the proportions reachable by each number of
-individuals given up; \code{\link{rkn_selection}}, \code{\link{rkn_select_criteria}},
-\code{\link{rkn_select_random}}.
+\code{\link{rkn_tradeoff}} for the proportions or means reachable by each
+number of individuals given up; \code{\link{rkn_selection}},
+\code{\link{rkn_select_criteria}}, \code{\link{rkn_select_random}}.
 }

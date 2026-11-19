@@ -1,0 +1,8 @@
+bibentry(
+  bibtype = "Manual",
+  title = "{RedKinNet}: Selection of Unrelated Individuals from Kinship Networks",
+  author = person("Paolo", "Dalena"),
+  year = "2026",
+  note = sprintf("R package version %s", meta$Version),
+  url = "https://github.com/PaoloDalena/RedKinNet"
+)

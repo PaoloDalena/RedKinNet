@@ -4,8 +4,12 @@
 ^data-private$
 ^data-raw$
 ^scripts$
-^README\.rmd$
+^README\.[Rr]md$
 ^tests/testthat/_problems$
 ^tests/testthat/testthat-problems\.rds$
 ^man-roxygen$
 ^paper$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$

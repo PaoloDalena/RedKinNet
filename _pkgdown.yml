@@ -1,0 +1,44 @@
+url: https://paolodalena.github.io/RedKinNet/
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Kinship network
+  desc: Build the network of related samples and check the samples.
+  contents:
+  - rkn_graph_from_kinship
+  - rkn_check_samples
+  - print.rkn_sample_check
+- title: Selection of unrelated individuals
+  desc: Select a largest set of unrelated individuals at random, by preferences for individuals, or with a target composition.
+  contents:
+  - rkn_select_random
+  - rkn_select_criteria
+  - rkn_criterion_cutoff
+  - rkn_criterion_level
+  - rkn_select_global
+  - rkn_tradeoff
+- title: Selections
+  desc: Results of the selectors, their summaries and plots.
+  contents:
+  - rkn_selection
+  - print.rkn_selection
+  - summary.rkn_selection
+  - print.summary.rkn_selection
+  - rkn_plot_pre
+- title: Data
+  contents:
+  - rkn_example
+  - rules_db
+- title: Package
+  contents:
+  - RedKinNet-package
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - RedKinNet
+  - covariates
+  - uncertainty

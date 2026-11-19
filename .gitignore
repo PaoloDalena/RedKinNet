@@ -13,3 +13,6 @@ data-private/
 # testthat debugging artefacts
 tests/testthat/_problems/
 tests/testthat/testthat-problems.rds
+
+# manuscript and paper analyses (Overleaf clone, scripts, aggregated results) - local only
+paper/

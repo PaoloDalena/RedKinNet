@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<img src="man/figures/logoredkinnet.png" align="right" width="200px" />
+<img src="man/figures/logo.png" align="right" height="138" alt="" />
 
 # RedKinNet
 

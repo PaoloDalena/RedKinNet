@@ -1,0 +1,113 @@
+---
+title: "Selecting with covariates"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Selecting with covariates}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+A family usually has several maximum sets, all equally large. Covariates can decide among
+them in two ways: by preferring some individuals within each family
+(`rkn_select_criteria()`), or by steering the composition of the whole selection towards a
+target proportion or mean (`rkn_select_global()`). This vignette uses the example cohort,
+with the network built as in *Get started with RedKinNet*.
+
+```{r}
+library(RedKinNet)
+kin <- rkn_example$kinship
+covariates <- rkn_example$samples
+chk <- rkn_check_samples(kin, threshold = "third", samples = covariates$id)
+g <- rkn_graph_from_kinship(kin, threshold = "third", samples = covariates$id,
+                            exclude = chk$contamination$id, covariates = covariates,
+                            check = FALSE)
+```
+
+## Preferring individuals
+
+A criterion states a preference: `rkn_criterion_cutoff()` prefers values above or below a
+cutoff, and `rkn_criterion_level()` prefers one value of a covariate, such as cases over
+controls. Here the samples with a call rate above 0.99, the better-genotyped ones, are
+preferred whenever the family offers a choice.
+
+```{r}
+prefer_quality <- rkn_criterion_cutoff("call_rate", cutoff = 0.99, prefer = "above")
+sel <- rkn_select_criteria(g, prefer_quality, seed = 1)
+sel
+```
+
+By default the criteria decide the choices left open by the structural rules. With
+`optimal = TRUE` they choose among all the maximum sets of each family, so that the
+selection contains as many preferred individuals as possible.
+
+```{r}
+sel_optimal <- rkn_select_criteria(g, prefer_quality, optimal = TRUE, seed = 1)
+low_quality <- function(s) sum(covariates$call_rate[match(s$kept, covariates$id)] <= 0.99)
+c(default = low_quality(sel), optimal = low_quality(sel_optimal),
+  uniform = low_quality(rkn_select_random(g, uniform = TRUE, seed = 1)))
+```
+
+A second criterion breaks the ties left by the first, for instance preferring older
+individuals when the call rate does not decide.
+
+```{r}
+prefer_older <- rkn_criterion_cutoff("age", cutoff = 50, prefer = "above")
+rkn_select_criteria(g, prefer_quality, prefer_older, optimal = TRUE, seed = 1)
+```
+
+Since every family keeps its largest size, a preference applied within each family is also
+best for the selection as a whole: no choice in one family can make up for another.
+
+## A target composition
+
+Some targets concern the selection as a whole: as many women as men, or a mean age matching
+that of a group of cases. The best choice in one family then depends on the others, and
+`rkn_select_global()` chooses all the families jointly, exactly.
+
+```{r}
+balanced <- rkn_select_global(g, "sex", target = c(F = 0.5), seed = 1)
+balanced
+```
+
+Without a target, the selection keeps the composition of the cohort.
+
+```{r}
+rkn_select_global(g, "sex", seed = 1)
+```
+
+For a numeric covariate the target is a mean. The values are rounded to a grid for the
+search, whose step is the `resolution`; the reported mean is that of the recorded values.
+A family whose computation would exceed the time and memory budget is resolved
+approximately, and the printed summary says so; a coarser resolution makes the computation
+smaller.
+
+```{r}
+rkn_select_global(g, "age", target = 50, seed = 1)
+rkn_select_global(g, "age", target = 50, resolution = 5, seed = 1)
+```
+
+## Giving up individuals for a closer composition
+
+The selections of the largest size reach a range of compositions, and a target outside that
+range cannot be met without giving up individuals. `rkn_tradeoff()` shows, before
+selecting, the composition reachable for each number of individuals given up.
+
+```{r}
+tr <- rkn_tradeoff(g, "sex", target = c(F = 0.65))
+tr
+```
+
+```{r, fig.width = 6, fig.height = 4}
+plot(tr)
+```
+
+The argument `max_loss` of `rkn_select_global()` then allows that many individuals to be
+given up.
+
+```{r}
+rkn_select_global(g, "sex", target = c(F = 0.65), max_loss = attr(tr, "tradeoff")$reached, seed = 1)
+```

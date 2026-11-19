@@ -16,3 +16,8 @@ tests/testthat/testthat-problems.rds
 
 # manuscript and paper analyses (Overleaf clone, scripts, aggregated results) - local only
 paper/
+
+# built vignettes
+inst/doc
+/doc/
+/Meta/

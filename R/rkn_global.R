@@ -65,6 +65,12 @@
   base <- sum(cat) + 1
   x <- cat + base * miss
   elim <- .rkn_elimination_order(A)
+  # A family gives up at most the size of its maximum sets, whatever k: when the tables for k
+  # exceed the budget, k is lowered to that size, which leaves the options unchanged.
+  budget <- .rkn_profile_budget(elim, x, k)
+  if (k > 0 && elim$width <= max_width && (budget[["cells"]] > max_cells || budget[["work"]] > max_work)) {
+    k <- min(k, .rkn_mis_eliminate(A, elim)$alpha)
+  }
   prof <- .rkn_family_profile(A, x, k, elim, max_cells, max_work)
   if (!is.null(prof)) {
     nz <- which(prof$counts > 0, arr.ind = TRUE)

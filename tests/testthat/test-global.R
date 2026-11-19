@@ -102,6 +102,34 @@ test_that("families beyond the budget or too intricate are included with the opt
                "too intricate")
 })
 
+test_that("a family gives up at most the size of its maximum sets, so a larger loss stays within the budget", {
+  path <- igraph::make_ring(7, circular = FALSE)
+  A <- adjacency(path)
+  cat <- c(1, 0, 1, 1, 0, 0, 1)
+  miss <- rep(0, 7)
+  elim <- .rkn_elimination_order(A)
+  limit <- .rkn_profile_budget(elim, cat, 4)[["cells"]]
+  expect_gt(.rkn_profile_budget(elim, cat, 6)[["cells"]], limit)
+  full <- .rkn_global_options(A, cat, miss, 6, max_cells = Inf)
+  capped <- .rkn_global_options(A, cat, miss, 6, max_cells = limit)
+  expect_true(capped$exact)
+  key <- function(o) sort(paste(o$options$j, o$options$c, o$options$m, round(o$options$lc, 10)))
+  expect_identical(key(capped), key(full))
+})
+
+test_that("a selection allowed to give up individuals reaches the composition of the trade-off table", {
+  skip_on_cran()
+  ids <- rkn_example$samples$id
+  chk <- rkn_check_samples(rkn_example$kinship, "third", samples = ids)
+  g <- rkn_graph_from_kinship(rkn_example$kinship, "third", samples = ids, exclude = chk$contamination$id,
+                              covariates = rkn_example$samples, check = FALSE)
+  tr <- rkn_tradeoff(g, "sex", c(F = 0.65), max_loss = 15)
+  sel <- rkn_select_global(g, "sex", c(F = 0.65), max_loss = 15, seed = 1)
+  expect_identical(attr(tr, "tradeoff")$n_inexact, 0L)
+  expect_true(sel$global$exact)
+  expect_equal(abs(sel$global$proportion - 0.65), min(tr$distance))
+})
+
 test_that("the memory of the global selection is checked before the tables are built", {
   b <- .rkn_global_singletons(rep(c(1, 0), 50), rep(0, 100), 2)
   expect_error(.rkn_global_select(b, 2, proportion_distance(0.5), max_cells = 10), "table cells")

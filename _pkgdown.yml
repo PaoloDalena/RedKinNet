@@ -2,6 +2,7 @@ url: https://paolodalena.github.io/RedKinNet/
 
 template:
   bootstrap: 5
+  bootswatch: united
 
 reference:
 - title: Kinship network

@@ -21,3 +21,6 @@ paper/
 inst/doc
 /doc/
 /Meta/
+
+# pkgdown site built locally
+docs/

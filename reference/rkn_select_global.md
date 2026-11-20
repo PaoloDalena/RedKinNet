@@ -79,7 +79,11 @@ rkn_select_global(
   or scores); other values are rounded to the smallest of 1, 2 or 5
   times a power of 10 that divides their range into at most 100 steps,
   e.g. 0.5 for values from 16 to 45, or 2000 for values from 0 to
-  200,000.
+  200,000. If the tables of the search would then exceed the memory
+  budget (see Details), as with ages in years in cohorts of about
+  100,000 samples, the default resolution is coarsened along the same
+  sequence until they fit, and
+  [`print()`](https://rdrr.io/r/base/print.html) says so.
 
 - seed:
 
@@ -136,29 +140,38 @@ multiples of `resolution` for the search only, and
 recorded values of the selected individuals. Since the rounding moves
 the mean of any selection by at most half the resolution, the distance
 of the selected mean from the target exceeds the smallest possible by at
-most `resolution`; in practice the rounding errors largely cancel, and
-the mean of \\n\\ individuals moves by about
-\\\mathrm{resolution}/\sqrt{12 n}\\. The time grows with the number of
-steps over the range of the values, and quickly with `max_loss`: a
-coarser resolution shortens it.
+most `resolution`; in practice the rounding errors of the individual
+values partly cancel, and the mean moves by much less than half the
+resolution when the resolution is fine compared with the spread of the
+values. They do not cancel entirely, because the values are seldom
+spread evenly between two multiples of the resolution. The time grows
+with the number of steps over the range of the values, and quickly with
+`max_loss`: a coarser resolution shortens it.
 
 The computation of a family is not attempted when it would exceed a
 budget of memory and time, as for the largest families of genetic
 isolates at the third degree of relationship. Such a family contributes
 the maximum sets with the smallest and the largest number of members in
-the category, or sum of the values, found exactly, and those of 100
-uniform draws; a family too intricate even for this is selected as by
+the category, or sum of the values, found exactly or, in the most
+intricate families, among the maximum sets that remain after removing
+individuals who cannot enlarge the selection, and those of 100 uniform
+draws; a family too intricate even for this is selected as by
 [`rkn_select_random`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md).
 The selection then keeps the maximum size, but the composition may not
 be the best possible and the draw is not uniform within these families,
 whose number [`print()`](https://rdrr.io/r/base/print.html) reports. If
-the tables that combine the families would exceed about 80 MB, which
+the tables that combine the families would exceed about 800 MB, which
 requires many individuals with a missing value, a large `max_loss` or,
 for a numeric covariate, a fine resolution, the selection stops with an
-error before allocating them. The work of these tables is also estimated
-beforehand: beyond about half a minute on a recent laptop, a message
-warns that the selection may take several minutes, and a smaller
-`max_loss` or a coarser resolution shortens it.
+error before allocating them, unless the resolution of a numeric
+covariate was left to its default, which is then coarsened until the
+tables fit. The mean of the selection then lies within half the
+resolution of the mean that the search reaches, and usually much closer:
+in a synthetic cohort of 100,000 samples, with ages rounded to 10 years,
+the selected mean was 50.07 for a target of 50. The work of these tables
+is also estimated beforehand: beyond about half a minute on a recent
+laptop, a message warns that the selection may take several minutes, and
+a smaller `max_loss` or a coarser resolution shortens it.
 
 ## See also
 

@@ -79,7 +79,11 @@ plot(x, main = NULL, ...)
   or scores); other values are rounded to the smallest of 1, 2 or 5
   times a power of 10 that divides their range into at most 100 steps,
   e.g. 0.5 for values from 16 to 45, or 2000 for values from 0 to
-  200,000.
+  200,000. If the tables of the search would then exceed the memory
+  budget (see Details), as with ages in years in cohorts of about
+  100,000 samples, the default resolution is coarsened along the same
+  sequence until they fit, and
+  [`print()`](https://rdrr.io/r/base/print.html) says so.
 
 - seed:
 
@@ -140,15 +144,17 @@ with a known value of the covariate, and are `NA` for a size at which no
 selection includes one. The attribute `"tradeoff"` is a list describing
 the table: `type` (`"proportion"` or `"mean"`); `covariate`; `category`,
 for a categorical covariate; `target` and `cohort`, whether the target
-is the composition of the network; `resolution` and `rounded`, for a
-numeric covariate, whether some value was rounded; `max_size`, the size
-of the largest selection; `max_loss`, as given; `reached`, the number of
-individuals given up at which the target comes within reach (`NA` if it
-does not within the table); `limited`, why the default table stopped
-before the target came within reach, `"memory"` or `"work"` for the
-memory limit or the computational budget (`NA` otherwise); `n_missing`,
-the number of individuals of the network with a missing value; and
-`n_inexact`, the number of families beyond the computational budget.
+is the composition of the network; `resolution`, `rounded` and
+`coarsened`, for a numeric covariate, whether some value was rounded and
+whether the default resolution was coarsened to fit the memory budget;
+`max_size`, the size of the largest selection; `max_loss`, as given;
+`reached`, the number of individuals given up at which the target comes
+within reach (`NA` if it does not within the table); `limited`, why the
+default table stopped before the target came within reach, `"memory"` or
+`"work"` for the memory limit or the computational budget (`NA`
+otherwise); `n_missing`, the number of individuals of the network with a
+missing value; and `n_inexact`, the number of families beyond the
+computational budget.
 
 [`print()`](https://rdrr.io/r/base/print.html) shows the first rows and
 those around `reached`, with the number of selections as a count.

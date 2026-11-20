@@ -147,8 +147,9 @@ structures).
   reached among the selected individuals with a known value) and
   `n_category`; for a numeric covariate, `mean` (the mean of the
   recorded values among the selected individuals with a known value),
-  `resolution` and `rounded` (whether some value was rounded for the
-  search). `NULL` otherwise.
+  `resolution`, `rounded` (whether some value was rounded for the
+  search) and `coarsened` (whether the default resolution was coarsened
+  to fit the memory budget). `NULL` otherwise.
 
 ## Family structures
 
@@ -215,6 +216,10 @@ unrelated individuals, reported in the column `mis_method` of
   individual is removed only if that relative meets the criteria at
   least as well, so the criteria are still optimised exactly, or, with
   missing covariate values, evaluated on the maximum sets that remain.
+  If the family is still too intricate, individuals are removed
+  regardless of the criteria, as in selections without criteria: the set
+  is still of maximum size, and the criteria are optimised over the
+  maximum sets that remain.
 
 - `"exact_sample"`:
 

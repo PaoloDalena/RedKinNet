@@ -39,6 +39,16 @@ A typical analysis follows these steps:
     [`plot()`](https://rdrr.io/r/graphics/plot.default.html) (see
     [`rkn_plot_pre`](https://paolodalena.github.io/RedKinNet/reference/rkn_plot_pre.md)).
 
+## See also
+
+Useful links:
+
+- <https://github.com/PaoloDalena/RedKinNet>
+
+- <https://paolodalena.github.io/RedKinNet/>
+
+- Report bugs at <https://github.com/PaoloDalena/RedKinNet/issues>
+
 ## Author
 
 **Maintainer**: Paolo Dalena <paolodalena97@gmail.com>

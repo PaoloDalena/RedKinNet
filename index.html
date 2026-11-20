@@ -66,7 +66,13 @@
 </div>
 <!-- badges: start -->
 
-<p>RedKinNet selects sets of unrelated individuals from pairwise kinship estimates, such as those of KING or PLINK 2. Pairs related above a threshold form a network whose connected components, the families, are resolved exactly, so that the selection is always as large as possible, also in the large and intricate families of genetic isolates. Among the many selections of the largest size, RedKinNet can draw one uniformly at random, with the exact probability that each individual is selected; choose by preferences for individuals; or reach a target proportion or mean of a covariate over the whole selection.</p>
+<p>Many genetic analyses, such as association studies and principal component analysis, assume that individuals are unrelated, so related samples are usually reduced to a set of unrelated individuals. Existing tools either remove relatives greedily, which can discard more individuals than necessary, or search exhaustively, which does not scale to the large families of genetic isolates; and none of them says how much the result depends on which of the many equally large sets is chosen.</p>
+<p>RedKinNet selects unrelated individuals from pairwise kinship estimates, for instance those of <a href="https://www.kingrelatedness.com/" class="external-link">KING</a> or of <a href="https://www.cog-genomics.org/plink/2.0/distance#make_king" class="external-link">PLINK 2</a>. Related pairs form a network, which RedKinNet splits into families and solves exactly: the selection always keeps as many individuals as possible, even in the large, intricate families of genetic isolates. Among the many largest selections, RedKinNet can:</p>
+<ul>
+<li>draw one uniformly at random, and give the exact probability that each individual is selected;</li>
+<li>choose by preferences for individuals, such as a higher call rate;</li>
+<li>reach a target proportion or mean of a covariate over the whole selection, such as half women.</li>
+</ul>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>

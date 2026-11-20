@@ -95,10 +95,10 @@ g <- rkn_graph_from_kinship(kin, threshold = "third", samples = covariates$id,
                             exclude = chk$contamination$id, covariates = covariates,
                             check = FALSE)
 g
-#> IGRAPH a7d4323 UN-- 751 715 -- 
+#> IGRAPH 3378e08 UN-- 751 715 -- 
 #> + attr: kinship_threshold (g/n), name (v/c), sex (v/c), age (v/n),
 #> | call_rate (v/n), kinship (e/n)
-#> + edges from a7d4323 (vertex names):
+#> + edges from 3378e08 (vertex names):
 #>  [1] S001--S055 S001--S578 S001--S620 S002--S323 S002--S649 S004--S301
 #>  [7] S005--S570 S008--S229 S008--S363 S009--S077 S009--S700 S010--S019
 #> [13] S010--S101 S010--S300 S010--S310 S010--S320 S010--S553 S010--S659

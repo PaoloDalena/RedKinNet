@@ -84,6 +84,7 @@ test_that("extreme targets are reached among more selections than double precisi
 })
 
 test_that("families beyond the budget or too intricate are included with the options found, and flagged", {
+  width_limit_only()
   set.seed(21)
   petersen <- igraph::make_graph("Petersen")
   cat <- rep(c(1, 0), 5)

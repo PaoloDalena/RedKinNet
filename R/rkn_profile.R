@@ -119,7 +119,7 @@
     n_code <- 2^(length(scope) + 1)
     code <- 0:(n_code - 1)
     # Bit 0 of an assignment code is v, bit j is scope[j].
-    bit <- function(j) (code %/% 2^j) %% 2
+    bit <- function(j) bitwAnd(bitwShiftR(code, j), 1L)
     xv <- bit(0)
     mx <- xv
     tab <- array(0, c(n_code, k + 1, x[v] + 1))
@@ -275,7 +275,9 @@
 #' weighted engine (integer weights that rank sets by size first and by value sum
 #' second), and the value sums of \code{n_draws} uniform draws. A graph too wide for the
 #' engine is reduced by weighted dominance first, as in
-#' \code{.rkn_criteria_maximum_set()}.
+#' \code{.rkn_criteria_maximum_set()}, which keeps the extremes exact; if it is still too
+#' wide, the reduction is repeated without the weights, and the extremes are then those
+#' of the maximum sets that remain.
 #'
 #' @param A Symmetric logical adjacency matrix of a connected family.
 #' @param x Non-negative integer value of each vertex.
@@ -295,6 +297,12 @@
     sol <- .rkn_mis_exact(A, max_width, weight)
     if (!sol$feasible) {
       keep <- .rkn_dominance_reduce(A, weight)
+      sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width, weight[keep])
+    }
+    if (!sol$feasible) {
+      # The reduction without weights removes more individuals and keeps the largest size;
+      # the extremes are then sought among the maximum sets that remain.
+      keep <- .rkn_dominance_reduce(A)
       sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width, weight[keep])
     }
     if (!sol$feasible) return(NULL)

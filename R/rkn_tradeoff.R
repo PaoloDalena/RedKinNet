@@ -94,9 +94,10 @@
 #'   one. The attribute \code{"tradeoff"} is a list describing the table: \code{type}
 #'   (\code{"proportion"} or \code{"mean"}); \code{covariate}; \code{category}, for a
 #'   categorical covariate; \code{target} and \code{cohort}, whether the target is the
-#'   composition of the network; \code{resolution} and \code{rounded}, for a numeric
-#'   covariate, whether some value was rounded; \code{max_size}, the size of the largest
-#'   selection; \code{max_loss}, as given; \code{reached}, the number of individuals
+#'   composition of the network; \code{resolution}, \code{rounded} and
+#'   \code{coarsened}, for a numeric covariate, whether some value was rounded and
+#'   whether the default resolution was coarsened to fit the memory budget;
+#'   \code{max_size}, the size of the largest selection; \code{max_loss}, as given; \code{reached}, the number of individuals
 #'   given up at which the target comes within reach (\code{NA} if it does not within the
 #'   table); \code{limited}, why the default table stopped before the target came within
 #'   reach, \code{"memory"} or \code{"work"} for the memory limit or the computational
@@ -160,15 +161,28 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
   rows <- NULL
   used <- NULL
   limited <- NA_character_
+  coarsened <- FALSE
   repeat {
     fam <- .rkn_global_families(g, tgt, k, fam)
     limit <- min(if (is.null(max_loss)) ceiling(0.05 * fam$max_size) else max_loss, fam$max_size)
     # Beyond the computational budget, the first table is computed with a message,
-    # and the extension of the default table stops.
+    # and the extension of the default table stops. Beyond the memory budget, the default
+    # resolution of a numeric covariate is coarsened for the first table, as in
+    # rkn_select_global(), and the extension of the default table stops.
     res <- tryCatch(.rkn_global_select(fam$fams, min(k, limit), draw = FALSE,
                                        long = if (is.null(max_loss) && !is.null(rows)) "stop" else "message"),
-                    rkn_table_limit = function(e) if (is.null(rows)) stop(e) else "memory",
+                    rkn_table_limit = function(e) {
+                      if (!is.null(rows)) return("memory")
+                      if (is.null(resolution) && tgt$type == "mean") e else stop(e)
+                    },
                     rkn_work_limit = function(e) "work")
+    if (inherits(res, "rkn_table_limit")) {
+      tgt <- .rkn_global_target(igraph::vertex_attr(g, covariate), target,
+                                .rkn_coarser_resolution(tgt$resolution, res$need / res$max_cells))
+      fam <- NULL
+      coarsened <- TRUE
+      next
+    }
     if (is.character(res)) {
       limited <- res
       break
@@ -190,7 +204,7 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
   names(rows)[3:6] <- .rkn_tradeoff_columns(tgt$type)
   attr(rows, "tradeoff") <- list(
     type = tgt$type, covariate = covariate, category = tgt$category, target = p, cohort = tgt$cohort,
-    resolution = if (tgt$type == "mean") tgt$resolution, rounded = isTRUE(tgt$rounded),
+    resolution = if (tgt$type == "mean") tgt$resolution, rounded = isTRUE(tgt$rounded), coarsened = coarsened,
     max_size = used$max_size, max_loss = max_loss, reached = reached, limited = limited,
     n_missing = sum(tgt$miss), n_inexact = sum(!used$exact)
   )
@@ -294,8 +308,10 @@ print.rkn_tradeoff <- function(x, ...) {
     cat(sprintf("Target not within reach by giving up up to %d (%s)\n", last, share(last)))
   }
   if (info$rounded) {
-    cat(sprintf("Values of %s rounded to multiples of %s: each mean is within %s of that of the recorded values\n",
-                info$covariate, format(info$resolution), format(info$resolution / 2)))
+    cat(sprintf("Values of %s rounded to multiples of %s%s: each mean is within %s of that of the recorded values\n",
+                info$covariate, format(info$resolution),
+                if (isTRUE(info$coarsened)) ", coarser than the default to fit the memory budget" else "",
+                format(info$resolution / 2)))
   }
   if (info$n_missing > 0) {
     cat(sprintf("%s among the selected individuals with a known value of %s\n",

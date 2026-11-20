@@ -147,7 +147,9 @@
 #' reported as \code{"exact_sample"}. A graph too wide for the engine is first reduced by
 #' dominance (\code{"exact_reduced"}), as in \code{.rkn_draw_maximum_set()}; the
 #' reduction uses the weights, so the additive criteria remain optimised exactly, while
-#' the others are evaluated on the maximum sets of the reduced graph.
+#' the others are evaluated on the maximum sets of the reduced graph. If the graph is
+#' still too wide, the reduction is repeated without the weights: the set keeps the
+#' largest size, and the criteria are optimised over the maximum sets that remain.
 #'
 #' @param g An igraph object with vertex names: the individuals to resolve.
 #' @param fixed_kept Individuals of the family already kept, included in the scores.
@@ -187,6 +189,13 @@
     keep <- .rkn_dominance_reduce(A, weight)
     sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width, weight[keep])
     method <- "exact_reduced"
+  }
+  if (!sol$feasible) {
+    # The reduction without weights removes more individuals and keeps the largest size, as
+    # in the selection without criteria; the criteria are then optimised over the maximum
+    # sets that remain.
+    keep <- .rkn_dominance_reduce(A)
+    sol <- .rkn_mis_exact(A[keep, keep, drop = FALSE], max_width, weight[keep])
   }
   if (!sol$feasible) {
     if (!error_if_wide) return(NULL)

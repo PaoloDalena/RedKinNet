@@ -269,3 +269,35 @@ test_that("an error explains when no selection includes an individual with a kno
   expect_error(rkn_tradeoff(g, "sex", c(F = 0.5), max_loss = 1),
                "giving up at most 1 individual includes an individual with a known value of \"sex\"")
 })
+
+test_that("the default resolution is coarsened until the tables fit in the memory budget", {
+  # 30 related pairs with ages from 1 to 99: the tables need 15,934 cells at resolution 1,
+  # 7,973 at 2 and 3,194 at 5, so a budget of 5,000 cells leads to a resolution of 5.
+  g <- igraph::make_empty_graph(60, directed = FALSE)
+  g <- igraph::add_edges(g, as.vector(rbind(seq(1, 59, 2), seq(2, 60, 2))))
+  igraph::V(g)$name <- paste0("s", 1:60)
+  igraph::V(g)$age <- as.numeric(c(rbind(1:30, 100 - 1:30)))
+  real <- .rkn_global_select
+  local_mocked_bindings(.rkn_global_select = function(fams, k, ...) real(fams, k, ..., max_cells = 5000))
+  sel <- rkn_select_global(g, "age", 50, seed = 1)
+  expect_identical(sel$global$resolution, 5)
+  expect_true(sel$global$coarsened)
+  expect_length(sel$kept, 30)
+  expect_output(print(sel), "coarser than the default to fit the memory budget")
+  expect_error(rkn_select_global(g, "age", 50, resolution = 1, seed = 1), class = "rkn_table_limit")
+  expect_false(rkn_select_global(g, "age", 50, resolution = 5, seed = 1)$global$coarsened)
+  # The trade-off keeps fewer tables at once (about 4,100 cells at resolution 1).
+  expect_false(attr(rkn_tradeoff(g, "age", 50, max_loss = 0), "tradeoff")$coarsened)
+  local_mocked_bindings(.rkn_global_select = function(fams, k, ...) real(fams, k, ..., max_cells = 2000))
+  tr <- rkn_tradeoff(g, "age", 50, max_loss = 0)
+  expect_identical(attr(tr, "tradeoff")$resolution, 5)
+  expect_true(attr(tr, "tradeoff")$coarsened)
+  expect_output(print(tr), "coarser than the default to fit the memory budget")
+})
+
+test_that("coarser resolutions follow the sequence 1, 2, 5 and exceed the previous one", {
+  expect_identical(.rkn_coarser_resolution(1, 3.19), 5)
+  expect_identical(.rkn_coarser_resolution(1, 6.4), 10)
+  expect_identical(.rkn_coarser_resolution(0.5, 1.1), 1)
+  expect_identical(.rkn_coarser_resolution(2, 1.0001), 5)
+})

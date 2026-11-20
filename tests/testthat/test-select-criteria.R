@@ -178,6 +178,19 @@ test_that("criteria fall back on a declared sample when there are too many maxim
   expect_identical(picked$method, "exact")
 })
 
+test_that("a family too intricate for the reduction with criteria is reduced without them", {
+  width_limit_only()
+  # The centre is preferred, so with the weights no leaf dominates it and the star keeps its
+  # width; without the weights the leaves dominate the centre and the width drops to zero.
+  star <- igraph::make_star(4, mode = "undirected")
+  igraph::V(star)$name <- c("A", "B", "C", "D")
+  fam_df <- fam_df_from_graph(star)
+  fam_df$sex <- c("F", "M", "M", "M")
+  picked <- .rkn_criteria_maximum_set(star, fam_df, character(0), crits$level, NULL, seed = 1, max_width = 0)
+  expect_identical(sort(picked$kept), c("B", "C", "D"))
+  expect_identical(picked$method, "exact_reduced")
+})
+
 test_that("criteria over all maximum sets reach the best score of every family", {
   pool <- thin_on_cran(atlas_connected(3, 7))
   for (k in seq_along(pool)) igraph::V(pool[[k]])$name <- paste0("a", k, "_", seq_len(igraph::vcount(pool[[k]])))
@@ -231,6 +244,7 @@ test_that("criteria over all maximum sets are not bound by the structural rules"
 })
 
 test_that("families too intricate for the evaluation over all maximum sets are selected by the rules", {
+  width_limit_only()
   petersen <- igraph::make_graph("Petersen")
   igraph::V(petersen)$name <- paste0("p", 1:10)
   fam_df <- fam_df_from_graph(petersen)

@@ -99,8 +99,9 @@
   for (v in order) {
     scope <- later[[v]]
     code <- 0:(2^(length(scope) + 1) - 1)
-    # Bit 0 of an assignment code is v, bit j is scope[j].
-    bit <- function(j) (code %/% 2^j) %% 2
+    # Bit 0 of an assignment code is v, bit j is scope[j]. Integer bit operations: on x86
+    # processors, %/% and %% on doubles use extended precision and are many times slower.
+    bit <- function(j) bitwAnd(bitwShiftR(code, j), 1L)
     xv <- bit(0)
     S <- xv * weight[v]
     C <- rep(1, length(code))
@@ -188,13 +189,33 @@
   x == 1
 }
 
-#' Internal helper: exact maximum independent sets of a graph, within a width limit
+#' Internal helper: whether an elimination ordering is within the limits of the engine
+#'
+#' The engine keeps a table of \eqn{2^{|scope| + 1}}{2^(|scope| + 1)} entries for each
+#' vertex, so its time and memory grow with the total number of entries. An ordering of
+#' width at most \code{max_width} is always accepted: at width 20 the largest table holds
+#' about two million entries. A wider ordering is accepted when all its tables together
+#' hold at most \code{max_entries}, as in the families of genetic isolates that exceed
+#' the width limit at only a few steps; at the default of \eqn{2^{25}}{2^25} entries, the
+#' computation takes about 1.5 GB of memory (0.9 GB were measured for 2.1e7 entries).
+#'
+#' @param elim The result of \code{.rkn_elimination_order()}.
+#' @param max_width Largest width accepted whatever the size of the tables.
+#' @param max_entries Largest total number of entries accepted above \code{max_width}.
+#' @return \code{TRUE} or \code{FALSE}.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_within_limits <- function(elim, max_width = 20, max_entries = 2^25) {
+  elim$width <= max_width || sum(2^(lengths(elim$later) + 1)) <= max_entries
+}
+
+#' Internal helper: exact maximum independent sets of a graph, within the limits of the engine
 #'
 #' @param A Symmetric logical adjacency matrix without self-loops.
-#' @param max_width Largest width of the elimination ordering accepted. Time and memory
-#'   grow as 2 to the power of the width: at width 20 the largest table holds about two
-#'   million values (some 32 MB), which keeps the computation within the memory of an
-#'   ordinary laptop. Above the limit the computation is not attempted.
+#' @param max_width Largest width of the elimination ordering accepted whatever the size of
+#'   its tables; a wider ordering is accepted only when its tables are small (see
+#'   \code{.rkn_within_limits()}). Otherwise the computation is not attempted.
 #' @param weight Weight of each vertex, as in \code{.rkn_mis_eliminate()}.
 #' @return The result of \code{.rkn_mis_eliminate()} with \code{feasible = TRUE} and
 #'   \code{width}, or \code{list(feasible = FALSE, width = ...)}.
@@ -203,7 +224,7 @@
 #' @noRd
 .rkn_mis_exact <- function(A, max_width = 20, weight = rep(1, nrow(A))) {
   elim <- .rkn_elimination_order(A)
-  if (elim$width > max_width) return(list(feasible = FALSE, width = elim$width))
+  if (!.rkn_within_limits(elim, max_width)) return(list(feasible = FALSE, width = elim$width))
   sol <- .rkn_mis_eliminate(A, elim, weight)
   sol$feasible <- TRUE
   sol$width <- elim$width
@@ -253,7 +274,8 @@
 #' Internal helper: draw a maximum independent set of a graph
 #'
 #' Draws a maximum independent set uniformly at random with the exact engine. When the
-#' elimination width exceeds \code{max_width}, the dominated vertices are removed first:
+#' graph is beyond the limits of the engine (see \code{.rkn_within_limits()}), the
+#' dominated vertices are removed first:
 #' the set drawn is still of maximum size but no longer uniform. If the graph is still
 #' too wide, the function stops before allocating the tables, rather than exhausting the
 #' memory.
@@ -294,7 +316,8 @@
 #' @noRd
 .rkn_intricate_message <- function(ids, width, max_width) {
   sprintf(paste0("The family of \"%s\" is too intricate for an exact selection: %d individuals are left after ",
-                 "the structural rules (elimination width %d, limit %d). Exclude the samples flagged by ",
+                 "the structural rules (elimination width %d, above the limit of %d, and tables too large ",
+                 "for the memory). Exclude the samples flagged by ",
                  "rkn_check_samples(), or use a higher threshold, which joins closer relatives only, such as ",
                  "\"second\" instead of \"third\"."), ids[1], length(ids), width, max_width)
 }
@@ -444,7 +467,7 @@
   for (p in rev(sol$order)) {
     vars <- c(p, sol$later[[p]])
     code <- 0:(2^length(vars) - 1)
-    bit <- function(j) (code %/% 2^j) %% 2
+    bit <- function(j) bitwAnd(bitwShiftR(code, j), 1L)
     index_of <- function(m) {
       index <- 0
       for (k in seq_along(m$vars)) index <- index + bit(match(m$vars[k], vars) - 1) * 2^(k - 1)
@@ -486,7 +509,7 @@
       for (j in rev(seq_along(vars))) {
         if (vars[j] %in% sol$later[[w]]) next
         step <- 2^(j - 1)
-        i0 <- which(((seq_along(s) - 1) %/% step) %% 2 == 0)
+        i0 <- which(bitwAnd(seq_along(s) - 1L, step) == 0L)
         i1 <- i0 + step
         best <- pmax(s[i0], s[i1])
         cnt <- (s[i0] == best) * cnt[i0] + (s[i1] == best) * cnt[i1]

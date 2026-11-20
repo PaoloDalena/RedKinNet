@@ -54,7 +54,10 @@ selections (see Details). If \code{NULL} (default), integer values spanning at m
 100 are not rounded (a resolution of 1, e.g. for ages in years or scores); other
 values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
-values from 0 to 200,000.}
+values from 0 to 200,000. If the tables of the search would then exceed the memory
+budget (see Details), as with ages in years in cohorts of about 100,000 samples, the
+default resolution is coarsened along the same sequence until they fit, and
+\code{print()} says so.}
 
 \item{seed}{Optional integer. Random numbers are used only in the families beyond the
 computational budget (see Details); a seed makes the table reproducible. If
@@ -90,9 +93,10 @@ value of the covariate, and are \code{NA} for a size at which no selection inclu
 one. The attribute \code{"tradeoff"} is a list describing the table: \code{type}
 (\code{"proportion"} or \code{"mean"}); \code{covariate}; \code{category}, for a
 categorical covariate; \code{target} and \code{cohort}, whether the target is the
-composition of the network; \code{resolution} and \code{rounded}, for a numeric
-covariate, whether some value was rounded; \code{max_size}, the size of the largest
-selection; \code{max_loss}, as given; \code{reached}, the number of individuals
+composition of the network; \code{resolution}, \code{rounded} and
+\code{coarsened}, for a numeric covariate, whether some value was rounded and
+whether the default resolution was coarsened to fit the memory budget;
+\code{max_size}, the size of the largest selection; \code{max_loss}, as given; \code{reached}, the number of individuals
 given up at which the target comes within reach (\code{NA} if it does not within the
 table); \code{limited}, why the default table stopped before the target came within
 reach, \code{"memory"} or \code{"work"} for the memory limit or the computational

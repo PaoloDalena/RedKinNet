@@ -83,6 +83,7 @@ test_that("the budget is checked before the profile is computed", {
 })
 
 test_that("partial profiles find the smallest and largest value sums among the maximum sets", {
+  width_limit_only()
   set.seed(17)
   for (i in 1:20) {
     repeat {
@@ -144,4 +145,16 @@ test_that("draws from a profile are uniform among the sets of the given size and
     expect_setequal(unique(drawn), target)
     if (length(target) > 1) expect_gt(stats::chisq.test(table(drawn))$p.value, 0.001)
   }
+})
+
+test_that("partial profiles fall back to the reduction without weights", {
+  width_limit_only()
+  # The centre has the largest value, so with the weights of the largest sum no leaf
+  # dominates it; without them the leaves do, and the only maximum set is left.
+  star <- igraph::make_star(4, mode = "undirected")
+  part <- .rkn_partial_profile(adjacency(star), c(5, 0, 1, 2), n_draws = 3, max_width = 0)
+  expect_false(is.null(part))
+  expect_identical(part$alpha, 3)
+  expect_identical(part$values, 3)
+  expect_identical(part$sets[[1]], c(FALSE, TRUE, TRUE, TRUE))
 })

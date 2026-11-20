@@ -96,8 +96,9 @@
 #'     \code{category}, \code{proportion} (the proportion reached among the selected
 #'     individuals with a known value) and \code{n_category}; for a numeric covariate,
 #'     \code{mean} (the mean of the recorded values among the selected individuals with
-#'     a known value), \code{resolution} and \code{rounded} (whether some value was
-#'     rounded for the search). \code{NULL} otherwise.}
+#'     a known value), \code{resolution}, \code{rounded} (whether some value was
+#'     rounded for the search) and \code{coarsened} (whether the default resolution was
+#'     coarsened to fit the memory budget). \code{NULL} otherwise.}
 #' }
 #'
 #' @section Family structures:
@@ -137,7 +138,9 @@
 #'     uniformly. In criteria-based selections an individual is removed only if that
 #'     relative meets the criteria at least as well, so the criteria are still optimised
 #'     exactly, or, with missing covariate values, evaluated on the maximum sets that
-#'     remain.}
+#'     remain. If the family is still too intricate, individuals are removed regardless
+#'     of the criteria, as in selections without criteria: the set is still of maximum
+#'     size, and the criteria are optimised over the maximum sets that remain.}
 #'   \item{\code{"exact_sample"}}{criteria-based selections only: see below.}
 #' }
 #' In criteria-based selections (\code{\link{rkn_select_criteria}}), the criteria are
@@ -348,9 +351,11 @@ print.rkn_selection <- function(x, ...) {
                   if (gl$n_missing > 0) " with a known value" else "", format(gl$target, digits = 6),
                   if (gl$cohort) ", the mean of the network" else ""))
       if (gl$rounded) {
-        cat(sprintf(paste0("Values of %s rounded to multiples of %s for the search: the distance of this mean ",
+        cat(sprintf(paste0("Values of %s rounded to multiples of %s for the search%s: the distance of this mean ",
                            "from the target exceeds the smallest possible by at most %s\n"),
-                    gl$covariate, format(gl$resolution), format(gl$resolution)))
+                    gl$covariate, format(gl$resolution),
+                    if (isTRUE(gl$coarsened)) ", coarser than the default to fit the memory budget" else "",
+                    format(gl$resolution)))
       }
     }
     if (gl$n_missing > 0) cat(sprintf("Selected with a missing value of %s: %d\n", gl$covariate, gl$n_missing))

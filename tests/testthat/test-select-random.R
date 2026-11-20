@@ -214,6 +214,7 @@ test_that("uniform diagnostics give exact inclusion probabilities and decision t
 })
 
 test_that("families too intricate for uniform sampling are selected by the rules and reported", {
+  width_limit_only()
   petersen <- igraph::make_graph("Petersen")
   igraph::V(petersen)$name <- paste0("p", 1:10)
   fam_df <- fam_df_from_graph(petersen)

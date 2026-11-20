@@ -30,6 +30,15 @@ the whole selection, such as half women or a mean age, after
 \code{\link{rkn_plot_pre}}).
 }
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/PaoloDalena/RedKinNet}
+  \item \url{https://paolodalena.github.io/RedKinNet/}
+  \item Report bugs at \url{https://github.com/PaoloDalena/RedKinNet/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Paolo Dalena \email{paolodalena97@gmail.com} (\href{https://orcid.org/0000-0003-2920-9572}{ORCID}) [copyright holder]
 

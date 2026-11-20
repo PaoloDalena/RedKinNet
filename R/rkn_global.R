@@ -68,7 +68,7 @@
   # A family gives up at most the size of its maximum sets, whatever k: when the tables for k
   # exceed the budget, k is lowered to that size, which leaves the options unchanged.
   budget <- .rkn_profile_budget(elim, x, k)
-  if (k > 0 && elim$width <= max_width && (budget[["cells"]] > max_cells || budget[["work"]] > max_work)) {
+  if (k > 0 && .rkn_within_limits(elim, max_width) && (budget[["cells"]] > max_cells || budget[["work"]] > max_work)) {
     k <- min(k, .rkn_mis_eliminate(A, elim)$alpha)
   }
   prof <- .rkn_family_profile(A, x, k, elim, max_cells, max_work)
@@ -159,7 +159,8 @@
 #'   arrays of the same shape, giving the distance from the target (\code{Inf} where it
 #'   is not defined).
 #' @param max_cells Largest number of cells of the tables kept at once. Beyond it,
-#'   the function stops with an error of class \code{rkn_table_limit}.
+#'   the function stops with an error of class \code{rkn_table_limit}, whose fields
+#'   \code{need} and \code{max_cells} give the cells needed and the limit.
 #' @param draw If \code{FALSE}, only the table of the totals is computed, without
 #'   keeping the tables needed to go back, and \code{distance} is not used.
 #' @param max_work Budget of work, in cells written while combining the families,
@@ -179,7 +180,7 @@
 #'
 #' @keywords internal
 #' @noRd
-.rkn_global_select <- function(fams, k, distance, max_cells = 1e7, draw = TRUE, max_work = 1.5e9,
+.rkn_global_select <- function(fams, k, distance, max_cells = 1e8, draw = TRUE, max_work = 1.5e9,
                                long = c("message", "stop")) {
   long <- match.arg(long)
   n_fam <- length(fams)
@@ -257,7 +258,8 @@
     msg <- sprintf(paste0("The global selection would keep %.1e table cells (limit %.1e). Reduce max_loss or ",
                           "the number of individuals with a missing value of the covariate, or, for a ",
                           "numeric covariate, choose a coarser resolution."), need, max_cells)
-    stop(structure(class = c("rkn_table_limit", "error", "condition"), list(message = msg, call = NULL)))
+    stop(structure(class = c("rkn_table_limit", "error", "condition"),
+                   list(message = msg, call = NULL, need = need, max_cells = max_cells)))
   }
   # Each option of a family writes a copy of the table before it into the next one;
   # going back recomputes the tables between checkpoints once more.

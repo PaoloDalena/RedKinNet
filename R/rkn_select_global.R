@@ -46,7 +46,10 @@
 #'   100 are not rounded (a resolution of 1, e.g. for ages in years or scores); other
 #'   values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 #'   their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
-#'   values from 0 to 200,000.
+#'   values from 0 to 200,000. If the tables of the search would then exceed the memory
+#'   budget (see Details), as with ages in years in cohorts of about 100,000 samples, the
+#'   default resolution is coarsened along the same sequence until they fit, and
+#'   \code{print()} says so.
 #'
 #' @details
 #' The selection is chosen in three steps: first the proportion or mean closest to the
@@ -70,24 +73,32 @@
 #' only, and \code{print()} reports the mean of the recorded values of the selected
 #' individuals. Since the rounding moves the mean of any selection by at most half the
 #' resolution, the distance of the selected mean from the target exceeds the smallest
-#' possible by at most \code{resolution}; in practice the rounding errors largely cancel,
-#' and the mean of \eqn{n} individuals moves by about
-#' \eqn{\mathrm{resolution}/\sqrt{12 n}}{resolution / sqrt(12 n)}. The time grows with
+#' possible by at most \code{resolution}; in practice the rounding errors of the
+#' individual values partly cancel, and the mean moves by much less than half the
+#' resolution when the resolution is fine compared with the spread of the values. They do
+#' not cancel entirely, because the values are seldom spread evenly between two multiples
+#' of the resolution. The time grows with
 #' the number of steps over the range of the values, and quickly with \code{max_loss}: a
 #' coarser resolution shortens it.
 #'
 #' The computation of a family is not attempted when it would exceed a budget of memory
 #' and time, as for the largest families of genetic isolates at the third degree of
 #' relationship. Such a family contributes the maximum sets with the smallest and the
-#' largest number of members in the category, or sum of the values, found exactly, and
-#' those of 100 uniform draws; a family too intricate even for this is selected as by
+#' largest number of members in the category, or sum of the values, found exactly or, in
+#' the most intricate families, among the maximum sets that remain after removing
+#' individuals who cannot enlarge the selection, and those of 100 uniform draws; a family
+#' too intricate even for this is selected as by
 #' \code{\link{rkn_select_random}}. The selection then keeps the maximum size, but the
 #' composition may not be the best possible and the draw is not uniform within these
 #' families, whose number \code{print()} reports. If the tables that combine the
-#' families would exceed about 80 MB, which requires many individuals with a missing
+#' families would exceed about 800 MB, which requires many individuals with a missing
 #' value, a large \code{max_loss} or, for a numeric covariate, a fine resolution, the
-#' selection stops with an error before allocating them. The work of these tables is
-#' also estimated beforehand: beyond about half a minute on a recent laptop, a message
+#' selection stops with an error before allocating them, unless the resolution of a
+#' numeric covariate was left to its default, which is then coarsened until the tables
+#' fit. The mean of the selection then lies within half the resolution of the mean that the
+#' search reaches, and usually much closer: in a synthetic cohort of 100,000 samples, with
+#' ages rounded to 10 years, the selected mean was 50.07 for a target of 50. The work of
+#' these tables is also estimated beforehand: beyond about half a minute on a recent laptop, a message
 #' warns that the selection may take several minutes, and a smaller \code{max_loss} or a
 #' coarser resolution shortens it.
 #'
@@ -136,16 +147,24 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   }
 
   ids <- igraph::V(g)$name
-  fam <- .rkn_global_families(g, tgt, max_loss)
+  # The default resolution of a numeric covariate is coarsened until the tables fit in the
+  # budget; a resolution set by the user is kept, and the selection then stops.
+  coarsened <- FALSE
+  repeat {
+    fam <- .rkn_global_families(g, tgt, max_loss)
+    # The network cannot give up more individuals than its maximum size.
+    res <- tryCatch(.rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt)),
+                    rkn_no_known_value = function(e) {
+                      stop(sprintf("No selection %s includes an individual with a known value of \"%s\".",
+                                   if (max_loss == 0) "of the largest size" else
+                                     "within `max_loss` of the largest size", covariate), call. = FALSE)
+                    },
+                    rkn_table_limit = function(e) if (is.null(resolution) && tgt$type == "mean") e else stop(e))
+    if (!inherits(res, "rkn_table_limit")) break
+    tgt <- .rkn_global_target(values, target, .rkn_coarser_resolution(tgt$resolution, res$need / res$max_cells))
+    coarsened <- TRUE
+  }
   comp <- fam$comp
-
-  # The network cannot give up more individuals than its maximum size.
-  res <- tryCatch(.rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt)),
-                  rkn_no_known_value = function(e) {
-                    stop(sprintf("No selection %s includes an individual with a known value of \"%s\".",
-                                 if (max_loss == 0) "of the largest size" else
-                                   "within `max_loss` of the largest size", covariate), call. = FALSE)
-                  })
   sets <- .rkn_global_realise(fam$fams, res$choice)
   selected <- rep(FALSE, length(ids))
   for (i in seq_along(sets)) selected[fam$members[[i]][sets[[i]]]] <- TRUE
@@ -164,6 +183,7 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
     global$mean <- mean(values[known])
     global$resolution <- tgt$resolution
     global$rounded <- tgt$rounded
+    global$coarsened <- coarsened
   }
 
   node_diagnostics <- NULL
@@ -363,6 +383,29 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
   list(type = "mean", p = if (is.null(target)) mean(x[known]) else target, cohort = is.null(target),
        cat = steps, miss = as.numeric(!known), lowest = lowest, resolution = resolution,
        rounded = any(error > 1e-9 * pmax(1, abs(x[known]))))
+}
+
+#' Internal helper: a coarser resolution for tables beyond the budget
+#'
+#' The tables of the global selection grow about in inverse proportion to the
+#' resolution of a numeric covariate. Returns the smallest of 1, 2 or 5 times a power of
+#' 10 that is coarser than \code{resolution} by at least \code{factor}, the ratio of the
+#' cells needed to the limit.
+#'
+#' @param resolution The resolution of the tables that exceeded the budget.
+#' @param factor The ratio of the cells needed to the limit, above 1.
+#' @return The coarser resolution.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_coarser_resolution <- function(resolution, factor) {
+  goal <- resolution * factor
+  for (power in floor(log10(goal)) + 0:1) {
+    for (m in c(1, 2, 5)) {
+      r <- m * 10^power
+      if (r >= goal * (1 - 1e-9) && r > resolution * (1 + 1e-9)) return(r)
+    }
+  }
 }
 
 #' Internal helper: default resolution of a numeric covariate

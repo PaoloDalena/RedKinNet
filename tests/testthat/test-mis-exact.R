@@ -68,9 +68,22 @@ test_that("the width of the elimination ordering reflects the structure of the g
   expect_identical(.rkn_elimination_order(adjacency(igraph::make_tree(30, 2, mode = "undirected")))$width, 1L)
   expect_identical(.rkn_elimination_order(adjacency(igraph::make_full_graph(8)))$width, 7L)
   expect_identical(.rkn_elimination_order(adjacency(igraph::make_ring(10)))$width, 2L)
+})
+
+test_that("orderings wider than the width limit are accepted when their tables are small", {
+  # Scopes of 22, 3 and 0 vertices: 2^23 + 2^4 + 2^1 entries.
+  elim <- list(width = 22L, later = list(1:22, 1:3, integer(0)))
+  expect_true(.rkn_within_limits(elim, max_width = 20))
+  expect_false(.rkn_within_limits(elim, max_width = 20, max_entries = 2^23))
+  expect_true(.rkn_within_limits(list(width = 20L, later = list(1:20, 1:20)), max_width = 20, max_entries = 0))
+  # A clique of 8 has width 7 but tables of 510 entries in all: its 8 maximum sets are counted.
   sol <- .rkn_mis_exact(adjacency(igraph::make_full_graph(8)), max_width = 5)
-  expect_false(sol$feasible)
+  expect_true(sol$feasible)
   expect_identical(sol$width, 7L)
+  expect_identical(sol$alpha, 1)
+  expect_equal(sol$log_count, log(8))
+  width_limit_only()
+  expect_false(.rkn_mis_exact(adjacency(igraph::make_full_graph(8)), max_width = 5)$feasible)
 })
 
 test_that("very large numbers of maximum independent sets are kept on the log scale", {
@@ -95,6 +108,7 @@ test_that("dominated vertices are removed without reducing the maximum size", {
 })
 
 test_that("draws fall back on the dominance reduction and then stop when a graph is too intricate", {
+  width_limit_only()
   fan <- igraph::make_ring(8, circular = FALSE) + igraph::vertex(1)
   fan <- igraph::add_edges(fan, as.vector(rbind(9, 1:8)))
   igraph::V(fan)$name <- as.character(1:9)
@@ -174,6 +188,7 @@ test_that("inclusion probabilities match the share of maximum independent sets c
 })
 
 test_that("the inclusion probabilities of the search refer to the graph it draws from", {
+  width_limit_only()
   path6 <- igraph::make_ring(6, circular = FALSE)
   igraph::V(path6)$name <- paste0("p", 1:6)
   searched <- .rkn_search_inclusion(path6)

@@ -185,3 +185,11 @@ best_selections <- function(g, cat, miss, k, p) {
   best <- d <= min(d) + 1e-12
   labels[best & size == max(size[best])]
 }
+
+# The exact engine also accepts a graph wider than max_width when its tables are small
+# (.rkn_within_limits()); tests that simulate intricate families with a small max_width
+# restore the limit on the width alone.
+width_limit_only <- function(env = parent.frame()) {
+  testthat::local_mocked_bindings(.rkn_within_limits = function(elim, max_width, ...) elim$width <= max_width,
+                                  .env = env)
+}

@@ -11,13 +11,13 @@ Source:
 [`inst/CITATION`](https://github.com/PaoloDalena/RedKinNet/blob/main/inst/CITATION)
 
 Dalena P (2026). *RedKinNet: Selection of Unrelated Individuals from
-Kinship Networks*. R package version 0.0.0.9000,
+Kinship Networks*. R package version 0.1.0,
 <https://github.com/PaoloDalena/RedKinNet>.
 
     @Manual{,
       title = {{RedKinNet}: Selection of Unrelated Individuals from Kinship Networks},
       author = {Paolo Dalena},
       year = {2026},
-      note = {R package version 0.0.0.9000},
+      note = {R package version 0.1.0},
       url = {https://github.com/PaoloDalena/RedKinNet},
     }

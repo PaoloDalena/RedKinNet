@@ -47,9 +47,9 @@
 #'   values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 #'   their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
 #'   values from 0 to 200,000. If the tables of the search would then exceed the memory
-#'   budget (see Details), as with ages in years in cohorts of about 100,000 samples, the
-#'   default resolution is coarsened along the same sequence until they fit, and
-#'   \code{print()} says so.
+#'   budget, or take more than about five minutes (see Details), as with ages in years in
+#'   cohorts of 100,000 samples or more, the default resolution is coarsened along the same
+#'   sequence until they fit, and \code{print()} says so.
 #'
 #' @details
 #' The selection is chosen in three steps: first the proportion or mean closest to the
@@ -98,9 +98,17 @@
 #' fit. The mean of the selection then lies within half the resolution of the mean that the
 #' search reaches, and usually much closer: in a synthetic cohort of 100,000 samples, with
 #' ages rounded to 10 years, the selected mean was 50.07 for a target of 50. The work of
-#' these tables is also estimated beforehand: beyond about half a minute on a recent laptop, a message
-#' warns that the selection may take several minutes, and a smaller \code{max_loss} or a
-#' coarser resolution shortens it.
+#' these tables is also estimated beforehand: beyond about half a minute on a recent
+#' laptop, a message warns that the selection may take several minutes, and a smaller
+#' \code{max_loss} or a coarser resolution shortens it; beyond about five minutes, the
+#' default resolution of a numeric covariate is coarsened, as for the memory.
+#'
+#' @section Computation time:
+#' On one core of a laptop (Apple M2), a target proportion of women took about 0.7
+#' seconds for a population cohort of 10,000 samples, 17 seconds for 100,000 and 44
+#' seconds for a family study of 10,000; a target mean of ages recorded in years took 4.5
+#' seconds, 6 minutes and 86 seconds. A larger \code{max_loss} or a finer resolution
+#' makes the search longer.
 #'
 #' @return An object of class \code{\link{rkn_selection}} with \code{method = "global"};
 #'   its element \code{global} describes the composition reached (see
@@ -148,20 +156,24 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
 
   ids <- igraph::V(g)$name
   # The default resolution of a numeric covariate is coarsened until the tables fit in the
-  # budget; a resolution set by the user is kept, and the selection then stops.
+  # memory budget and the work in some five minutes; a resolution set by the user is kept,
+  # and the selection then stops beyond the memory budget.
   coarsened <- FALSE
   repeat {
     fam <- .rkn_global_families(g, tgt, max_loss)
     # The network cannot give up more individuals than its maximum size.
-    res <- tryCatch(.rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt)),
+    adaptive <- is.null(resolution) && tgt$type == "mean"
+    res <- tryCatch(.rkn_global_select(fam$fams, min(max_loss, fam$max_size), .rkn_global_distance(tgt),
+                                       max_work_adapt = if (adaptive) .rkn_adaptive_work else Inf),
                     rkn_no_known_value = function(e) {
                       stop(sprintf("No selection %s includes an individual with a known value of \"%s\".",
                                    if (max_loss == 0) "of the largest size" else
                                      "within `max_loss` of the largest size", covariate), call. = FALSE)
                     },
-                    rkn_table_limit = function(e) if (is.null(resolution) && tgt$type == "mean") e else stop(e))
-    if (!inherits(res, "rkn_table_limit")) break
-    tgt <- .rkn_global_target(values, target, .rkn_coarser_resolution(tgt$resolution, res$need / res$max_cells))
+                    rkn_table_limit = function(e) if (adaptive) e else stop(e),
+                    rkn_work_limit = function(e) e)
+    if (!inherits(res, c("rkn_table_limit", "rkn_work_limit"))) break
+    tgt <- .rkn_global_target(values, target, .rkn_coarser_resolution(tgt$resolution, .rkn_coarsening(res)))
     coarsened <- TRUE
   }
   comp <- fam$comp
@@ -406,6 +418,20 @@ rkn_select_global <- function(g, covariate, target = NULL, max_loss = 0, resolut
       if (r >= goal * (1 - 1e-9) && r > resolution * (1 + 1e-9)) return(r)
     }
   }
+}
+
+#' Internal helper: how much coarser the resolution should be
+#'
+#' The cells of the tables grow about in inverse proportion to the resolution, and the
+#' work, which also grows with the options of each family, about as its inverse square.
+#'
+#' @param e A condition of class \code{rkn_table_limit} or \code{rkn_work_limit}.
+#' @return The factor by which the resolution should at least grow.
+#'
+#' @keywords internal
+#' @noRd
+.rkn_coarsening <- function(e) {
+  if (inherits(e, "rkn_table_limit")) e$need / e$max_cells else sqrt(e$work / e$max_work)
 }
 
 #' Internal helper: default resolution of a numeric covariate

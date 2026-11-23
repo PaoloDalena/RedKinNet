@@ -84,7 +84,7 @@ over several draws shows whether a conclusion depends on it.
 
 ## Why uniform
 
-The default selection of `rkn_select_random()` resolves larger families by structural rules,
+With `uniform = FALSE`, `rkn_select_random()` resolves larger families by structural rules,
 which never choose some of their maximum sets. On a chain of six relatives, for instance,
 there are four maximum sets, and the rules choose only between the two of alternate
 relatives. A uniform draw gives every maximum set the same chance, so that the inclusion
@@ -95,7 +95,8 @@ chain <- igraph::make_graph(~ A - B - C - D - E - F)
 rules <- character(200)
 uniform <- character(200)
 for (s in 1:200) {
-  rules[s] <- paste(sort(rkn_select_random(chain, seed = s, diagnostics = FALSE)$kept), collapse = "")
+  rules[s] <- paste(sort(rkn_select_random(chain, uniform = FALSE, seed = s, diagnostics = FALSE)$kept),
+                    collapse = "")
   uniform[s] <- paste(sort(rkn_select_random(chain, uniform = TRUE, seed = s, diagnostics = FALSE)$kept),
                       collapse = "")
 }

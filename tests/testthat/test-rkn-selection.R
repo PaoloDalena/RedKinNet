@@ -8,7 +8,7 @@ test_that("the constructor returns an object of class rkn_selection", {
 test_that("print shows the method, the call and the selection counts, and returns x invisibly", {
   sel <- make_selection()
   expect_output(print(sel), "<rkn_selection> Random selection, seed 1")
-  expect_output(print(sel), "Call: rkn_select_random(g = g, seed = 1, diagnostics = diagnostics)", fixed = TRUE)
+  expect_output(print(sel), "Call: rkn_select_random(g = g, uniform = FALSE, seed = 1, diagnostics = diagnostics)", fixed = TRUE)
   expect_output(print(sel), sprintf("selected: %d", length(sel$kept)))
   expect_output(print(sel), "a search over maximum sets")
   capture.output(out <- withVisible(print(sel)))

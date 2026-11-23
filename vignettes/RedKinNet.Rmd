@@ -74,9 +74,9 @@ members are those where a choice has to be made.
 
 ## Selecting unrelated individuals
 
-`rkn_select_random()` returns a maximum set: within each family, structural rules keep or
-discard the members whose fate is the same in the maximum sets they consider, and the
-remaining choices are made at random. A seed makes the selection reproducible.
+`rkn_select_random()` returns a maximum set: each family is resolved by an exact algorithm
+that draws one of all its maximum sets with equal probability. A seed makes the selection
+reproducible.
 
 ```{r}
 sel <- rkn_select_random(g, seed = 1)
@@ -84,27 +84,28 @@ sel
 head(sel$kept)
 ```
 
-With `uniform = TRUE`, each family is resolved by an exact algorithm that draws one of all
-its maximum sets with equal probability; the rules of the default selection never choose some
-of the maximum sets of larger families.
-
-```{r}
-sel_uniform <- rkn_select_random(g, uniform = TRUE, seed = 1)
-sel_uniform
-```
-
 The printed summary reports how many maximum sets the network has and how much two uniform
 draws differ on average: the selection is one of many equally valid ones. The vignette
 *Selection uncertainty* shows how to quantify the consequences.
 
+With `uniform = FALSE`, structural rules keep or discard the members whose fate is the same in
+the maximum sets they consider, and the remaining choices are made at random. The result is
+still a maximum set, but the rules never choose some of the maximum sets of larger families.
+
+```{r}
+sel_rules <- rkn_select_random(g, uniform = FALSE, seed = 1)
+sel_rules
+```
+
 ## Diagnostics
 
 Each selection records how every individual was decided (`node_diagnostics`) and how every
-family was resolved (`family_summary`).
+family was resolved (`family_summary`); the selection by rules also records the reason of
+each decision.
 
 ```{r}
-head(sel$node_diagnostics[, c("id", "pre_class", "post_class", "family_id", "family_size")])
-summary(sel)
+head(sel_rules$node_diagnostics[, c("id", "pre_class", "post_class", "family_id", "family_size")])
+summary(sel_rules)
 ```
 
 The plots draw the families with the selected and discarded individuals; `min_family_size`

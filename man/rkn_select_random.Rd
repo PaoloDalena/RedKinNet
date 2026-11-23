@@ -4,7 +4,7 @@
 \alias{rkn_select_random}
 \title{Select unrelated individuals at random}
 \usage{
-rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
+rkn_select_random(g, uniform = TRUE, seed = NULL, diagnostics = TRUE)
 }
 \arguments{
 \item{g}{An igraph object. Vertex names must be stored in V(g)$name. Vertex
@@ -14,17 +14,18 @@ The network is usually built with \code{\link{rkn_graph_from_kinship}}, which al
 checks the samples; for a network built in another way, see
 \code{\link{rkn_check_samples}}.}
 
-\item{uniform}{Logical. If \code{FALSE} (default), structural rules decide most
-individuals and the remaining choices are made at random; the result is a maximum
-set, but the maximum sets are not equally likely, and the rules never choose some of
-them: in a chain of six relatives, two of its four maximum sets. If \code{TRUE},
-each family is drawn uniformly at random among all its maximum sets, so that every
-maximum set of the network has the same probability, and the selection
-probabilities are exact: with diagnostics,
+\item{uniform}{Logical. If \code{TRUE} (default), each family is drawn uniformly at
+random among all its maximum sets, so that every maximum set of the network has the
+same probability, and the selection probabilities are exact: with diagnostics,
 \code{node_diagnostics$inclusion_probability} gives the probability that each
 individual is selected. Families too intricate for this exact computation are
 selected as with \code{uniform = FALSE} and reported in the column \code{uniform}
-of \code{family_summary} (see \code{\link{rkn_selection}}).}
+of \code{family_summary} (see \code{\link{rkn_selection}}). If \code{FALSE},
+structural rules decide most individuals and the remaining choices are made at
+random; the result is still a maximum set, but the maximum sets are not equally
+likely, and the rules never choose some of them: in a chain of six relatives, two
+of its four maximum sets. The rules record why each individual was kept or
+discarded, and are somewhat faster in cohorts whose families are small.}
 
 \item{seed}{Optional integer. If provided, the selection is reproducible: a seed is
 drawn from it for each family, so that the selection within a family does not
@@ -36,8 +37,10 @@ is used.}
 how each individual and each family was resolved (\code{node_diagnostics} and
 \code{family_summary}), which \code{print()}, \code{summary()} and
 \code{plot(type = "diagnostics")} use. Diagnostics increase the run time and the size
-of the returned object; on very large networks, \code{diagnostics = FALSE} returns
-the selection alone.}
+of the returned object: computing the inclusion probabilities makes a selection two
+to three times slower in family studies, though hardly slower in population cohorts.
+On very large networks, or when many selections are drawn, \code{diagnostics = FALSE}
+returns the selection alone.}
 }
 \value{
 An object of class \code{\link{rkn_selection}}, with \code{print},
@@ -49,11 +52,23 @@ Selects a maximum set of unrelated individuals, a set with no related pair of th
 largest possible size (see \code{\link{rkn_selection}}), and makes at random the
 choices that the network leaves open. The network is partitioned into families, its
 connected components, and each family is resolved on its own: since no relationship
-crosses two families, the union of their selections has no related pair. Structural
-rules decide most individuals; those left undecided in large families are resolved by
-an exact algorithm that also handles the intricate families of genetic isolates (see
-the section Search over maximum sets of \code{\link{rkn_selection}}).
+crosses two families, the union of their selections has no related pair. By default,
+each family is drawn uniformly at random among all its maximum sets by an exact
+algorithm that also handles the intricate families of genetic isolates (see the
+section Search over maximum sets of \code{\link{rkn_selection}}); alternatively,
+structural rules decide most individuals.
 }
+\section{Computation time}{
+
+On one core of a laptop (Apple M2), the uniform selection with diagnostics took about
+0.3 seconds for a population cohort of 1,000 samples, 3 seconds for 10,000 and 30
+seconds for 100,000, and the selection by rules about two thirds of these times. The
+time depends on the largest and most intricate families more than on the number of
+samples: a family study of 10,000 samples took 40 seconds (16 without diagnostics),
+and a family study of 100,000 samples about 12 minutes on one core of a compute node,
+where a population cohort of the same size took less than 2 minutes.
+}
+
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
 # siblings (S1, S2), three mutually related individuals (T1, T2, T3), a larger family
@@ -68,19 +83,19 @@ age <- c(P1 = 52, C1 = 21, P2 = 55, S1 = 34, S2 = 31, T1 = 60, T2 = 33, T3 = 29,
          D1 = 63, K1 = 35, D2 = 61, K2 = 38, K3 = 30, D3 = 58, U1 = 44)
 igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
 igraph::V(g)$age <- unname(age[igraph::V(g)$name])
+# Uniformly among all the maximum sets, with the probability that each individual is
+# selected
 sel <- rkn_select_random(g, seed = 1)
 sel
 sel$kept
-summary(sel)
+sel$node_diagnostics[, c("id", "inclusion_probability")]
 
 # The selection alone, without diagnostics
 rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
 
-# Uniformly among all the maximum sets, with the probability that each individual is
-# selected
-u <- rkn_select_random(g, uniform = TRUE, seed = 1)
-u
-u$node_diagnostics[, c("id", "inclusion_probability")]
+# By structural rules, which record why each individual was kept or discarded
+rules <- rkn_select_random(g, uniform = FALSE, seed = 1)
+summary(rules)
 
 }
 \seealso{

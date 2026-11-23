@@ -6,9 +6,9 @@ First release.
   a table of pairs, with thresholds given as numbers or as KING degrees of relationship.
 * `rkn_check_samples()` flags possible duplicates, contaminated samples and samples of
   different ancestry.
-* `rkn_select_random()` selects a largest set of unrelated individuals by structural rules
-  or, with `uniform = TRUE`, uniformly at random among all of them, with exact inclusion
-  probabilities.
+* `rkn_select_random()` selects a largest set of unrelated individuals uniformly at random
+  among all of them, with exact inclusion probabilities, or, with `uniform = FALSE`, by
+  structural rules.
 * `rkn_select_criteria()` chooses among the largest sets by preferences for individuals
   (`rkn_criterion_cutoff()`, `rkn_criterion_level()`), within the choices left by the rules
   or, with `optimal = TRUE`, over all the largest sets of each family.

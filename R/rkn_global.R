@@ -87,6 +87,10 @@
   listed(list(set), sum(set), FALSE)
 }
 
+# Work beyond which the default resolution of a numeric covariate is coarsened: about ten
+# times the budget of .rkn_global_select(), some five minutes on a recent laptop.
+.rkn_adaptive_work <- 1.5e10
+
 #' Internal helper: single individuals of a global selection, grouped
 #'
 #' Single individuals with the same value (in the category or not, or the same steps of
@@ -168,7 +172,11 @@
 #'   recent laptop (from 4e7 to 8e7 cells per second).
 #' @param long What to do beyond \code{max_work}: \code{"message"} warns that the
 #'   computation may take several minutes and carries on; \code{"stop"} stops with an
-#'   error of class \code{rkn_work_limit}.
+#'   error of class \code{rkn_work_limit}, whose fields \code{work} and \code{max_work}
+#'   give the work estimated and the limit.
+#' @param max_work_adapt Work beyond which the function stops with an error of class
+#'   \code{rkn_work_limit} in any case, so that the caller can coarsen the default
+#'   resolution of a numeric covariate (\code{.rkn_adaptive_work}).
 #' @return A list with \code{choice}, the option chosen in each family; the totals
 #'   \code{size}, \code{j}, \code{c} and \code{m} of the selection; \code{distance};
 #'   \code{log_count}, the logarithm of the number of selections reaching the best
@@ -181,7 +189,7 @@
 #' @keywords internal
 #' @noRd
 .rkn_global_select <- function(fams, k, distance, max_cells = 1e8, draw = TRUE, max_work = 1.5e9,
-                               long = c("message", "stop")) {
+                               long = c("message", "stop"), max_work_adapt = Inf) {
   long <- match.arg(long)
   n_fam <- length(fams)
   n_opt <- integer(n_fam)
@@ -264,11 +272,12 @@
   # Each option of a family writes a copy of the table before it into the next one;
   # going back recomputes the tables between checkpoints once more.
   work <- sum(n_valid * box[-length(box)] + box[-1]) * (if (draw) 2 else 1)
+  if (work > max_work_adapt || (work > max_work && long == "stop")) {
+    stop(structure(class = c("rkn_work_limit", "error", "condition"),
+                   list(message = "The computation would exceed the computational budget.", call = NULL,
+                        work = work, max_work = min(max_work_adapt, if (long == "stop") max_work else Inf))))
+  }
   if (work > max_work) {
-    if (long == "stop") {
-      stop(structure(class = c("rkn_work_limit", "error", "condition"),
-                     list(message = "The computation would exceed the computational budget.", call = NULL)))
-    }
     message("This computation is large and may take several minutes; a smaller max_loss or, for a numeric ",
             "covariate, a coarser resolution shortens it.")
   }

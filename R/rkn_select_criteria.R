@@ -37,6 +37,12 @@
 #'   computation are selected as with \code{optimal = FALSE} and reported in the column
 #'   \code{optimal} of \code{family_summary}.
 #'
+#' @section Computation time:
+#' On one core of a laptop (Apple M2), the selection took about as long as
+#' \code{rkn_select_random(uniform = FALSE)}: 1.6 seconds for a population cohort of
+#' 10,000 samples, 17 seconds for 100,000 and 32 seconds for a family study of 10,000;
+#' with \code{optimal = TRUE}, 5.5 seconds, 1 minute and 67 seconds.
+#'
 #' @return An object of class \code{\link{rkn_selection}}, as for
 #'   \code{\link{rkn_select_random}}; its \code{criteria} element holds the criteria.
 #'

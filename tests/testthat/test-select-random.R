@@ -135,7 +135,7 @@ test_that("mis_method records how each family was resolved", {
   g <- igraph::disjoint_union(igraph::make_star(5, mode = "undirected"), igraph::make_full_graph(4),
                               igraph::make_graph("Petersen"))
   igraph::V(g)$name <- paste0("v", seq_len(igraph::vcount(g)))
-  fs <- rkn_select_random(g, seed = 1)$family_summary
+  fs <- rkn_select_random(g, uniform = FALSE, seed = 1)$family_summary
   expect_identical(fs$mis_method, c(NA, NA, "exact"))
 })
 
@@ -148,7 +148,7 @@ test_that("individuals the search leaves without alternatives are decided withou
   igraph::V(g)$sex <- rep(c("M", "F"), length.out = 11)
   kept <- c("D1", "D2", "D3", "C1", "C2", "C3")
   discarded <- c("K1", "K2", "K3", "P1", "P2")
-  selectors <- list(function(d) rkn_select_random(g, seed = 1, diagnostics = d),
+  selectors <- list(function(d) rkn_select_random(g, uniform = FALSE, seed = 1, diagnostics = d),
                     function(d) rkn_select_criteria(g, rkn_criterion_level("sex", "F"), seed = 1, diagnostics = d))
   for (select in selectors) {
     sel <- select(TRUE)
@@ -201,7 +201,7 @@ test_that("uniform diagnostics give exact inclusion probabilities and decision t
   expect_output(print(sel), "Families sampled uniformly among their maximum sets: 3 of 3")
   expect_output(print(sel), "Maximum sets: 20 in total; families with more than one: 2 of 3", fixed = TRUE)
   expect_output(print(summary(sel)), "in every maximum set")
-  expect_true(all(is.na(rkn_select_random(g, seed = 1)$family_summary$n_max_sets)))
+  expect_true(all(is.na(rkn_select_random(g, uniform = FALSE, seed = 1)$family_summary$n_max_sets)))
 
   pairs <- igraph::make_graph(seq_len(2 * 30), directed = FALSE)
   igraph::V(pairs)$name <- paste0("q", seq_len(60))
@@ -210,7 +210,9 @@ test_that("uniform diagnostics give exact inclusion probabilities and decision t
   # Each member of a pair is selected with probability 1/2: 60 x 1/4 = 15 differences.
   expect_output(print(rkn_select_random(pairs, seed = 1, uniform = TRUE)),
                 "Two uniform draws differ on average in 15.0 of the 30 selected individuals (50.0%)", fixed = TRUE)
-  expect_false(any(grepl("Two uniform draws", capture.output(print(rkn_select_random(pairs, seed = 1))))))
+  expect_false(any(grepl("Two uniform draws", capture.output(print(rkn_select_random(pairs, uniform = FALSE, seed = 1))))))
+  # The uniform draw is the default.
+  expect_identical(rkn_select_random(pairs, seed = 1)$kept, rkn_select_random(pairs, uniform = TRUE, seed = 1)$kept)
 })
 
 test_that("families too intricate for uniform sampling are selected by the rules and reported", {
@@ -222,7 +224,7 @@ test_that("families too intricate for uniform sampling are selected by the rules
   expect_false(out$uniform)
   expect_length(out$kept, 4)
   expect_true(all(is.na(out$node_diagnostics$inclusion_probability)))
-  expect_false(rkn_select_random(petersen, seed = 1)$family_summary$uniform)
+  expect_false(rkn_select_random(petersen, uniform = FALSE, seed = 1)$family_summary$uniform)
 })
 
 test_that("the seed and the logical options of the selectors are validated", {

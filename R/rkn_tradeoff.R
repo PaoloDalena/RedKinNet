@@ -72,6 +72,11 @@
 #' options come in part from random draws, so that \code{seed} makes the table
 #' reproducible; \code{print()} reports their number.
 #'
+#' @section Computation time:
+#' On one core of a laptop (Apple M2), the table for a target proportion of women took
+#' about 0.5 seconds for a population cohort of 10,000 samples, 13 seconds for 100,000
+#' and 47 seconds for a family study of 10,000.
+#'
 #' @return A data frame of class \code{rkn_tradeoff}, with one row per number of
 #'   individuals given up and the columns:
 #'   \describe{
@@ -96,7 +101,7 @@
 #'   categorical covariate; \code{target} and \code{cohort}, whether the target is the
 #'   composition of the network; \code{resolution}, \code{rounded} and
 #'   \code{coarsened}, for a numeric covariate, whether some value was rounded and
-#'   whether the default resolution was coarsened to fit the memory budget;
+#'   whether the default resolution was coarsened to fit the memory and time budgets;
 #'   \code{max_size}, the size of the largest selection; \code{max_loss}, as given; \code{reached}, the number of individuals
 #'   given up at which the target comes within reach (\code{NA} if it does not within the
 #'   table); \code{limited}, why the default table stopped before the target came within
@@ -166,19 +171,22 @@ rkn_tradeoff <- function(g, covariate, target = NULL, max_loss = NULL, resolutio
     fam <- .rkn_global_families(g, tgt, k, fam)
     limit <- min(if (is.null(max_loss)) ceiling(0.05 * fam$max_size) else max_loss, fam$max_size)
     # Beyond the computational budget, the first table is computed with a message,
-    # and the extension of the default table stops. Beyond the memory budget, the default
-    # resolution of a numeric covariate is coarsened for the first table, as in
-    # rkn_select_global(), and the extension of the default table stops.
+    # and the extension of the default table stops. Beyond the memory budget, or beyond some
+    # five minutes of work, the default resolution of a numeric covariate is coarsened for the
+    # first table, as in rkn_select_global(); beyond the memory budget, the extension of the
+    # default table stops.
+    adaptive <- is.null(rows) && is.null(resolution) && tgt$type == "mean"
     res <- tryCatch(.rkn_global_select(fam$fams, min(k, limit), draw = FALSE,
-                                       long = if (is.null(max_loss) && !is.null(rows)) "stop" else "message"),
+                                       long = if (is.null(max_loss) && !is.null(rows)) "stop" else "message",
+                                       max_work_adapt = if (adaptive) .rkn_adaptive_work else Inf),
                     rkn_table_limit = function(e) {
                       if (!is.null(rows)) return("memory")
-                      if (is.null(resolution) && tgt$type == "mean") e else stop(e)
+                      if (adaptive) e else stop(e)
                     },
-                    rkn_work_limit = function(e) "work")
-    if (inherits(res, "rkn_table_limit")) {
+                    rkn_work_limit = function(e) if (adaptive) e else "work")
+    if (inherits(res, c("rkn_table_limit", "rkn_work_limit"))) {
       tgt <- .rkn_global_target(igraph::vertex_attr(g, covariate), target,
-                                .rkn_coarser_resolution(tgt$resolution, res$need / res$max_cells))
+                                .rkn_coarser_resolution(tgt$resolution, .rkn_coarsening(res)))
       fam <- NULL
       coarsened <- TRUE
       next
@@ -310,7 +318,7 @@ print.rkn_tradeoff <- function(x, ...) {
   if (info$rounded) {
     cat(sprintf("Values of %s rounded to multiples of %s%s: each mean is within %s of that of the recorded values\n",
                 info$covariate, format(info$resolution),
-                if (isTRUE(info$coarsened)) ", coarser than the default to fit the memory budget" else "",
+                if (isTRUE(info$coarsened)) ", coarser than the default to keep the computation within its memory and time budgets" else "",
                 format(info$resolution / 2)))
   }
   if (info$n_missing > 0) {

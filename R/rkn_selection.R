@@ -98,7 +98,7 @@
 #'     \code{mean} (the mean of the recorded values among the selected individuals with
 #'     a known value), \code{resolution}, \code{rounded} (whether some value was
 #'     rounded for the search) and \code{coarsened} (whether the default resolution was
-#'     coarsened to fit the memory budget). \code{NULL} otherwise.}
+#'     coarsened to fit the memory and time budgets). \code{NULL} otherwise.}
 #' }
 #'
 #' @section Family structures:
@@ -354,7 +354,7 @@ print.rkn_selection <- function(x, ...) {
         cat(sprintf(paste0("Values of %s rounded to multiples of %s for the search%s: the distance of this mean ",
                            "from the target exceeds the smallest possible by at most %s\n"),
                     gl$covariate, format(gl$resolution),
-                    if (isTRUE(gl$coarsened)) ", coarser than the default to fit the memory budget" else "",
+                    if (isTRUE(gl$coarsened)) ", coarser than the default to keep the computation within its memory and time budgets" else "",
                     format(gl$resolution)))
       }
     }

@@ -55,9 +55,9 @@ selections (see Details). If \code{NULL} (default), integer values spanning at m
 values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
 values from 0 to 200,000. If the tables of the search would then exceed the memory
-budget (see Details), as with ages in years in cohorts of about 100,000 samples, the
-default resolution is coarsened along the same sequence until they fit, and
-\code{print()} says so.}
+budget, or take more than about five minutes (see Details), as with ages in years in
+cohorts of 100,000 samples or more, the default resolution is coarsened along the same
+sequence until they fit, and \code{print()} says so.}
 
 \item{seed}{Optional integer. Random numbers are used only in the families beyond the
 computational budget (see Details); a seed makes the table reproducible. If
@@ -95,7 +95,7 @@ one. The attribute \code{"tradeoff"} is a list describing the table: \code{type}
 categorical covariate; \code{target} and \code{cohort}, whether the target is the
 composition of the network; \code{resolution}, \code{rounded} and
 \code{coarsened}, for a numeric covariate, whether some value was rounded and
-whether the default resolution was coarsened to fit the memory budget;
+whether the default resolution was coarsened to fit the memory and time budgets;
 \code{max_size}, the size of the largest selection; \code{max_loss}, as given; \code{reached}, the number of individuals
 given up at which the target comes within reach (\code{NA} if it does not within the
 table); \code{limited}, why the default table stopped before the target came within
@@ -172,6 +172,13 @@ may then be wider than reported, and the number of selections is not available. 
 options come in part from random draws, so that \code{seed} makes the table
 reproducible; \code{print()} reports their number.
 }
+\section{Computation time}{
+
+On one core of a laptop (Apple M2), the table for a target proportion of women took
+about 0.5 seconds for a population cohort of 10,000 samples, 13 seconds for 100,000
+and 47 seconds for a family study of 10,000.
+}
+
 \examples{
 # A small relatedness network: two parents and their child (P1, P2, C1), a pair of
 # siblings (S1, S2), three mutually related individuals (T1, T2, T3), a larger family

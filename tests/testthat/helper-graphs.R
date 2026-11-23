@@ -116,7 +116,7 @@ selection_problems <- function(g, kept, discarded, alpha) {
 
 make_selection <- function(diagnostics = TRUE) {
   g <- make_network(51)
-  rkn_select_random(g, seed = 1, diagnostics = diagnostics)
+  rkn_select_random(g, uniform = FALSE, seed = 1, diagnostics = diagnostics)
 }
 
 # Synthetic kinship matrix of 200 samples: 30 parent-child pairs, a duplicate (S199,

@@ -102,7 +102,7 @@ individuals with a known value) and \code{n_category}; for a numeric covariate,
 \code{mean} (the mean of the recorded values among the selected individuals with
 a known value), \code{resolution}, \code{rounded} (whether some value was
 rounded for the search) and \code{coarsened} (whether the default resolution was
-coarsened to fit the memory budget). \code{NULL} otherwise.}
+coarsened to fit the memory and time budgets). \code{NULL} otherwise.}
 }
 }
 

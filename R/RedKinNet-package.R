@@ -5,8 +5,8 @@
 #' RedKinNet joins every pair of related individuals in a network and selects a maximum
 #' set of unrelated individuals: a set with no related pair of the largest possible size
 #' (see \code{\link{rkn_selection}}). The families, the connected components of the
-#' network, are resolved by structural rules and by an exact search that also handles
-#' the large and intricate families of genetic isolates.
+#' network, are resolved by an exact search that also handles the large and intricate
+#' families of genetic isolates, or by structural rules.
 #'
 #' A typical analysis follows these steps:
 #' \enumerate{
@@ -14,9 +14,10 @@
 #'     samples in the kinship estimates;
 #'   \item \code{\link{rkn_graph_from_kinship}} builds the network at a kinship
 #'     threshold, optionally leaving samples out and adding covariates;
-#'   \item a selector chooses the individuals: \code{\link{rkn_select_random}} at
-#'     random, optionally uniformly among all the maximum sets with exact inclusion
-#'     probabilities; \code{\link{rkn_select_criteria}} by preferences for individuals,
+#'   \item a selector chooses the individuals: \code{\link{rkn_select_random}}
+#'     uniformly at random among all the maximum sets, with exact inclusion
+#'     probabilities, or by structural rules; \code{\link{rkn_select_criteria}} by
+#'     preferences for individuals,
 #'     such as women; or \code{\link{rkn_select_global}} towards a target composition of
 #'     the whole selection, such as half women or a mean age, after
 #'     \code{\link{rkn_tradeoff}} has shown what the target costs in selection size;

@@ -8,10 +8,11 @@ Description: Selects sets of mutually unrelated individuals from pairwise
     kinship estimates. Pairs related above a kinship threshold, such as the
     cutoffs of Manichaikul et al. (2010) <doi:10.1093/bioinformatics/btq559>,
     form a network whose connected components (families) are resolved as
-    maximum independent set problems, by structural rules and an exact
-    elimination algorithm that also handles the large families of genetic
-    isolates. A largest set of unrelated individuals can be drawn at random,
-    uniformly among all such sets with exact inclusion probabilities, chosen
+    maximum independent set problems, by an exact elimination algorithm
+    that also handles the large families of genetic isolates, or by
+    structural rules. A largest set of unrelated individuals can be drawn
+    uniformly at random among all such sets, with exact inclusion
+    probabilities, chosen
     within families by preferences for individuals, or chosen jointly across
     families to approach a target proportion or mean of a covariate,
     optionally trading selection size for composition. Samples are screened

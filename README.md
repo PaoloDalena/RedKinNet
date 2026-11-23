@@ -54,7 +54,7 @@ g <- rkn_graph_from_kinship(rkn_example$kinship, threshold = "third",
                             covariates = rkn_example$samples, check = FALSE)
 
 # A largest set of unrelated individuals, drawn uniformly among all of them
-sel <- rkn_select_random(g, uniform = TRUE, seed = 1)
+sel <- rkn_select_random(g, seed = 1)
 sel
 #> <rkn_selection> Uniform random selection, seed 1
 #> Call: rkn_select_random(g = g, uniform = TRUE, seed = 1)

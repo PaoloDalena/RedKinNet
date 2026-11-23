@@ -56,7 +56,7 @@ values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
 values from 0 to 200,000. If the tables of the search would then exceed the memory
 budget, or take more than about five minutes (see Details), as with ages in years in
-cohorts of 100,000 samples or more, the default resolution is coarsened along the same
+cohorts of about a million samples, the default resolution is coarsened along the same
 sequence until they fit, and \code{print()} says so.}
 
 \item{seed}{Optional integer. Random numbers are used only in the families beyond the

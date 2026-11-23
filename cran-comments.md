@@ -12,7 +12,6 @@ This is a new submission.
 
 * local: macOS (aarch64), R 4.5.2
 * GitHub Actions: ubuntu-latest (R devel, release and oldrel-1), windows-latest (R release), macOS-latest (R release)
-* win-builder: R devel
 
 ## Notes for the reviewers
 

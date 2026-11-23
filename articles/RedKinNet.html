@@ -155,10 +155,10 @@ otherwise run.</p>
 <span>                            exclude <span class="op">=</span> <span class="va">chk</span><span class="op">$</span><span class="va">contamination</span><span class="op">$</span><span class="va">id</span>, covariates <span class="op">=</span> <span class="va">covariates</span>,</span>
 <span>                            check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">g</span></span>
-<span><span class="co">#&gt; IGRAPH 3378e08 UN-- 751 715 -- </span></span>
+<span><span class="co">#&gt; IGRAPH b08109f UN-- 751 715 -- </span></span>
 <span><span class="co">#&gt; + attr: kinship_threshold (g/n), name (v/c), sex (v/c), age (v/n),</span></span>
 <span><span class="co">#&gt; | call_rate (v/n), kinship (e/n)</span></span>
-<span><span class="co">#&gt; + edges from 3378e08 (vertex names):</span></span>
+<span><span class="co">#&gt; + edges from b08109f (vertex names):</span></span>
 <span><span class="co">#&gt;  [1] S001--S055 S001--S578 S001--S620 S002--S323 S002--S649 S004--S301</span></span>
 <span><span class="co">#&gt;  [7] S005--S570 S008--S229 S008--S363 S009--S077 S009--S700 S010--S019</span></span>
 <span><span class="co">#&gt; [13] S010--S101 S010--S300 S010--S310 S010--S320 S010--S553 S010--S659</span></span>
@@ -178,49 +178,50 @@ made.</p>
 <div class="section level2">
 <h2 id="selecting-unrelated-individuals">Selecting unrelated individuals<a class="anchor" aria-label="anchor" href="#selecting-unrelated-individuals"></a>
 </h2>
-<p><code><a href="../reference/rkn_select_random.html">rkn_select_random()</a></code> returns a maximum set: within each
-family, structural rules keep or discard the members whose fate is the
-same in the maximum sets they consider, and the remaining choices are
-made at random. A seed makes the selection reproducible.</p>
+<p><code><a href="../reference/rkn_select_random.html">rkn_select_random()</a></code> returns a maximum set: each family
+is resolved by an exact algorithm that draws one of all its maximum sets
+with equal probability. A seed makes the selection reproducible.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">sel</span></span>
-<span><span class="co">#&gt; &lt;rkn_selection&gt; Random selection, seed 1</span></span>
-<span><span class="co">#&gt; Call: rkn_select_random(g = g, seed = 1)</span></span>
-<span><span class="co">#&gt; Individuals: 751 | selected: 452 (60.2%)</span></span>
-<span><span class="co">#&gt; Families: 376 | size min/mean/max: 1 / 2.00 / 31</span></span>
-<span><span class="co">#&gt; Families with up to 5 members: 357 | with 6 or more: 19</span></span>
-<span><span class="co">#&gt; Families resolved by a search over maximum sets: 18</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">kept</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "S055" "S620" "S339" "S382" "S002" "S003"</span></span></code></pre></div>
-<p>With <code>uniform = TRUE</code>, each family is resolved by an exact
-algorithm that draws one of all its maximum sets with equal probability;
-the rules of the default selection never choose some of the maximum sets
-of larger families.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sel_uniform</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">sel_uniform</span></span>
 <span><span class="co">#&gt; &lt;rkn_selection&gt; Uniform random selection, seed 1</span></span>
-<span><span class="co">#&gt; Call: rkn_select_random(g = g, uniform = TRUE, seed = 1)</span></span>
+<span><span class="co">#&gt; Call: rkn_select_random(g = g, seed = 1)</span></span>
 <span><span class="co">#&gt; Individuals: 751 | selected: 452 (60.2%)</span></span>
 <span><span class="co">#&gt; Families: 376 | size min/mean/max: 1 / 2.00 / 31</span></span>
 <span><span class="co">#&gt; Families with up to 5 members: 357 | with 6 or more: 19</span></span>
 <span><span class="co">#&gt; Families sampled uniformly among their maximum sets: 376 of 376</span></span>
 <span><span class="co">#&gt; Maximum sets: 4.4e+54 in total; families with more than one: 127 of 376</span></span>
-<span><span class="co">#&gt; Two uniform draws differ on average in 84.6 of the 452 selected individuals (18.7%)</span></span></code></pre></div>
+<span><span class="co">#&gt; Two uniform draws differ on average in 84.6 of the 452 selected individuals (18.7%)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">kept</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "S047" "S620" "S339" "S382" "S649" "S003"</span></span></code></pre></div>
 <p>The printed summary reports how many maximum sets the network has and
 how much two uniform draws differ on average: the selection is one of
 many equally valid ones. The vignette <em>Selection uncertainty</em>
 shows how to quantify the consequences.</p>
+<p>With <code>uniform = FALSE</code>, structural rules keep or discard
+the members whose fate is the same in the maximum sets they consider,
+and the remaining choices are made at random. The result is still a
+maximum set, but the rules never choose some of the maximum sets of
+larger families.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sel_rules</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">sel_rules</span></span>
+<span><span class="co">#&gt; &lt;rkn_selection&gt; Random selection, seed 1</span></span>
+<span><span class="co">#&gt; Call: rkn_select_random(g = g, uniform = FALSE, seed = 1)</span></span>
+<span><span class="co">#&gt; Individuals: 751 | selected: 452 (60.2%)</span></span>
+<span><span class="co">#&gt; Families: 376 | size min/mean/max: 1 / 2.00 / 31</span></span>
+<span><span class="co">#&gt; Families with up to 5 members: 357 | with 6 or more: 19</span></span>
+<span><span class="co">#&gt; Families resolved by a search over maximum sets: 18</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="diagnostics">Diagnostics<a class="anchor" aria-label="anchor" href="#diagnostics"></a>
 </h2>
 <p>Each selection records how every individual was decided
 (<code>node_diagnostics</code>) and how every family was resolved
-(<code>family_summary</code>).</p>
+(<code>family_summary</code>); the selection by rules also records the
+reason of each decision.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">node_diagnostics</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"pre_class"</span>, <span class="st">"post_class"</span>, <span class="st">"family_id"</span>, <span class="st">"family_size"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sel_rules</span><span class="op">$</span><span class="va">node_diagnostics</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"pre_class"</span>, <span class="st">"post_class"</span>, <span class="st">"family_id"</span>, <span class="st">"family_size"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     id         pre_class post_class family_id family_size</span></span>
 <span><span class="co">#&gt; 1 S001 candidate_complex  discarded         1           5</span></span>
 <span><span class="co">#&gt; 2 S047 candidate_complex  discarded         1           5</span></span>
@@ -228,7 +229,7 @@ shows how to quantify the consequences.</p>
 <span><span class="co">#&gt; 4 S578 candidate_complex  discarded         1           5</span></span>
 <span><span class="co">#&gt; 5 S620 candidate_complex       kept         1           5</span></span>
 <span><span class="co">#&gt; 6 S002      kept_apriori       kept         2           6</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sel_rules</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;rkn_selection summary&gt; Random selection, seed 1</span></span>
 <span><span class="co">#&gt; Individuals: 751 | selected: 452 (60.2%) | families: 376</span></span>
 <span><span class="co">#&gt; </span></span>

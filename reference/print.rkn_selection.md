@@ -51,15 +51,17 @@ igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
 igraph::V(g)$age <- unname(age[igraph::V(g)$name])
 sel <- rkn_select_random(g, seed = 1)
 sel # the same as print(sel)
-#> <rkn_selection> Random selection, seed 1
+#> <rkn_selection> Uniform random selection, seed 1
 #> Call: rkn_select_random(g = g, seed = 1)
 #> Individuals: 15 | selected: 8 (53.3%)
 #> Families: 5 | size min/mean/max: 1 / 3.00 / 6
 #> Families with up to 5 members: 4 | with 6 or more: 1
-#> Families resolved by a search over maximum sets: 1
+#> Families sampled uniformly among their maximum sets: 5 of 5
+#> Maximum sets: 6 in total; families with more than one: 2 of 5
+#> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)
 
 print(rkn_select_random(g, seed = 1, diagnostics = FALSE))
-#> <rkn_selection> Random selection, seed 1
+#> <rkn_selection> Uniform random selection, seed 1
 #> Call: rkn_select_random(g = g, seed = 1, diagnostics = FALSE)
 #> Individuals: 15 | selected: 8 (53.3%)
 #> Families: 5 | size min/mean/max: 1 / 3.00 / 6

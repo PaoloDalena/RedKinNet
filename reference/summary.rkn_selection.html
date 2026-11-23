@@ -118,7 +118,7 @@ and for global selections, which have no types of decision;</p></dd>
 <span class="r-in"><span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection summary&gt; Random selection, seed 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection summary&gt; Uniform random selection, seed 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%) | families: 5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Selection by family structure:</span>
@@ -130,12 +130,11 @@ and for global selections, which have no types of decision;</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     6             family of 6 or more members        1           6        3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals by type of decision and outcome:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                  outcome</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> decision                          selected discarded</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   kept without a choice                  6         0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   discarded without a choice             0         4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   decided among single candidates        2         3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   decided among alternative sets         0         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                      outcome</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> decision                              selected discarded</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   in every maximum set                       6         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   in no maximum set                          0         4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   chosen at random among maximum sets        2         3</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The tables as data</span></span></span>
 <span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span></span>
@@ -153,12 +152,11 @@ and for global selections, which have no types of decision;</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4          1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5          3</span>
 <span class="r-in"><span><span class="va">s</span><span class="op">$</span><span class="va">decisions</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                  outcome</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> decision                          selected discarded</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   kept without a choice                  6         0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   discarded without a choice             0         4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   decided among single candidates        2         3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   decided among alternative sets         0         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                      outcome</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> decision                              selected discarded</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   in every maximum set                       6         0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   in no maximum set                          0         4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   chosen at random among maximum sets        2         3</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -6,17 +6,17 @@ pair of the largest possible size (see
 and makes at random the choices that the network leaves open. The
 network is partitioned into families, its connected components, and each
 family is resolved on its own: since no relationship crosses two
-families, the union of their selections has no related pair. Structural
-rules decide most individuals; those left undecided in large families
-are resolved by an exact algorithm that also handles the intricate
-families of genetic isolates (see the section Search over maximum sets
-of
-[`rkn_selection`](https://paolodalena.github.io/RedKinNet/reference/rkn_selection.md)).
+families, the union of their selections has no related pair. By default,
+each family is drawn uniformly at random among all its maximum sets by
+an exact algorithm that also handles the intricate families of genetic
+isolates (see the section Search over maximum sets of
+[`rkn_selection`](https://paolodalena.github.io/RedKinNet/reference/rkn_selection.md));
+alternatively, structural rules decide most individuals.
 
 ## Usage
 
 ``` r
-rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
+rkn_select_random(g, uniform = TRUE, seed = NULL, diagnostics = TRUE)
 ```
 
 ## Arguments
@@ -33,19 +33,20 @@ rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
 
 - uniform:
 
-  Logical. If `FALSE` (default), structural rules decide most
-  individuals and the remaining choices are made at random; the result
-  is a maximum set, but the maximum sets are not equally likely, and the
-  rules never choose some of them: in a chain of six relatives, two of
-  its four maximum sets. If `TRUE`, each family is drawn uniformly at
-  random among all its maximum sets, so that every maximum set of the
-  network has the same probability, and the selection probabilities are
-  exact: with diagnostics, `node_diagnostics$inclusion_probability`
-  gives the probability that each individual is selected. Families too
-  intricate for this exact computation are selected as with
-  `uniform = FALSE` and reported in the column `uniform` of
-  `family_summary` (see
+  Logical. If `TRUE` (default), each family is drawn uniformly at random
+  among all its maximum sets, so that every maximum set of the network
+  has the same probability, and the selection probabilities are exact:
+  with diagnostics, `node_diagnostics$inclusion_probability` gives the
+  probability that each individual is selected. Families too intricate
+  for this exact computation are selected as with `uniform = FALSE` and
+  reported in the column `uniform` of `family_summary` (see
   [`rkn_selection`](https://paolodalena.github.io/RedKinNet/reference/rkn_selection.md)).
+  If `FALSE`, structural rules decide most individuals and the remaining
+  choices are made at random; the result is still a maximum set, but the
+  maximum sets are not equally likely, and the rules never choose some
+  of them: in a chain of six relatives, two of its four maximum sets.
+  The rules record why each individual was kept or discarded, and are
+  somewhat faster in cohorts whose families are small.
 
 - seed:
 
@@ -63,8 +64,11 @@ rkn_select_random(g, uniform = FALSE, seed = NULL, diagnostics = TRUE)
   [`print()`](https://rdrr.io/r/base/print.html),
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   `plot(type = "diagnostics")` use. Diagnostics increase the run time
-  and the size of the returned object; on very large networks,
-  `diagnostics = FALSE` returns the selection alone.
+  and the size of the returned object: computing the inclusion
+  probabilities makes a selection two to three times slower in family
+  studies, though hardly slower in population cohorts. On very large
+  networks, or when many selections are drawn, `diagnostics = FALSE`
+  returns the selection alone.
 
 ## Value
 
@@ -72,6 +76,18 @@ An object of class
 [`rkn_selection`](https://paolodalena.github.io/RedKinNet/reference/rkn_selection.md),
 with `print`, `summary` and `plot` methods; `$kept` holds the
 identifiers of the selected individuals.
+
+## Computation time
+
+On one core of a laptop (Apple M2), the uniform selection with
+diagnostics took about 0.3 seconds for a population cohort of 1,000
+samples, 3 seconds for 10,000 and 30 seconds for 100,000, and the
+selection by rules about two thirds of these times. The time depends on
+the largest and most intricate families more than on the number of
+samples: a family study of 10,000 samples took 40 seconds (16 without
+diagnostics), and a family study of 100,000 samples about 12 minutes on
+one core of a compute node, where a population cohort of the same size
+took less than 2 minutes.
 
 ## See also
 
@@ -97,17 +113,45 @@ age <- c(P1 = 52, C1 = 21, P2 = 55, S1 = 34, S2 = 31, T1 = 60, T2 = 33, T3 = 29,
          D1 = 63, K1 = 35, D2 = 61, K2 = 38, K3 = 30, D3 = 58, U1 = 44)
 igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
 igraph::V(g)$age <- unname(age[igraph::V(g)$name])
+# Uniformly among all the maximum sets, with the probability that each individual is
+# selected
 sel <- rkn_select_random(g, seed = 1)
 sel
-#> <rkn_selection> Random selection, seed 1
+#> <rkn_selection> Uniform random selection, seed 1
 #> Call: rkn_select_random(g = g, seed = 1)
 #> Individuals: 15 | selected: 8 (53.3%)
 #> Families: 5 | size min/mean/max: 1 / 3.00 / 6
 #> Families with up to 5 members: 4 | with 6 or more: 1
-#> Families resolved by a search over maximum sets: 1
+#> Families sampled uniformly among their maximum sets: 5 of 5
+#> Maximum sets: 6 in total; families with more than one: 2 of 5
+#> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)
 sel$kept
-#> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"
-summary(sel)
+#> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"
+sel$node_diagnostics[, c("id", "inclusion_probability")]
+#>    id inclusion_probability
+#> 1  P1             1.0000000
+#> 2  C1             0.0000000
+#> 3  P2             1.0000000
+#> 4  S1             0.5000000
+#> 5  S2             0.5000000
+#> 6  T1             0.3333333
+#> 7  T2             0.3333333
+#> 8  T3             0.3333333
+#> 9  D1             1.0000000
+#> 10 K1             0.0000000
+#> 11 D2             1.0000000
+#> 12 K2             0.0000000
+#> 13 K3             0.0000000
+#> 14 D3             1.0000000
+#> 15 U1             1.0000000
+
+# The selection alone, without diagnostics
+rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
+#> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"
+
+# By structural rules, which record why each individual was kept or discarded
+rules <- rkn_select_random(g, uniform = FALSE, seed = 1)
+summary(rules)
 #> <rkn_selection summary> Random selection, seed 1
 #> Individuals: 15 | selected: 8 (53.3%) | families: 5
 #> 
@@ -126,38 +170,4 @@ summary(sel)
 #>   discarded without a choice             0         4
 #>   decided among single candidates        2         3
 #>   decided among alternative sets         0         0
-
-# The selection alone, without diagnostics
-rkn_select_random(g, seed = 1, diagnostics = FALSE)$kept
-#> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"
-
-# Uniformly among all the maximum sets, with the probability that each individual is
-# selected
-u <- rkn_select_random(g, uniform = TRUE, seed = 1)
-u
-#> <rkn_selection> Uniform random selection, seed 1
-#> Call: rkn_select_random(g = g, uniform = TRUE, seed = 1)
-#> Individuals: 15 | selected: 8 (53.3%)
-#> Families: 5 | size min/mean/max: 1 / 3.00 / 6
-#> Families with up to 5 members: 4 | with 6 or more: 1
-#> Families sampled uniformly among their maximum sets: 5 of 5
-#> Maximum sets: 6 in total; families with more than one: 2 of 5
-#> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)
-u$node_diagnostics[, c("id", "inclusion_probability")]
-#>    id inclusion_probability
-#> 1  P1             1.0000000
-#> 2  C1             0.0000000
-#> 3  P2             1.0000000
-#> 4  S1             0.5000000
-#> 5  S2             0.5000000
-#> 6  T1             0.3333333
-#> 7  T2             0.3333333
-#> 8  T3             0.3333333
-#> 9  D1             1.0000000
-#> 10 K1             0.0000000
-#> 11 D2             1.0000000
-#> 12 K2             0.0000000
-#> 13 K3             0.0000000
-#> 14 D3             1.0000000
-#> 15 U1             1.0000000
 ```

@@ -6,8 +6,8 @@ network and selects a maximum set of unrelated individuals: a set with
 no related pair of the largest possible size (see
 [`rkn_selection`](https://paolodalena.github.io/RedKinNet/reference/rkn_selection.md)).
 The families, the connected components of the network, are resolved by
-structural rules and by an exact search that also handles the large and
-intricate families of genetic isolates.
+an exact search that also handles the large and intricate families of
+genetic isolates, or by structural rules.
 
 A typical analysis follows these steps:
 
@@ -21,8 +21,8 @@ A typical analysis follows these steps:
 
 3.  a selector chooses the individuals:
     [`rkn_select_random`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md)
-    at random, optionally uniformly among all the maximum sets with
-    exact inclusion probabilities;
+    uniformly at random among all the maximum sets, with exact inclusion
+    probabilities, or by structural rules;
     [`rkn_select_criteria`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_criteria.md)
     by preferences for individuals, such as women; or
     [`rkn_select_global`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_global.md)

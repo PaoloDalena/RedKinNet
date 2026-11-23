@@ -149,7 +149,7 @@ structures).
   recorded values among the selected individuals with a known value),
   `resolution`, `rounded` (whether some value was rounded for the
   search) and `coarsened` (whether the default resolution was coarsened
-  to fit the memory budget). `NULL` otherwise.
+  to fit the memory and time budgets). `NULL` otherwise.
 
 ## Family structures
 
@@ -341,27 +341,27 @@ names(sel)
 #>  [9] "diagnostics"      "node_diagnostics" "family_summary"   "graph"           
 #> [13] "call"             "global"          
 sel$kept
-#> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"
+#> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"
 head(sel$node_diagnostics)
-#>   id         pre_class post_class is_selected            pre_reason family_id
-#> 1 P1      kept_apriori       kept        TRUE                  <NA>         1
-#> 2 C1 discarded_apriori  discarded       FALSE                  <NA>         1
-#> 3 P2      kept_apriori       kept        TRUE                  <NA>         1
-#> 4 S1  candidate_simple  discarded       FALSE single_conflict_group         2
-#> 5 S2  candidate_simple       kept        TRUE single_conflict_group         2
-#> 6 T1  candidate_simple  discarded       FALSE single_conflict_group         3
-#>   family_size
-#> 1           3
-#> 2           3
-#> 3           3
-#> 4           2
-#> 5           2
-#> 6           3
+#>   id         pre_class post_class is_selected     pre_reason
+#> 1 P1      kept_apriori       kept        TRUE  uniform_every
+#> 2 C1 discarded_apriori  discarded       FALSE   uniform_none
+#> 3 P2      kept_apriori       kept        TRUE  uniform_every
+#> 4 S1 candidate_complex  discarded       FALSE uniform_chosen
+#> 5 S2 candidate_complex       kept        TRUE uniform_chosen
+#> 6 T1 candidate_complex  discarded       FALSE uniform_chosen
+#>   inclusion_probability family_id family_size
+#> 1             1.0000000         1           3
+#> 2             0.0000000         1           3
+#> 3             1.0000000         1           3
+#> 4             0.5000000         2           2
+#> 5             0.5000000         2           2
+#> 6             0.3333333         3           3
 sel$family_summary[, c("family_id", "family_size", "mis_method", "n_kept", "n_discarded")]
 #>   family_id family_size mis_method n_kept n_discarded
-#> 1         1           3       <NA>      2           1
-#> 2         2           2       <NA>      1           1
-#> 3         3           3       <NA>      1           2
+#> 1         1           3      exact      2           1
+#> 2         2           2      exact      1           1
+#> 3         3           3      exact      1           2
 #> 4         4           6      exact      3           3
-#> 5         5           1       <NA>      1           0
+#> 5         5           1      exact      1           0
 ```

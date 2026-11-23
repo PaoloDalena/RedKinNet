@@ -88,8 +88,11 @@ rkn_select_criteria(
   [`print()`](https://rdrr.io/r/base/print.html),
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   `plot(type = "diagnostics")` use. Diagnostics increase the run time
-  and the size of the returned object; on very large networks,
-  `diagnostics = FALSE` returns the selection alone.
+  and the size of the returned object: computing the inclusion
+  probabilities makes a selection two to three times slower in family
+  studies, though hardly slower in population cohorts. On very large
+  networks, or when many selections are drawn, `diagnostics = FALSE`
+  returns the selection alone.
 
 ## Value
 
@@ -98,6 +101,14 @@ An object of class
 as for
 [`rkn_select_random`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md);
 its `criteria` element holds the criteria.
+
+## Computation time
+
+On one core of a laptop (Apple M2), the selection took about as long as
+`rkn_select_random(uniform = FALSE)`: 1.6 seconds for a population
+cohort of 10,000 samples, 17 seconds for 100,000 and 32 seconds for a
+family study of 10,000; with `optimal = TRUE`, 5.5 seconds, 1 minute and
+67 seconds.
 
 ## See also
 

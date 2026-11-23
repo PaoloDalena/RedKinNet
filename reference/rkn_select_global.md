@@ -80,9 +80,9 @@ rkn_select_global(
   times a power of 10 that divides their range into at most 100 steps,
   e.g. 0.5 for values from 16 to 45, or 2000 for values from 0 to
   200,000. If the tables of the search would then exceed the memory
-  budget (see Details), as with ages in years in cohorts of about
-  100,000 samples, the default resolution is coarsened along the same
-  sequence until they fit, and
+  budget, or take more than about five minutes (see Details), as with
+  ages in years in cohorts of about a million samples, the default
+  resolution is coarsened along the same sequence until they fit, and
   [`print()`](https://rdrr.io/r/base/print.html) says so.
 
 - seed:
@@ -171,7 +171,17 @@ in a synthetic cohort of 100,000 samples, with ages rounded to 10 years,
 the selected mean was 50.07 for a target of 50. The work of these tables
 is also estimated beforehand: beyond about half a minute on a recent
 laptop, a message warns that the selection may take several minutes, and
-a smaller `max_loss` or a coarser resolution shortens it.
+a smaller `max_loss` or a coarser resolution shortens it; beyond about
+five minutes, the default resolution of a numeric covariate is
+coarsened, as for the memory.
+
+## Computation time
+
+On one core of a laptop (Apple M2), a target proportion of women took
+about 0.7 seconds for a population cohort of 10,000 samples, 17 seconds
+for 100,000 and 44 seconds for a family study of 10,000; a target mean
+of ages recorded in years took 4.5 seconds, 6 minutes and 86 seconds. A
+larger `max_loss` or a finer resolution makes the search longer.
 
 ## See also
 

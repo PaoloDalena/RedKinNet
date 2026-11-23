@@ -93,15 +93,17 @@ families.</p>
 <span class="r-in"><span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sel</span> <span class="co"># the same as print(sel)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Random selection, seed 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Uniform random selection, seed 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: rkn_select_random(g = g, seed = 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Families: 5 | size min/mean/max: 1 / 3.00 / 6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Families with up to 5 members: 4 | with 6 or more: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Families resolved by a search over maximum sets: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Families sampled uniformly among their maximum sets: 5 of 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Maximum sets: 6 in total; families with more than one: 2 of 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Random selection, seed 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Uniform random selection, seed 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: rkn_select_random(g = g, seed = 1, diagnostics = FALSE)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Families: 5 | size min/mean/max: 1 / 3.00 / 6</span>

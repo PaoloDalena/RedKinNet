@@ -166,19 +166,20 @@ several draws shows whether a conclusion depends on it.</p>
 <div class="section level2">
 <h2 id="why-uniform">Why uniform<a class="anchor" aria-label="anchor" href="#why-uniform"></a>
 </h2>
-<p>The default selection of <code><a href="../reference/rkn_select_random.html">rkn_select_random()</a></code> resolves
-larger families by structural rules, which never choose some of their
-maximum sets. On a chain of six relatives, for instance, there are four
-maximum sets, and the rules choose only between the two of alternate
-relatives. A uniform draw gives every maximum set the same chance, so
-that the inclusion probabilities above describe the selection
+<p>With <code>uniform = FALSE</code>, <code><a href="../reference/rkn_select_random.html">rkn_select_random()</a></code>
+resolves larger families by structural rules, which never choose some of
+their maximum sets. On a chain of six relatives, for instance, there are
+four maximum sets, and the rules choose only between the two of
+alternate relatives. A uniform draw gives every maximum set the same
+chance, so that the inclusion probabilities above describe the selection
 exactly.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">chain</span> <span class="op">&lt;-</span> <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/make_graph.html" class="external-link">make_graph</a></span><span class="op">(</span><span class="op">~</span> <span class="va">A</span> <span class="op">-</span> <span class="va">B</span> <span class="op">-</span> <span class="va">C</span> <span class="op">-</span> <span class="va">D</span> <span class="op">-</span> <span class="va">E</span> <span class="op">-</span> <span class="cn">F</span><span class="op">)</span></span>
 <span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span></span>
 <span><span class="va">uniform</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">s</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">200</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">rules</span><span class="op">[</span><span class="va">s</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">chain</span>, seed <span class="op">=</span> <span class="va">s</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">kept</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
+<span>  <span class="va">rules</span><span class="op">[</span><span class="va">s</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">chain</span>, uniform <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">s</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">kept</span><span class="op">)</span>,</span>
+<span>                    collapse <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
 <span>  <span class="va">uniform</span><span class="op">[</span><span class="va">s</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="../reference/rkn_select_random.html">rkn_select_random</a></span><span class="op">(</span><span class="va">chain</span>, uniform <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="va">s</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">kept</span><span class="op">)</span>,</span>
 <span>                      collapse <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>

@@ -109,7 +109,7 @@ several draws shows whether a conclusion depends on it.
 
 ## Why uniform
 
-The default selection of
+With `uniform = FALSE`,
 [`rkn_select_random()`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md)
 resolves larger families by structural rules, which never choose some of
 their maximum sets. On a chain of six relatives, for instance, there are
@@ -124,7 +124,8 @@ chain <- igraph::make_graph(~ A - B - C - D - E - F)
 rules <- character(200)
 uniform <- character(200)
 for (s in 1:200) {
-  rules[s] <- paste(sort(rkn_select_random(chain, seed = s, diagnostics = FALSE)$kept), collapse = "")
+  rules[s] <- paste(sort(rkn_select_random(chain, uniform = FALSE, seed = s, diagnostics = FALSE)$kept),
+                    collapse = "")
   uniform[s] <- paste(sort(rkn_select_random(chain, uniform = TRUE, seed = s, diagnostics = FALSE)$kept),
                       collapse = "")
 }

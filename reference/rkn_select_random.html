@@ -3,17 +3,19 @@
 largest possible size (see rkn_selection), and makes at random the
 choices that the network leaves open. The network is partitioned into families, its
 connected components, and each family is resolved on its own: since no relationship
-crosses two families, the union of their selections has no related pair. Structural
-rules decide most individuals; those left undecided in large families are resolved by
-an exact algorithm that also handles the intricate families of genetic isolates (see
-the section Search over maximum sets of rkn_selection)."><meta property="og:description" content="Selects a maximum set of unrelated individuals, a set with no related pair of the
+crosses two families, the union of their selections has no related pair. By default,
+each family is drawn uniformly at random among all its maximum sets by an exact
+algorithm that also handles the intricate families of genetic isolates (see the
+section Search over maximum sets of rkn_selection); alternatively,
+structural rules decide most individuals."><meta property="og:description" content="Selects a maximum set of unrelated individuals, a set with no related pair of the
 largest possible size (see rkn_selection), and makes at random the
 choices that the network leaves open. The network is partitioned into families, its
 connected components, and each family is resolved on its own: since no relationship
-crosses two families, the union of their selections has no related pair. Structural
-rules decide most individuals; those left undecided in large families are resolved by
-an exact algorithm that also handles the intricate families of genetic isolates (see
-the section Search over maximum sets of rkn_selection)."><meta property="og:image" content="https://paolodalena.github.io/RedKinNet/logo.png"></head><body>
+crosses two families, the union of their selections has no related pair. By default,
+each family is drawn uniformly at random among all its maximum sets by an exact
+algorithm that also handles the intricate families of genetic isolates (see the
+section Search over maximum sets of rkn_selection); alternatively,
+structural rules decide most individuals."><meta property="og:image" content="https://paolodalena.github.io/RedKinNet/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -57,15 +59,16 @@ the section Search over maximum sets of rkn_selection)."><meta property="og:imag
 largest possible size (see <code><a href="rkn_selection.html">rkn_selection</a></code>), and makes at random the
 choices that the network leaves open. The network is partitioned into families, its
 connected components, and each family is resolved on its own: since no relationship
-crosses two families, the union of their selections has no related pair. Structural
-rules decide most individuals; those left undecided in large families are resolved by
-an exact algorithm that also handles the intricate families of genetic isolates (see
-the section Search over maximum sets of <code><a href="rkn_selection.html">rkn_selection</a></code>).</p>
+crosses two families, the union of their selections has no related pair. By default,
+each family is drawn uniformly at random among all its maximum sets by an exact
+algorithm that also handles the intricate families of genetic isolates (see the
+section Search over maximum sets of <code><a href="rkn_selection.html">rkn_selection</a></code>); alternatively,
+structural rules decide most individuals.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="cn">NULL</span>, diagnostics <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="cn">NULL</span>, diagnostics <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,17 +85,18 @@ checks the samples; for a network built in another way, see
 
 
 <dt id="arg-uniform">uniform<a class="anchor" aria-label="anchor" href="#arg-uniform"></a></dt>
-<dd><p>Logical. If <code>FALSE</code> (default), structural rules decide most
-individuals and the remaining choices are made at random; the result is a maximum
-set, but the maximum sets are not equally likely, and the rules never choose some of
-them: in a chain of six relatives, two of its four maximum sets. If <code>TRUE</code>,
-each family is drawn uniformly at random among all its maximum sets, so that every
-maximum set of the network has the same probability, and the selection
-probabilities are exact: with diagnostics,
+<dd><p>Logical. If <code>TRUE</code> (default), each family is drawn uniformly at
+random among all its maximum sets, so that every maximum set of the network has the
+same probability, and the selection probabilities are exact: with diagnostics,
 <code>node_diagnostics$inclusion_probability</code> gives the probability that each
 individual is selected. Families too intricate for this exact computation are
 selected as with <code>uniform = FALSE</code> and reported in the column <code>uniform</code>
-of <code>family_summary</code> (see <code><a href="rkn_selection.html">rkn_selection</a></code>).</p></dd>
+of <code>family_summary</code> (see <code><a href="rkn_selection.html">rkn_selection</a></code>). If <code>FALSE</code>,
+structural rules decide most individuals and the remaining choices are made at
+random; the result is still a maximum set, but the maximum sets are not equally
+likely, and the rules never choose some of them: in a chain of six relatives, two
+of its four maximum sets. The rules record why each individual was kept or
+discarded, and are somewhat faster in cohorts whose families are small.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -108,8 +112,10 @@ is used.</p></dd>
 how each individual and each family was resolved (<code>node_diagnostics</code> and
 <code>family_summary</code>), which <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and
 <code>plot(type = "diagnostics")</code> use. Diagnostics increase the run time and the size
-of the returned object; on very large networks, <code>diagnostics = FALSE</code> returns
-the selection alone.</p></dd>
+of the returned object: computing the inclusion probabilities makes a selection two
+to three times slower in family studies, though hardly slower in population cohorts.
+On very large networks, or when many selections are drawn, <code>diagnostics = FALSE</code>
+returns the selection alone.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -117,6 +123,18 @@ the selection alone.</p></dd>
     <p>An object of class <code><a href="rkn_selection.html">rkn_selection</a></code>, with <code>print</code>,
 <code>summary</code> and <code>plot</code> methods; <code>$kept</code> holds the identifiers of the
 selected individuals.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="computation-time">Computation time<a class="anchor" aria-label="anchor" href="#computation-time"></a></h2>
+
+
+<p>On one core of a laptop (Apple M2), the uniform selection with diagnostics took about
+0.3 seconds for a population cohort of 1,000 samples, 3 seconds for 10,000 and 30
+seconds for 100,000, and the selection by rules about two thirds of these times. The
+time depends on the largest and most intricate families more than on the number of
+samples: a family study of 10,000 samples took 40 seconds (16 without diagnostics),
+and a family study of 100,000 samples about 12 minutes on one core of a compute node,
+where a population cohort of the same size took less than 2 minutes.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -140,17 +158,45 @@ selected individuals.</p>
 <span class="r-in"><span>         D1 <span class="op">=</span> <span class="fl">63</span>, K1 <span class="op">=</span> <span class="fl">35</span>, D2 <span class="op">=</span> <span class="fl">61</span>, K2 <span class="op">=</span> <span class="fl">38</span>, K3 <span class="op">=</span> <span class="fl">30</span>, D3 <span class="op">=</span> <span class="fl">58</span>, U1 <span class="op">=</span> <span class="fl">44</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">sex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">sex</span><span class="op">[</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Uniformly among all the maximum sets, with the probability that each individual is</span></span></span>
+<span class="r-in"><span><span class="co"># selected</span></span></span>
 <span class="r-in"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sel</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Random selection, seed 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Uniform random selection, seed 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Call: rkn_select_random(g = g, seed = 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Families: 5 | size min/mean/max: 1 / 3.00 / 6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Families with up to 5 members: 4 | with 6 or more: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Families resolved by a search over maximum sets: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Families sampled uniformly among their maximum sets: 5 of 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Maximum sets: 6 in total; families with more than one: 2 of 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)</span>
 <span class="r-in"><span><span class="va">sel</span><span class="op">$</span><span class="va">kept</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"</span>
+<span class="r-in"><span><span class="va">sel</span><span class="op">$</span><span class="va">node_diagnostics</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"inclusion_probability"</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    id inclusion_probability</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  P1             1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  C1             0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  P2             1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  S1             0.5000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  S2             0.5000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  T1             0.3333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  T2             0.3333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  T3             0.3333333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  D1             1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 K1             0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 D2             1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 K2             0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 K3             0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 D3             1.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 U1             1.0000000</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># The selection alone, without diagnostics</span></span></span>
+<span class="r-in"><span><span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">kept</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># By structural rules, which record why each individual was kept or discarded</span></span></span>
+<span class="r-in"><span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">rules</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection summary&gt; Random selection, seed 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%) | families: 5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -169,40 +215,6 @@ selected individuals.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   discarded without a choice             0         4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   decided among single candidates        2         3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   decided among alternative sets         0         0</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The selection alone, without diagnostics</span></span></span>
-<span class="r-in"><span><span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, seed <span class="op">=</span> <span class="fl">1</span>, diagnostics <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">kept</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Uniformly among all the maximum sets, with the probability that each individual is</span></span></span>
-<span class="r-in"><span><span class="co"># selected</span></span></span>
-<span class="r-in"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu">rkn_select_random</span><span class="op">(</span><span class="va">g</span>, uniform <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">u</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;rkn_selection&gt; Uniform random selection, seed 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Call: rkn_select_random(g = g, uniform = TRUE, seed = 1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Individuals: 15 | selected: 8 (53.3%)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Families: 5 | size min/mean/max: 1 / 3.00 / 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Families with up to 5 members: 4 | with 6 or more: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Families sampled uniformly among their maximum sets: 5 of 5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Maximum sets: 6 in total; families with more than one: 2 of 5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Two uniform draws differ on average in 1.2 of the 8 selected individuals (14.6%)</span>
-<span class="r-in"><span><span class="va">u</span><span class="op">$</span><span class="va">node_diagnostics</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"inclusion_probability"</span><span class="op">)</span><span class="op">]</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id inclusion_probability</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  P1             1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  C1             0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  P2             1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  S1             0.5000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  S2             0.5000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  T1             0.3333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7  T2             0.3333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  T3             0.3333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  D1             1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 K1             0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 D2             1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 K2             0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 K3             0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 D3             1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15 U1             1.0000000</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

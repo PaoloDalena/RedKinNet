@@ -188,7 +188,7 @@ individuals with a known value) and <code>n_category</code>; for a numeric covar
 <code>mean</code> (the mean of the recorded values among the selected individuals with
 a known value), <code>resolution</code>, <code>rounded</code> (whether some value was
 rounded for the search) and <code>coarsened</code> (whether the default resolution was
-coarsened to fit the memory budget). <code>NULL</code> otherwise.</p></dd>
+coarsened to fit the memory and time budgets). <code>NULL</code> otherwise.</p></dd>
 
 
 </dl></div>
@@ -349,29 +349,29 @@ reduction count as in no maximum set, although some maximum sets may contain the
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "diagnostics"      "node_diagnostics" "family_summary"   "graph"           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [13] "call"             "global"          </span>
 <span class="r-in"><span><span class="va">sel</span><span class="op">$</span><span class="va">kept</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D3" "D1" "D2" "U1"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "P1" "P2" "S2" "T3" "D1" "D2" "D3" "U1"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">node_diagnostics</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   id         pre_class post_class is_selected            pre_reason family_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 P1      kept_apriori       kept        TRUE                  &lt;NA&gt;         1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 C1 discarded_apriori  discarded       FALSE                  &lt;NA&gt;         1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 P2      kept_apriori       kept        TRUE                  &lt;NA&gt;         1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 S1  candidate_simple  discarded       FALSE single_conflict_group         2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 S2  candidate_simple       kept        TRUE single_conflict_group         2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 T1  candidate_simple  discarded       FALSE single_conflict_group         3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   family_size</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   id         pre_class post_class is_selected     pre_reason</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 P1      kept_apriori       kept        TRUE  uniform_every</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 C1 discarded_apriori  discarded       FALSE   uniform_none</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 P2      kept_apriori       kept        TRUE  uniform_every</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 S1 candidate_complex  discarded       FALSE uniform_chosen</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 S2 candidate_complex       kept        TRUE uniform_chosen</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 T1 candidate_complex  discarded       FALSE uniform_chosen</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   inclusion_probability family_id family_size</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1             1.0000000         1           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2             0.0000000         1           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3             1.0000000         1           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4             0.5000000         2           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5             0.5000000         2           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6             0.3333333         3           3</span>
 <span class="r-in"><span><span class="va">sel</span><span class="op">$</span><span class="va">family_summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"family_id"</span>, <span class="st">"family_size"</span>, <span class="st">"mis_method"</span>, <span class="st">"n_kept"</span>, <span class="st">"n_discarded"</span><span class="op">)</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   family_id family_size mis_method n_kept n_discarded</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         1           3       &lt;NA&gt;      2           1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2         2           2       &lt;NA&gt;      1           1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3         3           3       &lt;NA&gt;      1           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1         1           3      exact      2           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2         2           2      exact      1           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3         3           3      exact      1           2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4         4           6      exact      3           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5         5           1       &lt;NA&gt;      1           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5         5           1      exact      1           0</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

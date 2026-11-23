@@ -95,10 +95,10 @@ g <- rkn_graph_from_kinship(kin, threshold = "third", samples = covariates$id,
                             exclude = chk$contamination$id, covariates = covariates,
                             check = FALSE)
 g
-#> IGRAPH 3378e08 UN-- 751 715 -- 
+#> IGRAPH b08109f UN-- 751 715 -- 
 #> + attr: kinship_threshold (g/n), name (v/c), sex (v/c), age (v/n),
 #> | call_rate (v/n), kinship (e/n)
-#> + edges from 3378e08 (vertex names):
+#> + edges from b08109f (vertex names):
 #>  [1] S001--S055 S001--S578 S001--S620 S002--S323 S002--S649 S004--S301
 #>  [7] S005--S570 S008--S229 S008--S363 S009--S077 S009--S700 S010--S019
 #> [13] S010--S101 S010--S300 S010--S310 S010--S320 S010--S553 S010--S659
@@ -120,42 +120,24 @@ made.
 ## Selecting unrelated individuals
 
 [`rkn_select_random()`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md)
-returns a maximum set: within each family, structural rules keep or
-discard the members whose fate is the same in the maximum sets they
-consider, and the remaining choices are made at random. A seed makes the
-selection reproducible.
+returns a maximum set: each family is resolved by an exact algorithm
+that draws one of all its maximum sets with equal probability. A seed
+makes the selection reproducible.
 
 ``` r
 
 sel <- rkn_select_random(g, seed = 1)
 sel
-#> <rkn_selection> Random selection, seed 1
-#> Call: rkn_select_random(g = g, seed = 1)
-#> Individuals: 751 | selected: 452 (60.2%)
-#> Families: 376 | size min/mean/max: 1 / 2.00 / 31
-#> Families with up to 5 members: 357 | with 6 or more: 19
-#> Families resolved by a search over maximum sets: 18
-head(sel$kept)
-#> [1] "S055" "S620" "S339" "S382" "S002" "S003"
-```
-
-With `uniform = TRUE`, each family is resolved by an exact algorithm
-that draws one of all its maximum sets with equal probability; the rules
-of the default selection never choose some of the maximum sets of larger
-families.
-
-``` r
-
-sel_uniform <- rkn_select_random(g, uniform = TRUE, seed = 1)
-sel_uniform
 #> <rkn_selection> Uniform random selection, seed 1
-#> Call: rkn_select_random(g = g, uniform = TRUE, seed = 1)
+#> Call: rkn_select_random(g = g, seed = 1)
 #> Individuals: 751 | selected: 452 (60.2%)
 #> Families: 376 | size min/mean/max: 1 / 2.00 / 31
 #> Families with up to 5 members: 357 | with 6 or more: 19
 #> Families sampled uniformly among their maximum sets: 376 of 376
 #> Maximum sets: 4.4e+54 in total; families with more than one: 127 of 376
 #> Two uniform draws differ on average in 84.6 of the 452 selected individuals (18.7%)
+head(sel$kept)
+#> [1] "S047" "S620" "S339" "S382" "S649" "S003"
 ```
 
 The printed summary reports how many maximum sets the network has and
@@ -163,15 +145,33 @@ how much two uniform draws differ on average: the selection is one of
 many equally valid ones. The vignette *Selection uncertainty* shows how
 to quantify the consequences.
 
+With `uniform = FALSE`, structural rules keep or discard the members
+whose fate is the same in the maximum sets they consider, and the
+remaining choices are made at random. The result is still a maximum set,
+but the rules never choose some of the maximum sets of larger families.
+
+``` r
+
+sel_rules <- rkn_select_random(g, uniform = FALSE, seed = 1)
+sel_rules
+#> <rkn_selection> Random selection, seed 1
+#> Call: rkn_select_random(g = g, uniform = FALSE, seed = 1)
+#> Individuals: 751 | selected: 452 (60.2%)
+#> Families: 376 | size min/mean/max: 1 / 2.00 / 31
+#> Families with up to 5 members: 357 | with 6 or more: 19
+#> Families resolved by a search over maximum sets: 18
+```
+
 ## Diagnostics
 
 Each selection records how every individual was decided
 (`node_diagnostics`) and how every family was resolved
-(`family_summary`).
+(`family_summary`); the selection by rules also records the reason of
+each decision.
 
 ``` r
 
-head(sel$node_diagnostics[, c("id", "pre_class", "post_class", "family_id", "family_size")])
+head(sel_rules$node_diagnostics[, c("id", "pre_class", "post_class", "family_id", "family_size")])
 #>     id         pre_class post_class family_id family_size
 #> 1 S001 candidate_complex  discarded         1           5
 #> 2 S047 candidate_complex  discarded         1           5
@@ -179,7 +179,7 @@ head(sel$node_diagnostics[, c("id", "pre_class", "post_class", "family_id", "fam
 #> 4 S578 candidate_complex  discarded         1           5
 #> 5 S620 candidate_complex       kept         1           5
 #> 6 S002      kept_apriori       kept         2           6
-summary(sel)
+summary(sel_rules)
 #> <rkn_selection summary> Random selection, seed 1
 #> Individuals: 751 | selected: 452 (60.2%) | families: 376
 #> 

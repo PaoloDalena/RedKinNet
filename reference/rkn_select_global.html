@@ -132,9 +132,9 @@ selections (see Details). If <code>NULL</code> (default), integer values spannin
 values are rounded to the smallest of 1, 2 or 5 times a power of 10 that divides
 their range into at most 100 steps, e.g. 0.5 for values from 16 to 45, or 2000 for
 values from 0 to 200,000. If the tables of the search would then exceed the memory
-budget (see Details), as with ages in years in cohorts of about 100,000 samples, the
-default resolution is coarsened along the same sequence until they fit, and
-<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> says so.</p></dd>
+budget, or take more than about five minutes (see Details), as with ages in years in
+cohorts of about a million samples, the default resolution is coarsened along the same
+sequence until they fit, and <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> says so.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -203,9 +203,20 @@ numeric covariate was left to its default, which is then coarsened until the tab
 fit. The mean of the selection then lies within half the resolution of the mean that the
 search reaches, and usually much closer: in a synthetic cohort of 100,000 samples, with
 ages rounded to 10 years, the selected mean was 50.07 for a target of 50. The work of
-these tables is also estimated beforehand: beyond about half a minute on a recent laptop, a message
-warns that the selection may take several minutes, and a smaller <code>max_loss</code> or a
-coarser resolution shortens it.</p>
+these tables is also estimated beforehand: beyond about half a minute on a recent
+laptop, a message warns that the selection may take several minutes, and a smaller
+<code>max_loss</code> or a coarser resolution shortens it; beyond about five minutes, the
+default resolution of a numeric covariate is coarsened, as for the memory.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="computation-time">Computation time<a class="anchor" aria-label="anchor" href="#computation-time"></a></h2>
+
+
+<p>On one core of a laptop (Apple M2), a target proportion of women took about 0.7
+seconds for a population cohort of 10,000 samples, 17 seconds for 100,000 and 44
+seconds for a family study of 10,000; a target mean of ages recorded in years took 4.5
+seconds, 6 minutes and 86 seconds. A larger <code>max_loss</code> or a finer resolution
+makes the search longer.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

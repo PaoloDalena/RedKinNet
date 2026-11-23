@@ -80,7 +80,7 @@ igraph::V(g)$sex <- unname(sex[igraph::V(g)$name])
 igraph::V(g)$age <- unname(age[igraph::V(g)$name])
 sel <- rkn_select_random(g, seed = 1)
 summary(sel)
-#> <rkn_selection summary> Random selection, seed 1
+#> <rkn_selection summary> Uniform random selection, seed 1
 #> Individuals: 15 | selected: 8 (53.3%) | families: 5
 #> 
 #> Selection by family structure:
@@ -92,12 +92,11 @@ summary(sel)
 #>     6             family of 6 or more members        1           6        3
 #> 
 #> Individuals by type of decision and outcome:
-#>                                  outcome
-#> decision                          selected discarded
-#>   kept without a choice                  6         0
-#>   discarded without a choice             0         4
-#>   decided among single candidates        2         3
-#>   decided among alternative sets         0         0
+#>                                      outcome
+#> decision                              selected discarded
+#>   in every maximum set                       6         0
+#>   in no maximum set                          0         4
+#>   chosen at random among maximum sets        2         3
 
 # The tables as data
 s <- summary(sel)
@@ -115,10 +114,9 @@ s$by_structure
 #> 4          1
 #> 5          3
 s$decisions
-#>                                  outcome
-#> decision                          selected discarded
-#>   kept without a choice                  6         0
-#>   discarded without a choice             0         4
-#>   decided among single candidates        2         3
-#>   decided among alternative sets         0         0
+#>                                      outcome
+#> decision                              selected discarded
+#>   in every maximum set                       6         0
+#>   in no maximum set                          0         4
+#>   chosen at random among maximum sets        2         3
 ```

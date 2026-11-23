@@ -12,9 +12,9 @@ First release.
   flags possible duplicates, contaminated samples and samples of
   different ancestry.
 - [`rkn_select_random()`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_random.md)
-  selects a largest set of unrelated individuals by structural rules or,
-  with `uniform = TRUE`, uniformly at random among all of them, with
-  exact inclusion probabilities.
+  selects a largest set of unrelated individuals uniformly at random
+  among all of them, with exact inclusion probabilities, or, with
+  `uniform = FALSE`, by structural rules.
 - [`rkn_select_criteria()`](https://paolodalena.github.io/RedKinNet/reference/rkn_select_criteria.md)
   chooses among the largest sets by preferences for individuals
   ([`rkn_criterion_cutoff()`](https://paolodalena.github.io/RedKinNet/reference/rkn_criterion_cutoff.md),

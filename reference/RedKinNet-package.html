@@ -3,16 +3,17 @@
 RedKinNet joins every pair of related individuals in a network and selects a maximum
 set of unrelated individuals: a set with no related pair of the largest possible size
 (see rkn_selection). The families, the connected components of the
-network, are resolved by structural rules and by an exact search that also handles
-the large and intricate families of genetic isolates.
+network, are resolved by an exact search that also handles the large and intricate
+families of genetic isolates, or by structural rules.
 A typical analysis follows these steps:
 rkn_check_samples flags possible duplicates and contaminated
 samples in the kinship estimates;
 rkn_graph_from_kinship builds the network at a kinship
 threshold, optionally leaving samples out and adding covariates;
-a selector chooses the individuals: rkn_select_random at
-random, optionally uniformly among all the maximum sets with exact inclusion
-probabilities; rkn_select_criteria by preferences for individuals,
+a selector chooses the individuals: rkn_select_random
+uniformly at random among all the maximum sets, with exact inclusion
+probabilities, or by structural rules; rkn_select_criteria by
+preferences for individuals,
 such as women; or rkn_select_global towards a target composition of
 the whole selection, such as half women or a mean age, after
 rkn_tradeoff has shown what the target costs in selection size;
@@ -24,16 +25,17 @@ rkn_plot_pre).
 RedKinNet joins every pair of related individuals in a network and selects a maximum
 set of unrelated individuals: a set with no related pair of the largest possible size
 (see rkn_selection). The families, the connected components of the
-network, are resolved by structural rules and by an exact search that also handles
-the large and intricate families of genetic isolates.
+network, are resolved by an exact search that also handles the large and intricate
+families of genetic isolates, or by structural rules.
 A typical analysis follows these steps:
 rkn_check_samples flags possible duplicates and contaminated
 samples in the kinship estimates;
 rkn_graph_from_kinship builds the network at a kinship
 threshold, optionally leaving samples out and adding covariates;
-a selector chooses the individuals: rkn_select_random at
-random, optionally uniformly among all the maximum sets with exact inclusion
-probabilities; rkn_select_criteria by preferences for individuals,
+a selector chooses the individuals: rkn_select_random
+uniformly at random among all the maximum sets, with exact inclusion
+probabilities, or by structural rules; rkn_select_criteria by
+preferences for individuals,
 such as women; or rkn_select_global towards a target composition of
 the whole selection, such as half women or a mean age, after
 rkn_tradeoff has shown what the target costs in selection size;
@@ -85,15 +87,16 @@ rkn_plot_pre).
 RedKinNet joins every pair of related individuals in a network and selects a maximum
 set of unrelated individuals: a set with no related pair of the largest possible size
 (see <code><a href="rkn_selection.html">rkn_selection</a></code>). The families, the connected components of the
-network, are resolved by structural rules and by an exact search that also handles
-the large and intricate families of genetic isolates.</p>
+network, are resolved by an exact search that also handles the large and intricate
+families of genetic isolates, or by structural rules.</p>
 <p>A typical analysis follows these steps:</p><ol><li><p><code><a href="rkn_check_samples.html">rkn_check_samples</a></code> flags possible duplicates and contaminated
 samples in the kinship estimates;</p></li>
 <li><p><code><a href="rkn_graph_from_kinship.html">rkn_graph_from_kinship</a></code> builds the network at a kinship
 threshold, optionally leaving samples out and adding covariates;</p></li>
-<li><p>a selector chooses the individuals: <code><a href="rkn_select_random.html">rkn_select_random</a></code> at
-random, optionally uniformly among all the maximum sets with exact inclusion
-probabilities; <code><a href="rkn_select_criteria.html">rkn_select_criteria</a></code> by preferences for individuals,
+<li><p>a selector chooses the individuals: <code><a href="rkn_select_random.html">rkn_select_random</a></code>
+uniformly at random among all the maximum sets, with exact inclusion
+probabilities, or by structural rules; <code><a href="rkn_select_criteria.html">rkn_select_criteria</a></code> by
+preferences for individuals,
 such as women; or <code><a href="rkn_select_global.html">rkn_select_global</a></code> towards a target composition of
 the whole selection, such as half women or a mean age, after
 <code><a href="rkn_tradeoff.html">rkn_tradeoff</a></code> has shown what the target costs in selection size;</p></li>

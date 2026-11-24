@@ -6,6 +6,7 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/PaoloDalena/RedKinNet/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PaoloDalena/RedKinNet/actions/workflows/R-CMD-check.yaml)
+[![License: GPL (>= 3)](https://img.shields.io/badge/license-GPL%20%28%3E%3D%203%29-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 <!-- badges: end -->
 
 Many genetic analyses, such as association studies and principal component analysis, assume
@@ -96,6 +97,9 @@ rkn_select_global(g, "sex", target = c(F = 0.5), seed = 1)
   plotted.
 
 ## Documentation
+
+The full documentation, with the reference of every function and the vignettes, is available
+at <https://paolodalena.github.io/RedKinNet/>.
 
 - `vignette("RedKinNet")`: the whole workflow.
 - `vignette("covariates")`: selecting with covariates.

@@ -96,6 +96,9 @@ rkn_select_global(g, "sex", target = c(F = 0.5), seed = 1)
 
 ## Documentation
 
+The full documentation, with the reference of every function and the
+vignettes, is available at <https://paolodalena.github.io/RedKinNet/>.
+
 - [`vignette("RedKinNet")`](https://paolodalena.github.io/RedKinNet/articles/RedKinNet.md):
   the whole workflow.
 - [`vignette("covariates")`](https://paolodalena.github.io/RedKinNet/articles/covariates.md):

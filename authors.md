@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/PaoloDalena/RedKinNet/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/PaoloDalena/RedKinNet/blob/v0.1.0/inst/CITATION)
 
 Dalena P (2026). *RedKinNet: Selection of Unrelated Individuals from
 Kinship Networks*. R package version 0.1.0,

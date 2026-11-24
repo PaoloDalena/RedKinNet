@@ -7,6 +7,7 @@
 
 [![R-CMD-check](https://github.com/PaoloDalena/RedKinNet/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PaoloDalena/RedKinNet/actions/workflows/R-CMD-check.yaml)
 [![License: GPL (>= 3)](https://img.shields.io/badge/license-GPL%20%28%3E%3D%203%29-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24499855.svg)](https://doi.org/10.5281/zenodo.24499855)
 <!-- badges: end -->
 
 Many genetic analyses, such as association studies and principal component analysis, assume
